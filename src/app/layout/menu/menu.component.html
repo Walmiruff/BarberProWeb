@@ -1,0 +1,238 @@
+<!--nav class="navbar navbar-expand-lg navbar-dark ftco_navbar bg-dark ftco-navbar-light" style="position: absolute"
+  id="ftco-navbar">
+  <div class="container">
+    <img class="mr-2" src="assets\image\LogoBS.png">
+    <a class="navbar-brand" style="color: white">BarberPro</a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#ftco-nav" aria-controls="ftco-nav"
+      aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="collapse navbar-collapse" id="ftco-nav">
+      <ul class="navbar-nav ml-auto">
+
+        <li class="nav-item" *ngIf="pmt.membership | async as pro; else elseTemplatePag">
+          <a *ngIf="pro.status == 'active'" class="nav-link" style="cursor: pointer">
+            <span class="far fa-check-circle"></span>
+            {{ 'NAV.SUB' | translate }}</a>
+
+          <a (click)="openHandler()" *ngIf="pro.status != 'active'" class="nav-link" style="cursor: pointer">
+            <span class="fa fa-shopping-bag"></span>
+            {{price}} <span class="badge badge-danger" *ngIf="trial(pro.status)">{{ badge }}</span> </a>
+        </li>
+
+        <ng-template #elseTemplatePag>
+          <li class="nav-item">
+            <a (click)="openHandler()" class="nav-link" style="cursor: pointer">
+              <span class="fa fa-shopping-bag"></span>
+              {{price}} <span class="badge badge-danger" *ngIf="trial('noActive')">{{ badge }}</span> </a>
+          </li>
+        </ng-template>
+
+
+        <li class="nav-item active"> <a class="nav-link">{{ 'NAV.MYSCHEDULE' | translate }}</a></li>
+        <li class="nav-item"> <a routerLink="/menu/config" class="nav-link"
+            href="#">{{ 'NAV.SETTINGS' | translate }}</a></li>
+        <li class="nav-item"><a (click)="Logout()" class="nav-link"
+            style="cursor: pointer">{{ 'NAV.LOGOUT' | translate }}</a></li>
+
+      </ul>
+    </div>
+  </div>
+</nav-->
+
+
+
+
+
+
+<div class="hero-wrap" style="background-image: url('assets/image/a.jpg')" data-stellar-background-ratio="0.5">
+  <div class="overlay"></div>
+  <div class="container">
+    <div class="row no-gutters slider-text" data-scrollax-parent="true">
+
+      <div class="col-12 col-lg-8" style="margin-top: 8rem" data-scrollax=" properties: { translateY: '70%' }">
+
+
+
+
+        <!--ng-template #modalContent let-close="close">
+          <div class="modal-header">
+            <h5 class="modal-title">Event action occurred</h5>
+            <button type="button" class="close" (click)="close()">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
+            <div>
+              Action:
+              <pre>{{ modalData?.action }}</pre>
+            </div>
+            <div>
+              Event:
+              <pre>{{ modalData?.event | json }}</pre>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" (click)="close()">OK</button>
+          </div>
+        </ng-template-->
+
+        <div class="row text-center">
+          <div class="col-md-4">
+            <div class="btn-group">
+              <div class="btn btn-primary" mwlCalendarPreviousView [view]="view" [(viewDate)]="viewDate"
+                (viewDateChange)="activeDayIsOpen = false">
+                {{ 'MENU.PREVIOUS' | translate }}
+              </div>
+              <div class="btn btn-outline-secondary" mwlCalendarToday [(viewDate)]="viewDate">
+                {{ 'MENU.TODAY' | translate }}
+              </div>
+              <div class="btn btn-primary" mwlCalendarNextView [view]="view" [(viewDate)]="viewDate"
+                (viewDateChange)="activeDayIsOpen = false">
+                {{ 'MENU.NEXT' | translate }}
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <h3>{{ viewDate | calendarDate:(view + 'ViewTitle'): locale }}</h3>
+          </div>
+          <div class="col-md-4">
+            <div class="btn-group">
+              <div class="btn btn-primary" (click)="view = CalendarView.Month"
+                [class.active]="view === CalendarView.Month">
+                {{ 'MENU.MONTH' | translate }}
+              </div>
+              <div class="btn btn-primary" (click)="view = CalendarView.Week"
+                [class.active]="view === CalendarView.Week">
+                {{ 'MENU.WEEK' | translate }}
+              </div>
+              <div class="btn btn-primary" (click)="view = CalendarView.Day" [class.active]="view === CalendarView.Day">
+                {{ 'MENU.DAY' | translate }}
+              </div>
+            </div>
+          </div>
+        </div>
+        <br>
+
+
+        <div [ngSwitch]="view">
+          <mwl-calendar-month-view *ngSwitchCase="CalendarView.Month" [viewDate]="viewDate" [events]="events"
+            [locale]="locale" [refresh]="refresh" [activeDayIsOpen]="activeDayIsOpen"
+            (dayClicked)="dayClicked($event.day)" (eventClicked)="handleEvent('Clicked', $event.event)"
+            (eventTimesChanged)="eventTimesChanged($event)">
+          </mwl-calendar-month-view>
+          <mwl-calendar-week-view *ngSwitchCase="CalendarView.Week" [viewDate]="viewDate" [events]="events"
+            [locale]="locale" [refresh]="refresh" (eventClicked)="handleEvent('Clicked', $event.event)"
+            (eventTimesChanged)="eventTimesChanged($event)">
+          </mwl-calendar-week-view>
+          <mwl-calendar-day-view *ngSwitchCase="CalendarView.Day" [viewDate]="viewDate" [events]="events"
+            [locale]="locale" [refresh]="refresh" (eventClicked)="handleEvent('Clicked', $event.event)"
+            (eventTimesChanged)="eventTimesChanged($event)">
+          </mwl-calendar-day-view>
+        </div>
+
+      </div>
+      <br><br><br>
+      <div class="col-12 col-lg-8" style="margin-top: 8rem" data-scrollax=" properties: { translateY: '70%' }">
+        <h3>
+          {{ 'MENU.EDITHOUR' | translate }}
+          <button class="btn btn-primary pull-right" (click)="addEvent(event)">
+            {{ 'MENU.ADDNEW' | translate }}
+          </button>
+          <div class="clearfix"></div>
+        </h3>
+
+        <table class="table table-bordered">
+
+          <thead>
+            <tr>
+              <th>{{ 'MENU.CLIENTS' | translate }}</th>
+              <th>{{ 'MENU.HORARY' | translate }}</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            <tr *ngFor="let event of events; let index = index">
+              <td>
+                <input type="text" class="form-control" [(ngModel)]="event.title"
+                  (blur)="refresh.next(); atualizaCliente(event)">
+              </td>
+
+              <td>
+                <div class="row">
+
+                  <div class="col-10">
+                    <input class="form-control" type="datetime" mwlFlatpickr [(ngModel)]="event.start"
+                      (ngModelChange)="refresh.next(); atualizaClienteHora(event)" [altInput]="true"
+                      [convertModelValue]="true" [enableTime]="true" dateFormat="Y-m-dTH:i" altFormat="F j, Y H:i"
+                      time_24hr="true" placeholder="Not set">
+                  </div>
+
+                  <div class="col-2">
+                    <button class="btn btn-danger"
+                      (click)="events.splice(index, 1); refresh.next(); onDelete(event.id)">
+                      <span class="fa fa-trash" style="cursor: pointer; color: white"></span>
+                    </button>
+                  </div>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+
+        </table>
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+</div>
+
+
+
+<button id="openModalButton" [hidden]="true" data-toggle="modal" data-target="#modalAss">Open Modal</button>
+
+<div class="modal" id="modalAss" data-backdrop="static">
+  <div class="modal-dialog">
+    <div class="modal-content">
+
+      <div class="modal-header" style="border-bottom-width: 0px">
+        <h5 class="modal-title" style="color: gray">BarberPro</h5>
+      </div>
+
+      <div class="modal-body">
+
+
+        <div class="container">
+
+          <div class="row">
+
+
+            <div class="col-md-12 mb-1">
+              <p>{{ 'HOME.TITLE26' | translate }}</p>
+            </div>
+          </div>
+
+        </div>
+
+
+
+      </div>
+
+
+      <div class="modal-footer" style="padding: 20px; border-top-color: transparent">
+
+        <div>
+          <button class="btn btn-outline-primary mr-2" (click)="naoassinar()"
+            data-dismiss="modal">{{ 'HOME.TITLE18' | translate }}</button>
+          <button class="btn btn-primary" (click)="assinar()"
+            data-dismiss="modal">{{ 'HOME.TITLE25' | translate }}</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>

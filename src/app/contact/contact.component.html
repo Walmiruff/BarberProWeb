@@ -1,0 +1,46 @@
+<nav class="navbar navbar-expand-lg navbar-dark ftco_navbar bg-dark ftco-navbar-light" style="position: absolute" id="ftco-navbar">
+
+    <img class="mr-2" src="assets\image\LogoBS.png">
+    <a class="navbar-brand" routerLink="" href="#">BarberPro</a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#ftco-nav" aria-controls="ftco-nav"
+      aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="collapse navbar-collapse" id="ftco-nav">
+      <ul class="navbar-nav ml-auto">
+        <li class="nav-item"><a routerLink="" class="nav-link" href="#">{{ 'NAV.HOME' | translate }}</a></li>
+        <li class="nav-item active"> <a routerLink="/app" class="nav-link" href="#">{{ 'NAV.SERVICESSCHED' | translate }}</a></li>
+        <li class="nav-item"><a routerLink="/login" class="nav-link" href="#">{{ 'NAV.LOGIN' | translate }}</a></li>
+      </ul>
+    </div>
+
+</nav>
+
+
+<div class="hero-wrap js-fullheight" style="background-image: url('assets/image/b2.jpg')"
+  data-stellar-background-ratio="0.5">
+  <div class="overlay"></div>
+  <div class="container">
+
+
+    <div class="row no-gutters slider-text js-fullheight align-items-center justify-content-start"
+      data-scrollax-parent="true">
+
+      <div class="col-md-6 " data-scrollax=" properties: { translateY: '70%' }">
+
+        <h1 class="mb-5" data-scrollax="properties: { translateY: '30%', opacity: 1.6 }">{{ 'CONTACT.TITLE' | translate }}</h1>
+
+        <div class="row">
+          <p class="mr-2" data-scrollax="properties: { translateY: '30%', opacity: 1.6 }"><a
+              class="btn btn-primary px-4 py-3">{{ 'CONTACT.BUTTON1' | translate }}</a></p>
+          <p data-scrollax="properties: { translateY: '30%', opacity: 1.6 }"><a routerLink="/login" href="#"
+              class="btn btn-secondary px-4 py-3">{{ 'CONTACT.BUTTON2' | translate }}</a></p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+

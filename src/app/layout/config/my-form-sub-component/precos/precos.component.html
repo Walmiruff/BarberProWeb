@@ -1,0 +1,21 @@
+<div [formGroup]="myFormPrecos">
+    <div class="row">
+        <div class="col-6" >
+          <div class="form-group2">
+            <div class="input-wrap2">
+              <div class="icon2"><span class="fas fa-cut"></span></div>
+              <input  type="text" formControlName="itemPropertyServico" id="servico" class="form-control2" placeholder="{{ 'PRECO.SERVICE' | translate }}">
+              </div>
+          </div>
+        </div>
+      
+        <div class="col-6">
+          <div class="form-group2">
+            <div class="input-wrap2">
+              <div class="icon2"><span class="fas fa-money-bill"></span></div>
+              <input type="text"  formControlName="itemPropertyPreco" id="preco" class="form-control2" placeholder="{{ 'PRECO.PRICE' | translate }}">
+            </div>
+          </div>
+        </div>
+      </div>
+</div>

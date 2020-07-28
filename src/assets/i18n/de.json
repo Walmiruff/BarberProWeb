@@ -1,0 +1,119 @@
+{
+    "PRECO": {
+        "SERVICE": "Bedienung",
+        "PRICE": "Preis"
+    },
+    "NAV": {
+        "MYSCHEDULE": "Mein Terminplan",
+        "SETTINGS": "Einstellungen",
+        "LOGOUT": "Abmelden",
+        "HOME": "Hauptseite",
+        "SERVICESSCHED": "Dienste und Zeitplan",
+        "LOGIN": "Einloggen",
+        "SUB": "Das Abonnement ist Aktiv"
+    },
+    "CONFIG": {
+        "MYSETTINGS": "Meine Einstellungen",
+        "NAMEOFBARBERSHOP": "Name des Friseursalons",
+        "COUNTRY": "Land",
+        "STATE": "Bundesland / Provinz / Region",
+        "CITY": "Stadt",
+        "NEIGHBORHOOD": "Nachbarschaft",
+        "STREET": "Straße",
+        "NUMBER": "Anzahl",
+        "ZIPCODE": "Postleitzahl",
+        "CELLPHONE": "Mobiltelefon",
+        "TELEPHONE": "Telefon",
+        "EMAIL": "E-mail",
+        "SUBMIT": "Absenden",
+        "PHOTOBARBERSHOP": "Foto des Friseursalons",
+        "TEXTEFFECT": "Um einen guten Gentleman zu machen, sind mehrere Berufe erforderlich, hauptsächlich jedoch ein Friseur.",
+        "TEXTEFFECTcont": "Arzt und Schriftsteller",
+        "TEXTEFFECT2": "Wählen Sie das beste Foto aus Ihrem Friseursalon, um Ihre neuen Kunden zu begeistern!",
+        "CHOOSEPHOTO": "Foto auswählen",
+        "CHOOSELOGO": "Wählen Sie Logo",
+        "BUSINESSHOURS": "Geschäftszeiten und Preise",
+        "TEXTEFFECT3": "Wählen Sie Ihre Servicepläne für Ihre neuen Kunden aus.",
+        "CLOSED": "Geschlossen",
+        "SUNDAY": "Sonntag",
+        "MONDAY": "Montag",
+        "TUESDAY": "Dienstag",
+        "WEDNESDAY": "Mittwoch",
+        "THURSDAY": "Donnerstag",
+        "FRIDAY": "Freitag",
+        "SATURDAY": "Samstag",
+        "ADDSERVICE": "+ Dienst hinzufügen",
+        "APPLY": "Übernehmen"
+    },
+    "CONTACT": {
+        "TITLE": "Wir Verbinden Kunden und Friseure",
+        "BUTTON1": "BarberPro für Kunden",
+        "BUTTON2": "BarberPro für Friseursalons"
+    },
+    "LOGIN": {
+        "LOGIN": "Einloggen",
+        "EMAIL": "E-mail",
+        "PASSWORD": "Passwort",
+        "AUTH": "Authentifizieren",
+        "RESET": "Konto zurücksetzen",
+        "REGISTER": "Jetzt Registrieren",
+        "NOACCOUNT": "Noch kein konto? "
+    },
+    "REGISTER": {
+        "TITLECREATE": "Konto erstellen",
+        "BUTTONCREATE": "Erstellen"
+    },
+    "RESET": {
+        "TITLERESET": "Konto zurücksetzen",
+        "BUTTONRESET": "Zurücksetzen"
+    },
+    "ERROMODAL": {
+        "ERROMODAL": "Ups! Etwas Unerwartetes passiert bitte im Internet! :("
+    },
+    "MENU": {
+        "PREVIOUS": "Zurück",
+        "TODAY": "Heute",
+        "NEXT": "Nächste",
+        "MONTH": "Monate",
+        "WEEK": "Woche",
+        "DAY": "Tag",
+        "EDITHOUR": "Bearbeiten",
+        "ADDNEW": "Neues hinzufügen",
+        "CLIENTS": "Kunden",
+        "HORARY": "Stundenplan"
+    },
+    "HOME": {
+        "TITLE1": "Verbinden von",
+        "TITLE1CONT": " Kunden mit Ihnen",
+        "TITLE2": "Terminvereinbarung für Barbershops",
+        "TITLE3": "Lassen Sie sich täglich von Tausenden von Menschen sehen und verwalten Sie Ihren Barbershop an Ihren Fingerspitzen.",
+        "TITLE4": "Demnächst",
+        "TITLE5": "im App Store",
+        "TITLE6": "Holen Sie es sich an",
+        "TITLE7": "Google Play",
+        "TITLE8": "Kunden können über BarberPro direkt mit Ihnen planen!",
+        "TITLE9": "Automatisierte Texte Erinnerungen, wenn es an der Zeit ist, einen Schnitt zu erhalten.",
+        "TITLE10": "Betriebsabläufe verbessern",
+        "TITLE11": "Drag & Drop-System: Ermöglicht das erneute Markieren mit Ihren Kunden, um Spitzenzeiten zu vermeiden!",
+        "TITLE12": "Stellen Sie Ihre Zeiten und Preise für jeden Tag in der Woche ein. Zugriff auch von einem Computer aus.",
+        "TITLE13": "Keine Zeit- und Kunden limits. Die Pläne beginnen bei 29 € pro Monat. Starten Sie eine kostenlose ",
+        "TITLE14": "Testversion",
+        "TITLE15": "",
+        "TITLE16": "Kontaktieren Sie uns",
+        "TITLE17": "Kontaktinformationen",
+        "TITLE18": "Abbrechen",
+        "TITLE19": "Nachricht senden",
+        "TITLE20": "Ihr Name",
+        "TITLE21": "Ihre E-Mail-Adresse",
+        "TITLE22": "Betreff",
+        "TITLE23": "Nachricht",
+        "TITLE24":"Unterstützung",
+        "TITLE25":"Abonnieren",
+        "TITLE26":"Ihre BarberPro-Testversion ist abgelaufen! Möchten Sie sich anmelden?",
+        "FOTO1": "assets\\image\\foto1de.png",
+        "FOTO2": "assets\\image\\foto2de.png",
+        "FOTO3": "assets\\image\\foto3de.png",
+        "FOTO4": "assets\\image\\foto4de.png",
+        "FOTO5": "assets\\image\\foto5de.png"
+    }
+}

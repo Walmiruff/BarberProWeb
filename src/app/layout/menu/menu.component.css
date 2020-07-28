@@ -1,0 +1,303 @@
+h3 {
+    margin: 0 0 10px;
+}
+
+pre {
+    background-color: white;
+    padding: 15px;
+}
+
+::ng-deep
+    body
+    > app-root
+    > app-layout
+    > app-menu
+    > div.hero-wrap
+    > div.container
+    > div
+    > div:nth-child(1)
+    > div:nth-child(3)
+    > mwl-calendar-month-view
+    > div
+    > div {
+    background-color: #fff;
+    opacity: 0.8;
+    border-bottom: 0px;
+    border: 1px solid #e1e1e1;
+}
+
+::ng-deep
+    body
+    > app-root
+    > app-layout
+    > app-menu
+    > div.hero-wrap
+    > div.container
+    > div
+    > div:nth-child(1)
+    > div:nth-child(3)
+    > mwl-calendar-week-view
+    > div
+    > div {
+    background-color: #e0dfdf;
+    opacity: 0.8;
+}
+
+::ng-deep
+    body
+    > app-root
+    > app-layout
+    > app-menu
+    > div.hero-wrap
+    > div.container
+    > div
+    > div:nth-child(1)
+    > div:nth-child(3)
+    > mwl-calendar-day-view
+    > div
+    > div.cal-hour-rows {
+    background-color: #e0dfdf;
+    opacity: 0.8;
+}
+
+::ng-deep
+    body
+    > app-root
+    > app-layout
+    > app-menu
+    > div.hero-wrap
+    > div.container
+    > div
+    > div:nth-child(1)
+    > div:nth-child(3)
+    > mwl-calendar-month-view
+    > div
+    > div
+    > div:nth-child(n)
+    > div
+    > mwl-calendar-month-cell:nth-child(n)
+    > div
+    > span {
+    color: #000;
+}
+
+::ng-deep
+    body
+    > app-root
+    > app-layout
+    > app-menu
+    > div
+    > div.container
+    > div
+    > div:nth-child(1)
+    > div:nth-child(3)
+    > mwl-calendar-week-view
+    > div
+    > mwl-calendar-week-view-header
+    > div
+    > div.cal-header.cal-future.cal-weekend.ng-star-inserted
+    > span {
+    color: red;
+}
+
+::ng-deep
+    body
+    > app-root
+    > app-layout
+    > app-menu
+    > div.hero-wrap
+    > div.container
+    > div
+    > div:nth-child(1)
+    > div:nth-child(3)
+    > mwl-calendar-week-view
+    > div
+    > mwl-calendar-week-view-header
+    > div
+    > div.cal-header.cal-past.cal-weekend.ng-star-inserted
+    > span {
+    color: red;
+}
+
+::ng-deep
+    body
+    > app-root
+    > app-layout
+    > app-menu
+    > div.hero-wrap
+    > div.container
+    > div
+    > div:nth-child(n)
+    > div:nth-child(3)
+    > mwl-calendar-month-view
+    > div
+    > div
+    > div:nth-child(n)
+    > div
+    > mwl-calendar-month-cell.cal-cell.cal-day-cell.cal-past.cal-weekend.cal-in-month.ng-star-inserted
+    > div
+    > span {
+    color: red !important;
+}
+
+::ng-deep
+    body
+    > app-root
+    > app-layout
+    > app-menu
+    > div.hero-wrap
+    > div.container
+    > div
+    > div:nth-child(1)
+    > div:nth-child(3)
+    > mwl-calendar-week-view
+    > div
+    > mwl-calendar-week-view-header
+    > div
+    > div.cal-header.cal-today.ng-star-inserted {
+    background-color: #5a8158;
+}
+
+::ng-deep
+    body
+    > app-root
+    > app-layout
+    > app-menu
+    > div.hero-wrap
+    > div.container
+    > div
+    > div:nth-child(1)
+    > div:nth-child(3)
+    > mwl-calendar-week-view
+    > div
+    > div
+    > div.cal-time-label-column.ng-star-inserted
+    > div:nth-child(n)
+    > mwl-calendar-week-view-hour-segment:nth-child(1)
+    > div
+    > div {
+    color: #646464;
+}
+
+::ng-deep
+    body
+    > app-root
+    > app-layout
+    > app-menu
+    > div
+    > div.container
+    > div
+    > div:nth-child(1)
+    > div:nth-child(3)
+    > mwl-calendar-week-view
+    > div
+    > div
+    > div.cal-day-columns
+    > div:nth-child(n)
+    > div.cal-event-container.cal-draggable.cal-starts-within-day.cal-ends-within-day.ng-star-inserted
+    > mwl-calendar-week-view-event
+    > div {
+    height: 25px;
+}
+
+::ng-deep
+    body
+    > app-root
+    > app-layout
+    > app-menu
+    > div.hero-wrap
+    > div.container
+    > div
+    > div:nth-child(1)
+    > div:nth-child(3)
+    > mwl-calendar-week-view
+    > div
+    > div
+    > div.cal-day-columns
+    > div:nth-child(n)
+    > div.cal-event-container.cal-draggable.cal-starts-within-day.cal-ends-within-day.ng-star-inserted
+    > mwl-calendar-week-view-event
+    > div
+    > mwl-calendar-event-title
+    > span {
+    color: rgb(30, 144, 255);
+}
+
+::ng-deep
+    body
+    > app-root
+    > app-layout
+    > app-menu
+    > div
+    > div.container
+    > div
+    > div:nth-child(1)
+    > div:nth-child(3)
+    > mwl-calendar-day-view
+    > div
+    > div.cal-hour-rows
+    > div.cal-events
+    > div
+    > mwl-calendar-day-view-event
+    > div {
+    height: 33px;
+}
+
+::ng-deep
+    body
+    > app-root
+    > app-layout
+    > app-menu
+    > div
+    > div.container
+    > div
+    > div:nth-child(1)
+    > div:nth-child(3)
+    > mwl-calendar-day-view
+    > div
+    > div.cal-hour-rows
+    > div.cal-events
+    > div:nth-child(n)
+    > mwl-calendar-day-view-event
+    > div
+    > mwl-calendar-event-title
+    > span {
+    color: rgb(30, 144, 255);
+}
+
+::ng-deep
+    body
+    > app-root
+    > app-layout
+    > app-menu
+    > div
+    > div.container
+    > div
+    > div:nth-child(1)
+    > div:nth-child(3)
+    > mwl-calendar-day-view
+    > div
+    > div.cal-hour-rows
+    > div:nth-child(n)
+    > mwl-calendar-day-view-hour-segment:nth-child(1)
+    > div
+    > div {
+    color: #646464;
+}
+
+::ng-deep
+    body
+    > app-root
+    > app-layout
+    > app-menu
+    > div
+    > div.container
+    > div
+    > div:nth-child(1)
+    > div:nth-child(3)
+    > mwl-calendar-month-view
+    > div
+    > mwl-calendar-month-view-header
+    > div {
+    background-color: transparent;
+}

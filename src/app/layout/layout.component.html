@@ -1,0 +1,50 @@
+<nav class="navbar navbar-expand-lg navbar-dark ftco_navbar bg-dark ftco-navbar-light" style="position: absolute"
+  id="ftco-navbar">
+
+
+  <img class="mr-2" src="assets\image\LogoBS.png">
+  <a class="navbar-brand" style="color: white">BarberPro</a>
+
+
+  <button style="margin-left: 0px" class="navbar-toggler" type="button" data-toggle="collapse" data-target="#ftco-nav" aria-controls="ftco-nav"
+    aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+
+
+  <div class="collapse navbar-collapse" id="ftco-nav">
+    <ul class="navbar-nav ml-auto">
+
+      <li class="nav-item" *ngIf="pmt.membership | async as pro; else elseTemplatePag">
+        <a *ngIf="pro.status == 'active'" class="nav-link" style="cursor: pointer">
+          <span class="far fa-check-circle"></span>
+          {{ 'NAV.SUB' | translate }}</a>
+
+        <a (click)="openHandler()" *ngIf="pro.status != 'active'" class="nav-link" style="cursor: pointer">
+          <span class="fa fa-shopping-bag"></span>
+          {{price}} <span class="badge badge-danger" *ngIf="trial(pro.status)">{{ badge }}</span> </a>
+      </li>
+
+      <li class="nav-item"> <a routerLink="/menu/calendario" class="nav-link"
+          href="#">{{ 'NAV.MYSCHEDULE' | translate }}</a></li>
+
+      <li class="nav-item"> <a routerLink="/menu/config" class="nav-link" href="#">{{ 'NAV.SETTINGS' | translate }}</a>
+      </li>
+      <li class="nav-item"><a (click)="Logout()" class="nav-link"
+          style="cursor: pointer">{{ 'NAV.LOGOUT' | translate }}</a></li>
+
+    </ul>
+  </div>
+
+</nav>
+
+<ng-template #elseTemplatePag>
+  <li class="nav-item">
+    <a (click)="openHandler()" class="nav-link" style="cursor: pointer">
+      <span class="fa fa-shopping-bag"></span>
+      {{price}} <span class="badge badge-danger" *ngIf="trial('noActive')">{{ badge }}</span> </a>
+  </li>
+</ng-template>
+
+<router-outlet></router-outlet>

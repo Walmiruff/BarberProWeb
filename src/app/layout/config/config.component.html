@@ -1,0 +1,1459 @@
+<!--nav class="navbar navbar-expand-lg navbar-dark ftco_navbar bg-dark ftco-navbar-light" style="position: absolute"
+  id="ftco-navbar">
+  <div class="container">
+    <img class="mr-2" src="assets\image\LogoBS.png">
+    <a class="navbar-brand" style="color: white">BarberPro</a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#ftco-nav" aria-controls="ftco-nav"
+      aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="collapse navbar-collapse" id="ftco-nav">
+      <ul class="navbar-nav ml-auto">
+        <li class="nav-item "> <a routerLink="/menu/calendario" class="nav-link"
+            href="#">{{ 'NAV.MYSCHEDULE' | translate }}</a></li>
+        <li class="nav-item active"><a class="nav-link">{{ 'NAV.SETTINGS' | translate }}</a></li>
+        <li class="nav-item"><a (click)="Logout()" class="nav-link"
+            style="cursor: pointer">{{ 'NAV.LOGOUT' | translate }}</a></li>
+      </ul>
+    </div>
+  </div>
+</nav-->
+
+
+
+<div class="hero-wrap" style="background-image: url('assets/image/b5.jpg');" data-stellar-background-ratio="0.5">
+  <div class="overlay"></div>
+  <div class="container">
+    <div class="row no-gutters slider-text" data-scrollax-parent="true">
+
+      <div class="col-md-6 mb-4" style="margin-top: 7rem" data-scrollax=" properties: { translateY: '70%' }">
+
+        <div class="card">
+
+          <h3 class="card-title mx-1" style="color: #ce9c6b">{{ 'CONFIG.MYSETTINGS' | translate }}</h3>
+
+
+
+          <form class="form-horizontal " [formGroup]="formulario" (ngSubmit)="onSubmit()">
+            <div class="card-body">
+
+
+              <input type="hidden" class="form-control " formControlName="id" id="id" (input)="onInput()">
+              <input type="hidden" class="form-control " formControlName="fk" id="fk" (input)="onInput()">
+              <input type="hidden" class="form-control " formControlName="url" id="url" (input)="onInput()">
+              <input type="hidden" class="form-control " formControlName="urlLogo" id="urlLogo" (input)="onInput()">
+
+              <div class="row" [ngClass]="aplicaCssErro('txt_NomeSalao')">
+
+                <div class="col-sm-12  mb-3">
+                  <input type="text" class="form-control" placeholder="{{ 'CONFIG.NAMEOFBARBERSHOP' | translate }}"
+                    formControlName="txt_NomeSalao" id="txt_NomeSalao" (input)="onInput()">
+                  <app-error-msg [control]="formulario.get('txt_NomeSalao')" label="{{ 'CONFIG.NAMEOFBARBERSHOP' | translate }}">
+                  </app-error-msg>
+                </div>
+              </div>
+
+
+              <!--combobox-->
+              <div class="row" [ngClass]="aplicaCssErro('txt_pais')">
+                <div class="col-sm-12  mb-3">
+                  <!--input type="text" class="form-control" placeholder="Country" formControlName="txt_pais" id="txt_pais"
+                    (input)="onInput()"-->
+                  <select class="form-control" formControlName="txt_pais" id="txt_pais">
+                    <!--Dar preferencia para pipe async em observable vindo do controle-->
+                    <option *ngFor="let pais of paises$ | async" [value]="pais.sigla"> {{ pais.nome_pais_int }}
+                    </option>
+                  </select>
+                  <app-error-msg [control]="formulario.get('txt_pais')" label="{{ 'CONFIG.COUNTRY' | translate }}"></app-error-msg>
+                </div>
+              </div>
+
+
+
+
+              <div class="row" [ngClass]="aplicaCssErro('txt_UF')">
+                <div class="col-sm-12  mb-3">
+                  <input type="text" class="form-control" placeholder="{{ 'CONFIG.STATE' | translate }}" formControlName="txt_UF" id="txt_UF"
+                    (input)="onInput()">
+                  <app-error-msg [control]="formulario.get('txt_UF')" label="{{ 'CONFIG.STATE' | translate }}"></app-error-msg>
+                </div>
+              </div>
+
+
+              <div class="row" [ngClass]="aplicaCssErro('txt_Cidade')">
+                <div class="col-sm-12 mb-3">
+                  <input type="text" class="form-control" placeholder="{{ 'CONFIG.CITY' | translate }}" formControlName="txt_Cidade"
+                    id="txt_Cidade" (input)="onInput()">
+                  <app-error-msg [control]="formulario.get('txt_Cidade')" label="{{ 'CONFIG.CITY' | translate }}"></app-error-msg>
+                </div>
+              </div>
+
+
+
+              <div class="row" [ngClass]="aplicaCssErro('txt_NomeResp')">
+
+                <div class="col-sm-12  mb-3">
+                  <input type="text" class="form-control" formControlName="txt_NomeResp" placeholder="{{ 'CONFIG.NEIGHBORHOOD' | translate }}"
+                    id="txt_NomeResp" (input)="onInput()">
+                  <app-error-msg [control]="formulario.get('txt_NomeResp')" label="{{ 'CONFIG.NEIGHBORHOOD' | translate }}"></app-error-msg>
+                </div>
+              </div>
+
+
+              <div class="row" [ngClass]="aplicaCssErro('txt_End')">
+                <div class="col-sm-12 mb-3">
+                  <input type="text" placeholder="{{ 'CONFIG.STREET' | translate }}" class="form-control" formControlName="txt_End" id="txt_End"
+                    (input)="onInput()">
+                  <app-error-msg [control]="formulario.get('txt_End')" label="{{ 'CONFIG.STREET' | translate }}"></app-error-msg>
+                </div>
+              </div>
+
+
+
+              <div class="row">
+
+                <div class="col-sm-6 input-group mb-3" [ngClass]="aplicaCssErro('txt_Numero')">
+                  <input type="text" class="form-control" placeholder="{{ 'CONFIG.NUMBER' | translate }}" formControlName="txt_Numero"
+                    id="txt_Numero" (input)="onInput()">
+
+                </div>
+
+
+                <div class="col-sm-6 input-group mb-3">
+                  <input type="text" class="form-control" placeholder="{{ 'CONFIG.ZIPCODE' | translate }}" formControlName="txt_CEP"
+                    id="txt_CEP" (input)="onInput()" (keypress)="numberOnly($event)">
+
+                </div>
+
+              </div>
+
+
+
+
+
+
+              <div class="row">
+
+                <div class="col-sm-6 input-group mb-3">
+                  <input type="text" placeholder="{{ 'CONFIG.CELLPHONE' | translate }}" class="form-control " formControlName="txt_Cel"
+                    id="txt_Cel" (input)="onInput()">
+                </div>
+
+                <div class="col-sm-6 input-group mb-3">
+                  <input type="text" class="form-control" placeholder="{{ 'CONFIG.TELEPHONE' | translate }}" formControlName="txt_Tel" id="txt_Tel"
+                    (input)="onInput()">
+                </div>
+
+              </div>
+
+
+
+
+
+
+
+              <div class="row">
+
+                <div class="col-sm-8 input-group" [ngClass]="aplicaCssErro('txt_email')">
+                  <input type="text" class="form-control" placeholder="{{ 'CONFIG.EMAIL' | translate }}" formControlName="txt_email"
+                    id="txt_email" (input)="onInput()">
+                  <app-error-msg [control]="formulario.get('txt_email')" label="{{ 'CONFIG.EMAIL' | translate }}"></app-error-msg>
+                </div>
+
+
+              </div>
+
+            </div>
+
+
+            <div class="card-footer justify-content-end"
+              style="background-color: transparent; border-top-color: transparent">
+              <button type="submit" class="btn btn-primary ">{{ 'CONFIG.SUBMIT' | translate }}</button>
+            </div>
+
+          </form>
+
+
+
+        </div>
+
+        <br><br>
+
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<section class="ftco-section ftco-intro" style="margin-top: 15rem; padding-top: 0px">
+  <div class="container">
+
+
+    <div class="row justify-content-center  mb-3 pb-3" data-scrollax-parent="true">
+      <div class="col-md-7 heading-section text-center fadeInUp ftco-animated " style="margin-top: 7rem"
+        data-scrollax=" properties: { translateY: '70%' }">
+        <h3 class="mb-4">{{ 'CONFIG.PHOTOBARBERSHOP' | translate }}</h3>
+        <p class="flip">
+          <span class="deg1"></span>
+          <span class="deg2"></span>
+          <span class="deg3"></span>
+        </p>
+      </div>
+    </div>
+
+
+    <div class="row d-flex">
+
+      <div class="col-md-6 col-sm-12 col-12 justify-content-center">
+        <img class="mr-2  img-fluid" src="assets\image\polaroid.jpg" alt="">
+      </div>
+
+      <div class="col-md-6 col-sm-12 col-12 pl-5 mt-5" style="padding-right: 48px">
+
+        <div class="row text-center">
+
+          <blockquote class="blockquote text-center">
+            <p class="mb-0">{{ 'CONFIG.TEXTEFFECT' | translate }}</p>
+            <footer class="blockquote-footer">Oliver Goldsmith <cite title="Título">{{ 'CONFIG.TEXTEFFECTCont' | translate }}</cite></footer>
+
+          </blockquote>
+
+        </div>
+
+        <br><br><br>
+        <p>{{ 'CONFIG.TEXTEFFECT2' | translate }}</p>
+        <div class="row" style="margin-left: 1">
+          <button class="btn btn-primary mr-3" data-toggle="modal" data-target="#fotoModal"
+            [disabled]="ativarDesativar">{{ 'CONFIG.CHOOSEPHOTO' | translate }}</button>
+
+          <button class="btn btn-outline-primary" data-toggle="modal" data-target="#fotoModalLogo"
+            [disabled]="ativarDesativar">{{ 'CONFIG.CHOOSELOGO' | translate }}</button>
+        </div>
+      </div>
+
+
+    </div>
+  </div>
+</section>
+
+
+
+<section class="ftco-section ftco-bg-dark">
+  <div class="container">
+
+
+    <div class="row justify-content-center  mb-3 pb-3" data-scrollax-parent="true">
+      <div class="col-md-7 heading-section text-center fadeInUp ftco-animated " style="margin-top: 7rem"
+        data-scrollax=" properties: { translateY: '70%' }">
+        <h3 class="mb-4">{{ 'CONFIG.BUSINESSHOURS' | translate }}</h3>
+        <p class="flip">
+          <span class="deg1"></span>
+          <span class="deg2"></span>
+          <span class="deg3"></span>
+        </p>
+      </div>
+    </div>
+
+
+    <div class="container">
+    <div class="row  justify-content-center mb-5">
+      <p class="mb-0">{{ 'CONFIG.TEXTEFFECT3' | translate }}</p>
+    </div>
+  </div>
+
+
+
+
+
+    <div class="row justify-content-center">
+      <div class="card" style="border-color: #ce9c6b">
+        <img class="card-img-top" src="assets\image\b6.jpg">
+
+        <div class="card-body" style="background-color: #1b1b1b">
+
+
+
+
+          <div class="container" style="cursor: pointer" data-toggle="modal" data-target="#myModal">
+            <!--Div com ng*For-->
+
+
+
+            <div class="row">
+
+              <div class="col-4">
+                <i class="far fa-clock" aria-hidden="true"></i>
+              </div>
+
+              <div class="col-4">
+
+              </div>
+
+              <div class="col-4" style="padding-left: 0px">
+                <i class="fa fa-pencil-alt" style="float: right" aria-hidden="true"></i>
+              </div>
+            </div>
+
+
+            <div class="row mb-2">
+
+
+              <div class="col-5" style="padding-left: 0px">
+                <h5 style="font-size: 15px">
+                  <span>{{ 'CONFIG.SUNDAY' | translate }}</span>
+                </h5>
+              </div>
+
+              <div class="col-7 justify-content-center"
+                *ngIf="horariosDom$ | async as horariosDom ; else elseTemplateDom">
+                <div *ngFor="let item of horariosDom">
+
+                  <div *ngIf="item.closedDom==false; else elseDom">
+                    <p
+                      style="font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif; margin-bottom: 0rem">
+                      {{ 'CONFIG.CLOSED' | translate }}</p>
+                  </div>
+
+                  <ng-template #elseDom>
+                    <div *ngFor="let item of item.formArrayDomingo">
+
+                      <p
+                        style="font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif; margin-bottom: 0rem">
+                        {{item.itemPropertyOneDomingo}} - {{item.itemPropertyTwoDomingo}} </p>
+
+
+                    </div>
+                  </ng-template>
+
+                </div>
+              </div>
+
+              <ng-template #elseTemplateDom>
+                <p
+                  style="font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif; margin-bottom: 0rem">
+                  {{ 'CONFIG.CLOSED' | translate }}</p>
+              </ng-template>
+
+
+
+            </div>
+
+
+
+
+
+            <div class="row mb-2">
+              <div class="col-5" style="padding-left: 0px">
+                <h5 style="font-size: 15px">
+                  <span>{{ 'CONFIG.MONDAY' | translate }}</span>
+                </h5>
+              </div>
+
+              <div class="col-7 justify-content-center"
+                *ngIf="horariosSeg$ | async as horariosSeg ; else elseTemplateSeg">
+                <div *ngFor="let item of horariosSeg">
+
+                  <div *ngIf="item.closedSeg==false; else elseSeg">
+                    <p
+                      style="font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif; margin-bottom: 0rem">
+                      {{ 'CONFIG.CLOSED' | translate }}</p>
+                  </div>
+
+                  <ng-template #elseSeg>
+                    <div *ngFor="let item of item.formArraySegunda">
+
+                      <p
+                        style="font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif; margin-bottom: 0rem">
+                        {{item.itemPropertyOneSegunda}} - {{item.itemPropertyTwoSegunda}} </p>
+
+
+                    </div>
+                  </ng-template>
+
+                </div>
+              </div>
+
+              <ng-template #elseTemplateSeg>
+                <p
+                  style="font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif; margin-bottom: 0rem">
+                  {{ 'CONFIG.CLOSED' | translate }}</p>
+              </ng-template>
+            </div>
+
+
+
+
+
+
+
+
+
+            <div class="row mb-2">
+              <div class="col-5" style="padding-left: 0px">
+                <h5 style="font-size: 15px">
+                  <span>{{ 'CONFIG.TUESDAY' | translate }}</span>
+                </h5>
+              </div>
+
+              <div class="col-7 justify-content-center"
+                *ngIf="horariosTer$ | async as horariosTer ; else elseTemplateTer">
+                <div *ngFor="let item of horariosTer">
+
+                  <div *ngIf="item.closedTer==false; else elseTer">
+                    <p
+                      style="font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif; margin-bottom: 0rem">
+                      {{ 'CONFIG.CLOSED' | translate }}</p>
+                  </div>
+
+                  <ng-template #elseTer>
+                    <div *ngFor="let item of item.formArrayTerca">
+
+                      <p
+                        style="font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif; margin-bottom: 0rem">
+                        {{item.itemPropertyOneTerca}} - {{item.itemPropertyTwoTerca}} </p>
+
+
+                    </div>
+                  </ng-template>
+
+                </div>
+              </div>
+              <ng-template #elseTemplateTer>
+                <p
+                  style="font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif; margin-bottom: 0rem">
+                  {{ 'CONFIG.CLOSED' | translate }}</p>
+              </ng-template>
+            </div>
+
+
+
+
+
+
+            <div class="row mb-2">
+              <div class="col-5" style="padding-left: 0px">
+                <h5 style="font-size: 15px">
+                  <span>{{ 'CONFIG.WEDNESDAY' | translate }}</span>
+                </h5>
+              </div>
+
+              <div class="col-7 justify-content-center"
+                *ngIf="horariosQua$ | async as horariosQua ; else elseTemplateQua">
+                <div *ngFor="let item of horariosQua">
+
+                  <div *ngIf="item.closedQua==false; else elseQua">
+                    <p
+                      style="font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif; margin-bottom: 0rem">
+                      {{ 'CONFIG.CLOSED' | translate }}</p>
+                  </div>
+
+                  <ng-template #elseQua>
+                    <div *ngFor="let item of item.formArrayQuarta">
+
+                      <p
+                        style="font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif; margin-bottom: 0rem">
+                        {{item.itemPropertyOneQuarta}} - {{item.itemPropertyTwoQuarta}} </p>
+
+
+                    </div>
+                  </ng-template>
+
+                </div>
+              </div>
+              <ng-template #elseTemplateQua>
+                <p
+                  style="font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif; margin-bottom: 0rem">
+                  {{ 'CONFIG.CLOSED' | translate }}</p>
+              </ng-template>
+            </div>
+
+
+
+
+
+
+
+
+            <div class="row mb-2">
+              <div class="col-5" style="padding-left: 0px">
+                <h5 style="font-size: 15px">
+                  <span>{{ 'CONFIG.THURSDAY' | translate }}</span>
+                </h5>
+              </div>
+
+              <div class="col-7 justify-content-center"
+                *ngIf="horariosQui$ | async as horariosQui ; else elseTemplateQui">
+                <div *ngFor="let item of horariosQui">
+
+                  <div *ngIf="item.closedQui==false; else elseQui">
+                    <p
+                      style="font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif; margin-bottom: 0rem">
+                      {{ 'CONFIG.CLOSED' | translate }}</p>
+                  </div>
+
+                  <ng-template #elseQui>
+                    <div *ngFor="let item of item.formArrayQuinta">
+
+                      <p
+                        style="font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif; margin-bottom: 0rem">
+                        {{item.itemPropertyOneQuinta}} - {{item.itemPropertyTwoQuinta}} </p>
+
+                    </div>
+                  </ng-template>
+
+                </div>
+              </div>
+
+              <ng-template #elseTemplateQui>
+                <p
+                  style="font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif; margin-bottom: 0rem">
+                  {{ 'CONFIG.CLOSED' | translate }}</p>
+              </ng-template>
+            </div>
+
+
+
+
+
+
+            <div class="row mb-2">
+              <div class="col-5" style="padding-left: 0px">
+                <h5 style="font-size: 15px">
+                  <span>{{ 'CONFIG.FRIDAY' | translate }}</span>
+                </h5>
+              </div>
+
+
+              <div class="col-7 justify-content-center"
+                *ngIf="horariosSex$ | async as horariosSex ; else elseTemplateSex">
+                <div *ngFor="let item of horariosSex">
+
+                  <div *ngIf="item.closedSex==false; else elseSex">
+                    <p
+                      style="font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif; margin-bottom: 0rem">
+                      {{ 'CONFIG.CLOSED' | translate }}</p>
+                  </div>
+
+                  <ng-template #elseSex>
+                    <div *ngFor="let item of item.formArraySexta">
+
+                      <p
+                        style="font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif; margin-bottom: 0rem">
+                        {{item.itemPropertyOneSexta}} - {{item.itemPropertyTwoSexta}} </p>
+
+
+                    </div>
+                  </ng-template>
+
+                </div>
+              </div>
+              <ng-template #elseTemplateSex>
+                <p
+                  style="font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif; margin-bottom: 0rem">
+                  {{ 'CONFIG.CLOSED' | translate }}</p>
+              </ng-template>
+            </div>
+
+
+
+
+
+
+
+
+            <div class="row">
+              <div class="col-5" style="padding-left: 0px">
+                <h5 style="font-size: 15px">
+                  <span>{{ 'CONFIG.SATURDAY' | translate }}</span>
+                </h5>
+              </div>
+
+              <div class="col-7 justify-content-center"
+                *ngIf="horariosSab$ | async as horariosSab ; else elseTemplateSab">
+                <div *ngFor="let item of horariosSab">
+
+                  <div *ngIf="item.closedSab==false; else elseSab">
+                    <p
+                      style="font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif; margin-bottom: 0rem">
+                      {{ 'CONFIG.CLOSED' | translate }}</p>
+                  </div>
+
+                  <ng-template #elseSab>
+                    <div *ngFor="let item of item.formArraySabado">
+
+                      <p
+                        style="font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif; margin-bottom: 0rem">
+                        {{item.itemPropertyOneSabado}} - {{item.itemPropertyTwoSabado}} </p>
+
+
+                    </div>
+                  </ng-template>
+
+                </div>
+              </div>
+              <ng-template #elseTemplateSab>
+                <p
+                  style="font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif; margin-bottom: 0rem">
+                  {{ 'CONFIG.CLOSED' | translate }}</p>
+              </ng-template>
+            </div>
+
+
+
+
+
+          </div>
+          <!--End Div com ng*For-->
+
+
+          <hr>
+
+          <div class="container" style="cursor: pointer" data-toggle="modal" data-target="#precoModal">
+
+            <div class="row">
+
+              <div class="col-4">
+                <i class="fas fa-cut" aria-hidden="true"></i>
+              </div>
+
+              <div class="col-4">
+
+              </div>
+
+              <div class="col-4">
+                <i class="fa fa-pencil-alt" style="float: right" aria-hidden="true"></i>
+              </div>
+            </div>
+
+
+
+            <div class="row justify-content-center" *ngIf="precos$ | async as precos ; else elseTemplateprecos">
+              <div class="pricing-entry" *ngFor="let item of precos">
+                <div class="d-flex text align-items-center" *ngFor="let item of item.formArrayPrecos">
+                  <h3 style="font-size: 15px">
+                    <span>{{ item.itemPropertyServico }}</span>
+                  </h3>
+
+                  <span class="price" style="font-size: 15px">{{ item.itemPropertyPreco }}</span>
+
+                </div>
+              </div>
+
+            </div>
+            <ng-template #elseTemplateprecos>
+
+              <p
+                style="font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif; margin-bottom: 0rem">{{ 'CONFIG.ADDSERVICE' | translate }}</p>
+
+            </ng-template>
+
+          </div>
+
+
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</section>
+
+
+
+
+
+
+
+<!-- Modal Horario-->
+
+<div class="modal" id="myModal">
+  <div class="modal-dialog">
+    <div class="modal-content">
+
+      <div class="modal-header" style="border-bottom: 0px">
+        <button class="close float-right" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">x</span>
+        </button>
+      </div>
+
+      <div class="modal-body">
+
+
+
+
+
+        <div class="container">
+
+
+          <div class="row mb-3">
+
+            <form class="appointment-form2 form-check-inline " [formGroup]="myFormDomingo">
+
+              <input type="hidden" class="form-control2" formControlName="id" id="id">
+
+              <input type="hidden" class="form-control2" formControlName="fk" id="fk">
+
+              <div class="row">
+                <div class="col-12 col-md-3">
+                  <div class="row " style="width: 115px">
+                    <div class="col-8 justify-content-start">
+                      <span class="mr-1" style="color: lightslategray ; font-size: 14px">{{ 'CONFIG.SUNDAY' | translate }}</span>
+                    </div>
+                    <div class="col-4 justify-content-end">
+                      <label class="switch">
+                        <input type="checkbox" [checked]="mostrarHoraDom" (click)="onClickMostraHoraDom()">
+                        <span class="slider round"></span>
+                      </label>
+                    </div>
+
+                  </div>
+                </div>
+
+
+
+
+
+
+                <input type="hidden" class="form-control2" formControlName="closedDom" id="closedDom">
+
+                <div class="col-8 col-md-7" [hidden]="!mostrarHoraDom">
+                  <div formArrayName="formArrayDomingo">
+                    <div *ngFor="let control of myFormDomingo.controls.formArrayDomingo.controls; let i=index">
+
+                      <div class="row" style="margin-left: 2px">
+                        <div class="col-10 col-md-11">
+                          <app-domingo [myFormDomingo]="myFormDomingo.controls.formArrayDomingo.controls[i]">
+                          </app-domingo>
+                        </div>
+                        <div class="col-2 col-md-1" style="padding: 0px">
+                          <span (click)="delInputDomingo(i)"
+                            style="cursor: pointer; position: absolute; right: 0">x</span>
+                        </div>
+                      </div>
+
+                    </div>
+                  </div>
+
+
+                </div>
+
+
+
+                <div class="col-4 col-md-2" style="padding: 0px" [hidden]="!mostrarHoraDom">
+                  <button class="btn btn-outline-primary" style="margin-left: 6px; padding: 9px"
+                    (click)="addInputDomingo()">Add+</button>
+                </div>
+
+
+                <div class="col-4 col-md-3" [hidden]="mostrarHoraDom" style="width: 0px; height: 0px">
+                </div>
+
+
+                <div class="col-4 col-md-3" [hidden]="mostrarHoraDom">
+                  <span>{{ 'CONFIG.CLOSED' | translate }}</span>
+                </div>
+
+              </div>
+            </form>
+          </div>
+
+
+          <div class="row mb-3">
+            <form class="appointment-form2 form-check-inline" [formGroup]="myFormSegunda">
+
+              <input type="hidden" class="form-control2" formControlName="id" id="id">
+
+              <input type="hidden" class="form-control2" formControlName="fk" id="fk">
+
+
+              <div class="row ">
+                <div class="col-12 col-md-3">
+                  <div class="row" style="width: 115px">
+                    <div class="col-8 justify-content-start">
+                      <span class="mr-1" style="color: lightslategray ; font-size: 14px">{{ 'CONFIG.MONDAY' | translate }}</span>
+                    </div>
+                    <div class="col-4 justify-content-end">
+                      <label class="switch">
+                        <input type="checkbox" [checked]="mostrarHoraSeg" (click)="onClickMostraHoraSeg()">
+                        <span class="slider round"></span>
+                      </label>
+                    </div>
+
+                  </div>
+                </div>
+
+
+                <input type="hidden" class="form-control2" formControlName="closedSeg" id="closedSeg">
+
+                <div class="col-8 col-md-7" [hidden]="!mostrarHoraSeg">
+                  <div formArrayName="formArraySegunda">
+                    <div *ngFor="let control of myFormSegunda.controls.formArraySegunda.controls; let i=index">
+
+                      <div class="row" style="margin-left: 2px">
+                        <div class="col-10 col-md-11">
+                          <app-segunda [myFormSegunda]="myFormSegunda.controls.formArraySegunda.controls[i]">
+                          </app-segunda>
+                        </div>
+                        <div class="col-2 col-md-1" style="padding: 0px">
+                          <span (click)="delInputSegunda(i)"
+                            style="cursor: pointer; position: absolute; right: 0">x</span>
+                        </div>
+                      </div>
+
+                    </div>
+                  </div>
+
+
+                </div>
+
+
+
+
+                <div class="col-4 col-md-2" style="padding: 0px" [hidden]="!mostrarHoraSeg">
+                  <button class="btn btn-outline-primary" style="margin-left: 6px; padding: 9px"
+                    (click)="addInputSegunda()">Add+</button>
+                </div>
+
+
+                <div class="col-4 col-md-3" [hidden]="mostrarHoraSeg" style="width: 0px; height: 0px">
+                </div>
+
+
+                <div class="col-4 col-md-3" [hidden]="mostrarHoraSeg">
+                  <span>{{ 'CONFIG.CLOSED' | translate }}</span>
+                </div>
+
+              </div>
+
+            </form>
+          </div>
+
+          <div class="row mb-3">
+            <form class="appointment-form2 form-check-inline" [formGroup]="myFormTerca">
+
+              <input type="hidden" class="form-control2" formControlName="id" id="id">
+
+              <input type="hidden" class="form-control2" formControlName="fk" id="fk">
+
+
+
+              <div class="row ">
+                <div class="col-12 col-md-3">
+                  <div class="row" style="width: 115px">
+                    <div class=" col-8 justify-content-start">
+                      <span class="mr-1" style="color: lightslategray ; font-size: 14px">{{ 'CONFIG.TUESDAY' | translate }}</span>
+                    </div>
+                    <div class="col-4 justify-content-end">
+                      <label class="switch">
+                        <input type="checkbox" [checked]="mostrarHoraTer" (click)="onClickMostraHoraTer()">
+                        <span class="slider round"></span>
+                      </label>
+                    </div>
+
+                  </div>
+                </div>
+
+
+
+
+
+
+                <input type="hidden" class="form-control2" formControlName="closedTer" id="closedTer">
+
+                <div class="col-8 col-md-7" [hidden]="!mostrarHoraTer">
+                  <div formArrayName="formArrayTerca">
+                    <div *ngFor="let control of myFormTerca.controls.formArrayTerca.controls; let i=index">
+
+                      <div class="row" style="margin-left: 2px">
+                        <div class="col-10 col-md-11">
+                          <app-terca [myFormTerca]="myFormTerca.controls.formArrayTerca.controls[i]"> </app-terca>
+                        </div>
+                        <div class="col-2 col-md-1" style="padding: 0px">
+                          <span (click)="delInputTerca(i)"
+                            style="cursor: pointer; position: absolute; right: 0">x</span>
+                        </div>
+                      </div>
+
+                    </div>
+                  </div>
+
+
+                </div>
+
+
+
+
+                <div class="col-4 col-md-2" style="padding: 0px" [hidden]="!mostrarHoraTer">
+                  <button class="btn btn-outline-primary" style="margin-left: 6px; padding: 9px"
+                    (click)="addInputTerca()">Add+</button>
+                </div>
+
+
+                <div class="col-4 col-md-3" [hidden]="mostrarHoraTer" style="width: 0px; height: 0px">
+                </div>
+
+
+                <div class="col-4 col-md-3" [hidden]="mostrarHoraTer">
+                  <span>{{ 'CONFIG.CLOSED' | translate }}</span>
+                </div>
+
+              </div>
+            </form>
+          </div>
+
+
+
+          <div class="row mb-3">
+            <form class="appointment-form2 form-check-inline " [formGroup]="myFormQuarta">
+
+              <input type="hidden" class="form-control2" formControlName="id" id="id">
+
+              <input type="hidden" class="form-control2" formControlName="fk" id="fk">
+
+
+
+              <div class="row ">
+                <div class="col-12 col-md-3">
+                  <div class="row " style="width: 115px">
+                    <div class="col-8 justify-content-start">
+                      <span class="mr-1" style="color: lightslategray; font-size: 14px">{{ 'CONFIG.WEDNESDAY' | translate }}</span>
+                    </div>
+                    <div class="col-4 justify-content-end">
+                      <label class="switch">
+                        <input type="checkbox" [checked]="mostrarHoraQua" (click)="onClickMostraHoraQua()">
+                        <span class="slider round"></span>
+                      </label>
+                    </div>
+
+                  </div>
+                </div>
+
+
+
+
+
+
+                <input type="hidden" class="form-control2" formControlName="closedQua" id="closedQua">
+
+                <div class="col-8 col-md-7" [hidden]="!mostrarHoraQua">
+                  <div formArrayName="formArrayQuarta">
+                    <div *ngFor="let control of myFormQuarta.controls.formArrayQuarta.controls; let i=index">
+
+                      <div class="row" style="margin-left: 2px">
+                        <div class="col-10 col-md-11">
+                          <app-quarta [myFormQuarta]="myFormQuarta.controls.formArrayQuarta.controls[i]">
+                          </app-quarta>
+                        </div>
+                        <div class="col-2 col-md-1" style="padding: 0px">
+                          <span (click)="delInputQuarta(i)"
+                            style="cursor: pointer; position: absolute; right: 0">x</span>
+                        </div>
+                      </div>
+
+                    </div>
+                  </div>
+
+
+                </div>
+
+
+
+
+                <div class="col-4 col-md-2" style="padding: 0px" [hidden]="!mostrarHoraQua">
+                  <button class="btn btn-outline-primary" style="margin-left: 6px; padding: 9px"
+                    (click)="addInputQuarta()">Add+</button>
+                </div>
+
+
+                <div class="col-4 col-md-3" [hidden]="mostrarHoraQua" style="width: 0px; height: 0px">
+                </div>
+
+
+                <div class="col-4 col-md-3" [hidden]="mostrarHoraQua">
+                  <span>{{ 'CONFIG.CLOSED' | translate }}</span>
+                </div>
+
+              </div>
+            </form>
+          </div>
+
+
+
+          <div class="row mb-3">
+            <form class="appointment-form2 form-check-inline" [formGroup]="myFormQuinta">
+
+              <input type="hidden" class="form-control2" formControlName="id" id="id">
+
+              <input type="hidden" class="form-control2" formControlName="fk" id="fk">
+
+
+
+
+              <div class="row ">
+                <div class="col-12 col-md-3">
+                  <div class="row" style="width: 115px">
+                    <div class="col-8 justify-content-start">
+                      <span class="mr-1" style="color: lightslategray ; font-size: 14px">{{ 'CONFIG.THURSDAY' | translate }}</span>
+                    </div>
+                    <div class="col-4 justify-content-end">
+                      <label class="switch">
+                        <input type="checkbox" [checked]="mostrarHoraQui" (click)="onClickMostraHoraQui()">
+                        <span class="slider round"></span>
+                      </label>
+                    </div>
+
+                  </div>
+                </div>
+
+
+
+
+
+
+                <input type="hidden" class="form-control2" formControlName="closedQui" id="closedQui">
+
+                <div class="col-8 col-md-7" [hidden]="!mostrarHoraQui">
+                  <div formArrayName="formArrayQuinta">
+                    <div *ngFor="let control of myFormQuinta.controls.formArrayQuinta.controls; let i=index">
+
+                      <div class="row" style="margin-left: 2px">
+                        <div class="col-10 col-md-11">
+                          <app-quinta [myFormQuinta]="myFormQuinta.controls.formArrayQuinta.controls[i]">
+                          </app-quinta>
+                        </div>
+                        <div class="col-2 col-md-1" style="padding: 0px">
+                          <span (click)="delInputQuinta(i)"
+                            style="cursor: pointer; position: absolute; right: 0">x</span>
+                        </div>
+                      </div>
+
+                    </div>
+                  </div>
+
+
+                </div>
+
+
+
+
+                <div class="col-4 col-md-2" style="padding: 0px" [hidden]="!mostrarHoraQui">
+                  <button class="btn btn-outline-primary" style="margin-left: 6px; padding: 9px"
+                    (click)="addInputQuinta()">Add+</button>
+                </div>
+
+
+                <div class="col-4 col-md-3" [hidden]="mostrarHoraQui" style="width: 0px; height: 0px">
+                </div>
+
+
+                <div class="col-4 col-md-3" [hidden]="mostrarHoraQui">
+                  <span>{{ 'CONFIG.CLOSED' | translate }}</span>
+                </div>
+
+              </div>
+
+            </form>
+          </div>
+
+
+          <div class="row mb-3">
+            <form class="appointment-form2 form-check-inline" [formGroup]="myFormSexta">
+
+              <input type="hidden" class="form-control2" formControlName="id" id="id">
+
+              <input type="hidden" class="form-control2" formControlName="fk" id="fk">
+
+
+
+
+
+
+
+              <div class="row">
+                <div class="col-12 col-md-3">
+                  <div class="row" style="width: 115px">
+                    <div class="col-8 justify-content-start">
+                      <span class="mr-1" style="color: lightslategray ; font-size: 14px">{{ 'CONFIG.FRIDAY' | translate }}</span>
+                    </div>
+                    <div class="col-4 justify-content-end">
+                      <label class="switch">
+                        <input type="checkbox" [checked]="mostrarHoraSex" (click)="onClickMostraHoraSex()">
+                        <span class="slider round"></span>
+                      </label>
+
+                    </div>
+                  </div>
+                </div>
+
+
+
+
+
+
+                <input type="hidden" class="form-control2" formControlName="closedSex" id="closedSex">
+
+                <div class="col-8 col-md-7" [hidden]="!mostrarHoraSex">
+                  <div formArrayName="formArraySexta">
+                    <div *ngFor="let control of myFormSexta.controls.formArraySexta.controls; let i=index">
+
+                      <div class="row" style="margin-left: 2px">
+                        <div class="col-10 col-md-11">
+                          <app-sexta [myFormSexta]="myFormSexta.controls.formArraySexta.controls[i]"> </app-sexta>
+                        </div>
+                        <div class="col-2 col-md-1" style="padding: 0px">
+                          <span (click)="delInputSexta(i)"
+                            style="cursor: pointer; position: absolute; right: 0">x</span>
+                        </div>
+                      </div>
+
+                    </div>
+                  </div>
+
+
+                </div>
+
+
+
+
+                <div class="col-4 col-md-2" style="padding: 0px" [hidden]="!mostrarHoraSex">
+                  <button class="btn btn-outline-primary" style="margin-left: 6px; padding: 9px"
+                    (click)="addInputSexta()">Add+</button>
+                </div>
+
+
+                <div class="col-4 col-md-3" [hidden]="mostrarHoraSex" style="width: 0px; height: 0px">
+                </div>
+
+
+                <div class="col-4 col-md-3" [hidden]="mostrarHoraSex">
+                  <span>{{ 'CONFIG.CLOSED' | translate }}</span>
+                </div>
+
+              </div>
+
+            </form>
+          </div>
+
+
+
+          <div class="row mb-3">
+
+            <form class="appointment-form2 form-check-inline" [formGroup]="myFormSabado">
+
+              <input type="hidden" class="form-control2" formControlName="id" id="id">
+
+              <input type="hidden" class="form-control2" formControlName="fk" id="fk">
+
+
+
+
+
+
+              <div class="row">
+                <div class="col-12 col-md-3">
+                  <div class="row" style="width: 115px">
+                    <div class="col-8 justify-content-start">
+                      <span class="mr-1" style="color: lightslategray ; font-size: 14px">{{ 'CONFIG.SATURDAY' | translate }}</span>
+                    </div>
+
+                    <div class="col-4 justify-content-end">
+                      <label class="switch">
+                        <input type="checkbox" [checked]="mostrarHoraSab" (click)="onClickMostraHoraSab()">
+                        <span class="slider round"></span>
+                      </label>
+
+                    </div>
+                  </div>
+                </div>
+
+
+
+
+
+
+                <input type="hidden" class="form-control2" formControlName="closedSab" id="closedSab">
+
+                <div class="col-8 col-md-7" [hidden]="!mostrarHoraSab">
+                  <div formArrayName="formArraySabado">
+                    <div *ngFor="let control of myFormSabado.controls.formArraySabado.controls; let i=index">
+
+                      <div class="row" style="margin-left: 2px">
+                        <div class="col-10 col-md-11">
+                          <app-sabado [myFormSabado]="myFormSabado.controls.formArraySabado.controls[i]">
+                          </app-sabado>
+                        </div>
+                        <div class="col-2 col-md-1" style="padding: 0px">
+                          <span (click)="delInputSabado(i)"
+                            style="cursor: pointer; position: absolute; right: 0">x</span>
+                        </div>
+                      </div>
+
+                    </div>
+                  </div>
+
+
+                </div>
+
+
+
+
+                <div class="col-4 col-md-2" style="padding: 0px" [hidden]="!mostrarHoraSab">
+                  <button class="btn btn-outline-primary" style="margin-left: 6px; padding: 9px"
+                    (click)="addInputSabado()">Add+</button>
+                </div>
+
+
+                <div class="col-4 col-md-3" [hidden]="mostrarHoraSab" style="width: 0px; height: 0px">
+                </div>
+
+
+                <div class="col-4 col-md-3" [hidden]="mostrarHoraSab">
+                  <span>{{ 'CONFIG.CLOSED' | translate }}</span>
+                </div>
+
+              </div>
+            </form>
+
+          </div>
+
+
+        </div>
+
+
+
+
+
+      </div>
+
+
+      <div class="modal-footer" style="padding: 20px; border-top-color: transparent">
+        <button class="btn btn-secondary" (click)="onClickAdd()" data-dismiss="modal">{{ 'CONFIG.APPLY' | translate }}</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+
+
+<div class="modal" id="precoModal">
+  <div class="modal-dialog">
+    <div class="modal-content">
+
+      <div class="modal-header" style="border-bottom: 0px">
+        <button class="close float-right" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">x</span>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <div class="container">
+          <div class="row">
+            <div class="col-lg-2"></div>
+
+            <div class="col-12 col-lg-8">
+              <form class="appointment-form2 form-check-inline" [formGroup]="myFormPrecos">
+
+                <input type="hidden" class="form-control2" formControlName="id" id="id">
+
+                <input type="hidden" class="form-control2" formControlName="fk" id="fk">
+                <div formArrayName="formArrayPrecos">
+                  <div *ngFor="let control of myFormPrecos.controls.formArrayPrecos.controls; let i=index">
+
+                    <div class="row">
+                      <div class="col-9">
+                        <app-precos [myFormPrecos]="myFormPrecos.controls.formArrayPrecos.controls[i]"></app-precos>
+                      </div>
+
+
+                      <div class="col-1">
+                        <i class="fas fa-plus" (click)="addInputPrecos()" style="cursor: pointer; color: #ce9c6b"></i>
+                      </div>
+
+                      <div class="col-1">
+                        <i class="fas fa-trash" (click)="delInputPrecos(i)" style="cursor: pointer"></i>
+                      </div>
+
+                    </div>
+                  </div>
+                </div>
+              </form>
+            </div>
+
+            <div class="col-1 col-lg-2"></div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer" style="padding: 20px; border-top-color: transparent">
+        <button class="btn btn-secondary" (click)="onClickAddPrecos()" data-dismiss="modal">{{ 'CONFIG.APPLY' | translate }}</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
+
+<div class="modal" id="fotoModal">
+  <div class="modal-dialog">
+    <div class="modal-content">
+
+      <div class="modal-header" style="border-bottom-width: 0px">
+        <h5 class="modal-title" style="color: gray">BarberPro</h5>
+
+      </div>
+
+      <div class="modal-body">
+        <div class="container">
+
+          <img [src]="downloadURL" style="max-width: 398px; max-height: 260px; width:auto; height: auto"> <br>
+
+          <input type="file" accept="image/*" class="form-control2" (change)="featuredPhotoSelected($event)" />
+        </div>
+      </div>
+      <div class="modal-footer" style="padding: 20px; border-top-color: transparent">
+
+        <button class="btn btn-primary" data-dismiss="modal">Ok</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
+
+
+<div class="modal" id="fotoModalLogo">
+  <div class="modal-dialog">
+    <div class="modal-content">
+
+      <div class="modal-header" style="border-bottom-width: 0px">
+        <h5 class="modal-title" style="color: gray">BarberPro</h5>
+
+      </div>
+
+      <div class="modal-body">
+        <div class="container">
+
+          <img [src]="downloadURLLogo" style="width: 70px; height: 70px;"> <br>
+
+          <input type="file" accept="image/*" class="form-control2" (change)="featuredPhotoSelectedLogo($event)" />
+        </div>
+      </div>
+      <div class="modal-footer" style="padding: 20px; border-top-color: transparent">
+
+        <button class="btn btn-primary" data-dismiss="modal">Ok</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
+
+
+
+
+
+
+
+<section style="background: #000">
+  <div class="container" style="padding-top: 30px; padding-bottom: 5px">
+    <div class="row">
+      <div class="col-8">
+        <p style="cursor: pointer" data-toggle="modal" data-target="#contatoModal"><i class="fas fa-headset"></i>
+          {{ 'HOME.TITLE24' | translate }}</p>
+      </div>
+     
+    </div>
+  </div>
+</section>
+
+
+
+
+
+<div class="modal" id="contatoModal">
+  <div class="modal-dialog">
+    <div class="modal-content">
+
+      <div class="modal-header" style="border-bottom-width: 0px">
+        <h5 class="modal-title" style="color: gray">{{ 'HOME.TITLE17' | translate }}</h5>
+        <button class="close float-right" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">x</span>
+        </button>
+      </div>
+
+      <div class="modal-body">
+
+
+
+
+
+        <div class="container">
+
+          <form action="#" class="contact-form" [formGroup]="formularioContato">
+            <div class="row">
+
+
+              <div class="col-md-6">
+                <div class="form-group">
+                  <input type="text" style="font-size: 13px" class="form-control" placeholder="{{ 'HOME.TITLE20' | translate }}" formControlName="yourName"
+                    id="yourName">
+                  <app-error-msg style="font-size: 10px" [control]="formularioContato.get('yourName')" label="Name">
+                  </app-error-msg>
+                </div>
+              </div>
+
+
+              <div class="col-md-6" >
+                <div class="form-group">
+                  <input type="text" style="font-size: 13px" class="form-control" placeholder="{{ 'HOME.TITLE21' | translate }}" formControlName="yourEmail"
+                    id="yourEmail">
+                  <app-error-msg style="font-size: 10px" [control]="formularioContato.get('yourEmail')" label="Email">
+                  </app-error-msg>
+                </div>
+
+              </div>
+            </div>
+
+
+          
+              <div class="form-group">
+                <input type="text" style="font-size: 13px" class="form-control" placeholder="{{ 'HOME.TITLE22' | translate }}" formControlName="assunto" id="assunto">
+                <app-error-msg style="font-size: 10px" [control]="formularioContato.get('assunto')" label="{{ 'HOME.TITLE22' | translate }}">
+                </app-error-msg>
+              </div>
+           
+
+         
+              <div class="form-group">
+                <textarea cols="30" rows="7" style="font-size: 13px" class="form-control" placeholder="{{ 'HOME.TITLE23' | translate }}" formControlName="message"
+                  id="message"></textarea>
+                <app-error-msg style="font-size: 10px" [control]="formularioContato.get('message')" label="Message">
+                </app-error-msg>
+              </div>
+         
+
+          </form>
+
+
+        </div>
+
+
+      </div>
+
+
+      <div class="modal-footer" style="padding: 20px; border-top-color: transparent">
+
+        <div>
+          <button class="btn btn-outline-primary mr-2" data-dismiss="modal">{{ 'HOME.TITLE18' | translate }}</button>
+          <button class="btn btn-primary" (click)="sendEmail()" data-dismiss="modal">{{ 'HOME.TITLE19' | translate }}</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
