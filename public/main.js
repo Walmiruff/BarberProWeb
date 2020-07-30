@@ -915,7 +915,7 @@ __webpack_require__.r(__webpack_exports__);
 // The list of file replacements can be found in `angular.json`.
 var environment = {
     production: false,
-    stripeKey: 'pk_test_E5N3vaoJGxK2OV9zKl2ST26H',
+    stripeKey: 'pk_live_hITQGbtfFlHXTTtbF7qLJYtS',
     API: 'http://localhost:3000/',
     //  AIzaSyACaAqb5pMAj8oqa9tfWSzPVe66oj-8nQk
     firebase: {

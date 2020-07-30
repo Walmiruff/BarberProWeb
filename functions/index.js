@@ -7,7 +7,7 @@ admin.initializeApp();
 
 const firebaseConfig = JSON.parse(process.env.FIREBASE_CONFIG);
 const Stripe = require('stripe');
-const stripe = Stripe('sk_test_Itd3DY0Lggdlq0v9qFfcFsMi');
+const stripe = Stripe('sk_live_VORtbfbDiMEDrFlOtTTGxw54');
 // const stripe = require('stripe')(functions.config().stripe.testkey);
 
 //1. Create the Stripe Customer on Signup

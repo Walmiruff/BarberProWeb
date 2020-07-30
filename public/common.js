@@ -42,13 +42,13 @@ var PaymentServiceService = /** @class */ (function () {
     PaymentServiceService.prototype.processPayment = function (token, uid, lang) {
         this.userId = uid;
         if (lang === 'pt-BR') {
-            this.plan = 'plan_ElEIT8gvghJpco';
+            this.plan = 'plan_EtApG9sgJaXnnW';
         }
         else if (lang === 'pt' || lang === 'de' || lang === 'es' || lang === 'fr' || lang === 'it') {
-            this.plan = 'plan_ElEFhTGFjeMS8w';
+            this.plan = 'plan_EtAn2S0vVAAgn7';
         }
         else {
-            this.plan = 'plan_EhDnLlNFnLEr1F';
+            this.plan = 'plan_EtAkL5tX4sQYCs';
         }
         return this.db.object("/users/" + this.userId + "/pro-membership").update({ token: token.id, plan: this.plan });
     };
