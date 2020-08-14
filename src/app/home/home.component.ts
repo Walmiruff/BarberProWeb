@@ -25,19 +25,29 @@ export class HomeComponent implements OnInit {
     this.translate.setDefaultLang('en');
     const browserLang = this.translate.getBrowserLang();
     this.translate.use(browserLang.match(/de|en|es|fr|it|pt/) ? browserLang : 'en');
-   }
+  }
 
 
   ngOnInit() {
 
+  }
+
+
+
+  openUrlPlayStore() {
+    window.location.href = 'https://play.google.com/store/apps/details?id=io.barberpro.starter&hl=pt_BR';
  }
 
-
-
-
-
   openUrlLinkedin() {
-    window.open('https://www.linkedin.com/in/walmir-castro-83011869', '_system', 'location=yes');
+    window.location.href = 'https://www.linkedin.com/in/walmir-castro-83011869';
+  }
+
+  openUrlIn() {
+    window.location.href = 'https://www.instagram.com/barberproapp/';
+  }
+
+  openUrlFace() {
+    window.location.href = 'https://www.facebook.com/barberproapp/';
   }
 
 

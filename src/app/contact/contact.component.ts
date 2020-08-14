@@ -18,4 +18,9 @@ export class ContactComponent implements OnInit {
   ngOnInit() {
   }
 
+  
+  openUrlPlayStore() {
+    window.location.href = 'https://play.google.com/store/apps/details?id=io.barberpro.starter&hl=pt_BR';
+ }
+
 }
