@@ -1,0 +1,119 @@
+{
+    "PRECO": {
+        "SERVICE": "Service",
+        "PRICE": "Price"
+    },
+    "NAV": {
+        "MYSCHEDULE": "My Schedule",
+        "SETTINGS": "Settings",
+        "LOGOUT": "Logout",
+        "HOME": "Home",
+        "SERVICESSCHED": "Services & Schedule",
+        "LOGIN": "Login",
+        "SUB": "Subscription is Active"
+    },
+    "CONFIG": {
+        "MYSETTINGS": "My Settings",
+        "NAMEOFBARBERSHOP": "Name of Barbershop",
+        "COUNTRY": "Country",
+        "STATE": "State/ Province/ Region",
+        "CITY": "City",
+        "NEIGHBORHOOD": "Neighborhood",
+        "STREET": "Street",
+        "NUMBER": "Number",
+        "ZIPCODE": "Zip Code",
+        "CELLPHONE": "Cell Phone",
+        "TELEPHONE": "Telephone",
+        "EMAIL": "E-mail",
+        "SUBMIT": "Submit",
+        "PHOTOBARBERSHOP": "Photo of the Barbershop",
+        "TEXTEFFECT": "To make a fine gentleman, several trades are required, but chiefly a barber.",
+        "TEXTEFFECTcont": "Doctor and Writer",
+        "TEXTEFFECT2": "Choose the best photo from your barbershop to deligth your new customers!",
+        "CHOOSEPHOTO": "Choose Photo",
+        "CHOOSELOGO": "Choose Logo",
+        "BUSINESSHOURS": "Business Hours & Pricing",
+        "TEXTEFFECT3": "Choose your service schedules available to your new customers.",
+        "CLOSED": "Closed",
+        "SUNDAY": "Sunday",
+        "MONDAY": "Monday",
+        "TUESDAY": "Tuesday",
+        "WEDNESDAY": "Wednesday",
+        "THURSDAY": "Thursday",
+        "FRIDAY": "Friday",
+        "SATURDAY": "Saturday",
+        "ADDSERVICE": "+Add Service",
+        "APPLY": "Apply"
+    },
+    "CONTACT": {
+        "TITLE": "We Connect Customers and Barbershops",
+        "BUTTON1": "BarberPro for Customers",
+        "BUTTON2": "BarberPro for Barbershops"
+    },
+    "LOGIN": {
+        "LOGIN": "Login",
+        "EMAIL": "E-mail",
+        "PASSWORD": "Password",
+        "AUTH": "Authenticate",
+        "RESET": "Reset Account",
+        "REGISTER": "Register Now",
+        "NOACCOUNT": "No account yet? "
+    },
+    "REGISTER": {
+        "TITLECREATE": "Create account",
+        "BUTTONCREATE": "Create"
+    },
+    "RESET": {
+        "TITLERESET": "Reset account",
+        "BUTTONRESET": "Reset"
+    },
+    "ERROMODAL": {
+        "ERROMODAL": "Oops! Something unexpected happened please check the internet! :("
+    },
+    "MENU": {
+        "PREVIOUS": "Previous",
+        "TODAY": "Today",
+        "NEXT": "Next",
+        "MONTH": "Month",
+        "WEEK": "Week",
+        "DAY": "Day",
+        "EDITHOUR": "Edit Horary",
+        "ADDNEW": "Add new",
+        "CLIENTS": "Clients",
+        "HORARY": "Horary"
+    },
+    "HOME": {
+        "TITLE1": "Connecting",
+        "TITLE1CONT": " Clients to You",
+        "TITLE2": "Appointment for Barbershops",
+        "TITLE3": "Be seen by thousands of people every day and manage your Barbershop at your fingertips.",
+        "TITLE4": "Coming soon",
+        "TITLE5": "in App Store",
+        "TITLE6": "Get it on",
+        "TITLE7": "Google Play",
+        "TITLE8": "Customers can schedule directly with you through BarberPro!",
+        "TITLE9": "Automated text reminders when it´s time to get a cut.",
+        "TITLE10": "Improve Operations",
+        "TITLE11": "Drag and drop system, allows you to re-tag with your customers avoiding peak times!",
+        "TITLE12":"Set your times and prices for each day in the week. Also access from a computer.",
+        "TITLE13": "No limits on schedules and clients. Plans start at $29 per month. Start a ",
+        "TITLE14": "Free Trial",
+        "TITLE15": " today!",
+        "TITLE16": "Contact Us",
+        "TITLE17": "Contact Information",
+        "TITLE18": "Cancel",
+        "TITLE19": "Send Message",
+        "TITLE20": "Your Name",
+        "TITLE21": "Your Email",
+        "TITLE22": "Subject",
+        "TITLE23": "Message",
+        "TITLE24":"Suport",
+        "TITLE25":"Subscribe",
+        "TITLE26":"Your BarberPro trial has expired! Do you want to subscribe?",
+        "FOTO1": "assets\\image\\foto1en.png",
+        "FOTO2": "assets\\image\\foto2en.png",
+        "FOTO3": "assets\\image\\foto3en.png",
+        "FOTO4": "assets\\image\\foto4en.png",
+        "FOTO5": "assets\\image\\foto5en.png"
+    }
+}
