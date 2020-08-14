@@ -9,7 +9,7 @@ import { TranslateService } from '@ngx-translate/core';
 @Component({
   selector: 'app-error-msg',
   templateUrl: './error-msg.component.html',
-  styleUrls: ['./error-msg.component.scss']
+  styleUrls: ['./error-msg.component.css']
 })
 export class ErrorMsgComponent implements OnInit {
 

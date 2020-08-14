@@ -1,0 +1,119 @@
+{
+    "PRECO": {
+        "SERVICE": "Serviço",
+        "PRICE": "Preço"
+    },
+    "NAV": {
+        "MYSCHEDULE": "Meus Agendamentos",
+        "SETTINGS": "Configurações",
+        "LOGOUT": "Sair",
+        "HOME": "Página Principal",
+        "SERVICESSCHED": "Serviços & Agendamento",
+        "LOGIN": "Entrar",
+        "SUB": "Plano Ativo"
+    },
+    "CONFIG": {
+        "MYSETTINGS": "Minhas Configurações",
+        "NAMEOFBARBERSHOP": "Nome da Barbearia",
+        "COUNTRY": "País",
+        "STATE": "Estado",
+        "CITY": "Cidade",
+        "NEIGHBORHOOD": "Bairro",
+        "STREET": "Rua",
+        "NUMBER": "Número",
+        "ZIPCODE": "CEP",
+        "CELLPHONE": "Celular",
+        "TELEPHONE": "Telefone",
+        "EMAIL": "E-mail",
+        "SUBMIT": "Enviar",
+        "PHOTOBARBERSHOP": "Foto da Barbearia",
+        "TEXTEFFECT": "Para torna-se um cavalheiro, vários ofícios são necessários, mas principalmente um barbeiro.",
+        "TEXTEFFECTCont": "Médico e escritor",
+        "TEXTEFFECT2": "Escolha a melhor foto de sua barbearia para encantar seus novos clientes!",
+        "CHOOSEPHOTO": "Escolher Foto",
+        "CHOOSELOGO": "Escolher Logo",
+        "BUSINESSHOURS": "Horários & Preços",
+        "TEXTEFFECT3": "Escolha seus horários de serviço disponíveis para seus novos clientes.",
+        "CLOSED": "Fechado",
+        "SUNDAY": "Domingo",
+        "MONDAY": "Segunda",
+        "TUESDAY": "Terça",
+        "WEDNESDAY": "Quarta",
+        "THURSDAY": "Quinta",
+        "FRIDAY": "Sexta",
+        "SATURDAY": "Sábado",
+        "ADDSERVICE": "+Add Serviço",
+        "APPLY": "Aplicar"
+    },
+    "CONTACT": {
+        "TITLE": "Nós Conectamos Clientes e Barbearias",
+        "BUTTON1": "BarberPro para Clientes",
+        "BUTTON2": "BarberPro para Barbearias"
+    },
+    "LOGIN": {
+        "LOGIN": "Entrar",
+        "EMAIL": "E-mail",
+        "PASSWORD": "Senha",
+        "AUTH": "Autenticar",
+        "RESET": "Redefinir conta",
+        "REGISTER": " Registre Agora",
+        "NOACCOUNT": "Ainda não tem conta?"
+    },
+    "REGISTER": {
+        "TITLECREATE": "Criar Conta",
+        "BUTTONCREATE": "Criar"
+    },
+    "RESET": {
+        "TITLERESET": "Resetar Conta",
+        "BUTTONRESET": "Resetar"
+    },
+    "ERROMODAL": {
+        "ERROMODAL": "Oops! Algo inesperado aconteceu por favor verifique a internet! :("
+    },
+    "MENU": {
+        "PREVIOUS": "Anterior",
+        "TODAY": "Hoje",
+        "NEXT": "Próximo",
+        "MONTH": "Mês",
+        "WEEK": "Semana",
+        "DAY": "Dia",
+        "EDITHOUR": "Editar Horario",
+        "ADDNEW": "Add Novo",
+        "CLIENTS": "Clientes",
+        "HORARY": "Horários"
+    },
+    "HOME": {
+        "TITLE1": "Conectando",
+        "TITLE1CONT": " Clientes a Voçê",
+        "TITLE2": "Agendamento para Barbearias",
+        "TITLE3": "Seja visto por milhares de pessoas todos os dias e gerencie sua Barbearia facilmente.",
+        "TITLE4": "Em breve",
+        "TITLE5": "na App Store",
+        "TITLE6": "Obtê-lo em",
+        "TITLE7": "Google Play",
+        "TITLE8": "Os clientes podem agendar diretamente com você através do BarberPro!",
+        "TITLE9": "Lembretes de texto automatizados quando é hora de cortar.",
+        "TITLE10": "Melhore as Operações",
+        "TITLE11": "Sistema \"Arrasta e Solta\", permite que você remarque com seus clientes, evitando horários de pico!",
+        "TITLE12": "Defina seus horários e preços para cada dia da semana. Acesse também de um computador.",
+        "TITLE13": "Não há limites de agendamentos e clientes. Os planos começam em R$49 por mês. Começe uma ",
+        "TITLE14": "Avaliação Gratuita",
+        "TITLE15": " hoje!",
+        "TITLE16": "Contate-Nos",
+        "TITLE17": "Informações de Contato",
+        "TITLE18": "Cancelar",
+        "TITLE19": "Enviar Mensagem",
+        "TITLE20": "Seu Nome",
+        "TITLE21": "Seu Email",
+        "TITLE22": "Assunto",
+        "TITLE23": "Mensagem",
+        "TITLE24":"Suporte",
+        "TITLE25":"Assinar",
+        "TITLE26":"Seu período de avaliação do BarberPro expirou! Deseja Assinar o serviço?",
+        "FOTO1": "assets\\image\\foto1pt.png",
+        "FOTO2": "assets\\image\\foto2pt.png",
+        "FOTO3": "assets\\image\\foto3pt.png",
+        "FOTO4": "assets\\image\\foto4pt.png",
+        "FOTO5": "assets\\image\\foto5pt.png"
+    }
+}

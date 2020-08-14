@@ -137,7 +137,7 @@
       <div class="col-12 col-lg-8" style="margin-top: 8rem" data-scrollax=" properties: { translateY: '70%' }">
         <h3>
           {{ 'MENU.EDITHOUR' | translate }}
-          <button class="btn btn-primary pull-right" (click)="addEvent(event)">
+          <button class="btn btn-primary pull-right" (click)="addEvent()">
             {{ 'MENU.ADDNEW' | translate }}
           </button>
           <div class="clearfix"></div>
@@ -226,9 +226,9 @@
       <div class="modal-footer" style="padding: 20px; border-top-color: transparent">
 
         <div>
-          <button class="btn btn-outline-primary mr-2" (click)="naoassinar()"
+          <button class="btn btn-outline-primary mr-2"
             data-dismiss="modal">{{ 'HOME.TITLE18' | translate }}</button>
-          <button class="btn btn-primary" (click)="assinar()"
+          <button class="btn btn-primary"
             data-dismiss="modal">{{ 'HOME.TITLE25' | translate }}</button>
         </div>
       </div>

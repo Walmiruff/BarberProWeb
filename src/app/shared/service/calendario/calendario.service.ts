@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+   import { Injectable } from '@angular/core';
 import { environment } from 'src/environments/environment';
 import { HttpClient } from '@angular/common/http';
 import { RequestOptions, RequestMethod, Headers, Http } from '@angular/http';
@@ -37,7 +37,7 @@ export class CalendarioService {
     return this.db.list(this.PATH + key)
       .snapshotChanges()
       .pipe(map(changes => {
-        return changes.map(c => ({
+        return changes.map((c:any) => ({
           key: c.payload.key, ...c.payload.val(),
           title: c.payload.key, ...c.payload.val(),
           userId: c.payload.key, ...c.payload.val(),

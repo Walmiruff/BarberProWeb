@@ -719,11 +719,11 @@
 
                 <div class="col-8 col-md-7" [hidden]="!mostrarHoraDom">
                   <div formArrayName="formArrayDomingo">
-                    <div *ngFor="let control of myFormDomingo.controls.formArrayDomingo.controls; let i=index">
+                    <div *ngFor="let control of myFormDomingo.get('formArrayDomingo')['controls']; let i=index">
 
                       <div class="row" style="margin-left: 2px">
                         <div class="col-10 col-md-11">
-                          <app-domingo [myFormDomingo]="myFormDomingo.controls.formArrayDomingo.controls[i]">
+                          <app-domingo [myFormDomingo]="myFormDomingo.get('formArrayDomingo')['controls'][i]">
                           </app-domingo>
                         </div>
                         <div class="col-2 col-md-1" style="padding: 0px">
@@ -788,11 +788,11 @@
 
                 <div class="col-8 col-md-7" [hidden]="!mostrarHoraSeg">
                   <div formArrayName="formArraySegunda">
-                    <div *ngFor="let control of myFormSegunda.controls.formArraySegunda.controls; let i=index">
+                    <div *ngFor="let control of myFormSegunda.get('formArraySegunda')['controls']; let i=index">
 
                       <div class="row" style="margin-left: 2px">
                         <div class="col-10 col-md-11">
-                          <app-segunda [myFormSegunda]="myFormSegunda.controls.formArraySegunda.controls[i]">
+                          <app-segunda [myFormSegunda]="myFormSegunda.get('formArraySegunda')['controls'][i]">
                           </app-segunda>
                         </div>
                         <div class="col-2 col-md-1" style="padding: 0px">
@@ -863,11 +863,11 @@
 
                 <div class="col-8 col-md-7" [hidden]="!mostrarHoraTer">
                   <div formArrayName="formArrayTerca">
-                    <div *ngFor="let control of myFormTerca.controls.formArrayTerca.controls; let i=index">
+                    <div *ngFor="let control of myFormTerca.get('formArrayTerca')['controls']; let i=index">
 
                       <div class="row" style="margin-left: 2px">
                         <div class="col-10 col-md-11">
-                          <app-terca [myFormTerca]="myFormTerca.controls.formArrayTerca.controls[i]"> </app-terca>
+                          <app-terca [myFormTerca]="myFormTerca.get('formArrayTerca')['controls'][i]"> </app-terca>
                         </div>
                         <div class="col-2 col-md-1" style="padding: 0px">
                           <span (click)="delInputTerca(i)"
@@ -938,11 +938,11 @@
 
                 <div class="col-8 col-md-7" [hidden]="!mostrarHoraQua">
                   <div formArrayName="formArrayQuarta">
-                    <div *ngFor="let control of myFormQuarta.controls.formArrayQuarta.controls; let i=index">
+                    <div *ngFor="let control of myFormQuarta.get('formArrayQuarta')['controls']; let i=index">
 
                       <div class="row" style="margin-left: 2px">
                         <div class="col-10 col-md-11">
-                          <app-quarta [myFormQuarta]="myFormQuarta.controls.formArrayQuarta.controls[i]">
+                          <app-quarta [myFormQuarta]="myFormQuarta.get('formArrayQuarta')['controls'][i]">
                           </app-quarta>
                         </div>
                         <div class="col-2 col-md-1" style="padding: 0px">
@@ -1015,11 +1015,11 @@
 
                 <div class="col-8 col-md-7" [hidden]="!mostrarHoraQui">
                   <div formArrayName="formArrayQuinta">
-                    <div *ngFor="let control of myFormQuinta.controls.formArrayQuinta.controls; let i=index">
+                    <div *ngFor="let control of myFormQuinta.get('formArrayQuinta')['controls']; let i=index">
 
                       <div class="row" style="margin-left: 2px">
                         <div class="col-10 col-md-11">
-                          <app-quinta [myFormQuinta]="myFormQuinta.controls.formArrayQuinta.controls[i]">
+                          <app-quinta [myFormQuinta]="myFormQuinta.get('formArrayQuinta')['controls'][i]">
                           </app-quinta>
                         </div>
                         <div class="col-2 col-md-1" style="padding: 0px">
@@ -1095,11 +1095,11 @@
 
                 <div class="col-8 col-md-7" [hidden]="!mostrarHoraSex">
                   <div formArrayName="formArraySexta">
-                    <div *ngFor="let control of myFormSexta.controls.formArraySexta.controls; let i=index">
+                    <div *ngFor="let control of myFormSexta.get('formArraySexta')['controls']; let i=index">
 
                       <div class="row" style="margin-left: 2px">
                         <div class="col-10 col-md-11">
-                          <app-sexta [myFormSexta]="myFormSexta.controls.formArraySexta.controls[i]"> </app-sexta>
+                          <app-sexta [myFormSexta]="myFormSexta.get('formArraySexta')['controls'][i]"> </app-sexta>
                         </div>
                         <div class="col-2 col-md-1" style="padding: 0px">
                           <span (click)="delInputSexta(i)"
@@ -1176,11 +1176,11 @@
 
                 <div class="col-8 col-md-7" [hidden]="!mostrarHoraSab">
                   <div formArrayName="formArraySabado">
-                    <div *ngFor="let control of myFormSabado.controls.formArraySabado.controls; let i=index">
+                    <div *ngFor="let control of myFormSabado.get('formArraySabado')['controls']; let i=index">
 
                       <div class="row" style="margin-left: 2px">
                         <div class="col-10 col-md-11">
-                          <app-sabado [myFormSabado]="myFormSabado.controls.formArraySabado.controls[i]">
+                          <app-sabado [myFormSabado]="myFormSabado.get('formArraySabado')['controls'][i]">
                           </app-sabado>
                         </div>
                         <div class="col-2 col-md-1" style="padding: 0px">
@@ -1260,11 +1260,11 @@
 
                 <input type="hidden" class="form-control2" formControlName="fk" id="fk">
                 <div formArrayName="formArrayPrecos">
-                  <div *ngFor="let control of myFormPrecos.controls.formArrayPrecos.controls; let i=index">
+                  <div *ngFor="let control of myFormPrecos.get('formArrayPrecos')['controls']; let i=index">
 
                     <div class="row">
                       <div class="col-9">
-                        <app-precos [myFormPrecos]="myFormPrecos.controls.formArrayPrecos.controls[i]"></app-precos>
+                        <app-precos [myFormPrecos]="myFormPrecos.get('formArrayPrecos')['controls'][i]"></app-precos>
                       </div>
 
 

@@ -9,6 +9,7 @@ import { RegisterComponent } from './register.component';
 
 import { SharedModule } from '../shared/shared.module';
 import { RegisterRoutingModule } from './register-routing.module';
+import { CampoControlErroComponent } from './campo-control-erro/campo-control-erro.component';
 
 
 
@@ -26,6 +27,7 @@ import { RegisterRoutingModule } from './register-routing.module';
   ],
   declarations: [
     RegisterComponent,
+    CampoControlErroComponent,
   ]
 })
 export class RegisterModule { }

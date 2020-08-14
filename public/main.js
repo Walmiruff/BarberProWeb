@@ -310,7 +310,13 @@ var AppModule = /** @class */ (function () {
                 }),
                 _app_routing_module__WEBPACK_IMPORTED_MODULE_7__["AppRoutingModule"],
             ],
-            providers: [],
+            providers: [
+            /* {
+          provide: HTTP_INTERCEPTORS,
+            useClass: AuthInterceptor,
+            multi: true
+          }*/
+            ],
             bootstrap: [_app_component__WEBPACK_IMPORTED_MODULE_14__["AppComponent"]]
         })
     ], AppModule);
@@ -318,6 +324,17 @@ var AppModule = /** @class */ (function () {
 }());
 
 
+
+/***/ }),
+
+/***/ "./src/app/shared/error-msg/error-msg.component.css":
+/*!**********************************************************!*\
+  !*** ./src/app/shared/error-msg/error-msg.component.css ***!
+  \**********************************************************/
+/*! no static exports found */
+/***/ (function(module, exports) {
+
+module.exports = "#erroDiv{\r\n    background-color: transparent;\r\n    margin-bottom: 0px;\r\n    border-color: transparent\r\n}"
 
 /***/ }),
 
@@ -329,17 +346,6 @@ var AppModule = /** @class */ (function () {
 /***/ (function(module, exports) {
 
 module.exports = "<div  *ngIf=\"errorMessage !=null\" >\n\n  <span class=\"glyphicon glyphicon-remove form-control-feedback\"> </span>\n  <span class=\"sr-only\">(error)</span>\n  <div  id=\"erroDiv\" class=\"alert alert-danger\" role=\"alert\">{{ errorMessage }}</div>\n\n</div>\n"
-
-/***/ }),
-
-/***/ "./src/app/shared/error-msg/error-msg.component.scss":
-/*!***********************************************************!*\
-  !*** ./src/app/shared/error-msg/error-msg.component.scss ***!
-  \***********************************************************/
-/*! no static exports found */
-/***/ (function(module, exports) {
-
-module.exports = "#erroDiv {\n  background-color: transparent;\n  margin-bottom: 0px;\n  border-color: transparent; }\n"
 
 /***/ }),
 
@@ -423,7 +429,7 @@ var ErrorMsgComponent = /** @class */ (function () {
         Object(_angular_core__WEBPACK_IMPORTED_MODULE_0__["Component"])({
             selector: 'app-error-msg',
             template: __webpack_require__(/*! ./error-msg.component.html */ "./src/app/shared/error-msg/error-msg.component.html"),
-            styles: [__webpack_require__(/*! ./error-msg.component.scss */ "./src/app/shared/error-msg/error-msg.component.scss")]
+            styles: [__webpack_require__(/*! ./error-msg.component.css */ "./src/app/shared/error-msg/error-msg.component.css")]
         }),
         __metadata("design:paramtypes", [_ngx_translate_core__WEBPACK_IMPORTED_MODULE_3__["TranslateService"]])
     ], ErrorMsgComponent);

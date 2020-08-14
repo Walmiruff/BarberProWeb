@@ -1,0 +1,119 @@
+{
+    "PRECO": {
+        "SERVICE": "Servicio",
+        "PRICE": "Precio"
+    },
+    "NAV": {
+        "MYSCHEDULE": "Mi Horario",
+        "SETTINGS": "Configuraciones",
+        "LOGOUT": "Cerrar Sesión",
+        "HOME": "Página Principal",
+        "SERVICESSCHED": "Servicios y Horarios",
+        "LOGIN": "Login",
+        "SUB": "La Auscripción es Activa"
+    },
+    "CONFIG": {
+        "MYSETTINGS": "Mis Configuraciones",
+        "NAMEOFBARBERSHOP": "Nombre de la Barbería",
+        "COUNTRY": "País",
+        "STATE": "Estado / Provincia / Región",
+        "CITY": "Ciudad",
+        "NEIGHBORHOOD": "Barrio",
+        "STREET": "Calle",
+        "NUMBER": "Numero",
+        "ZIPCODE": "Codigo Postal",
+        "CELLPHONE": "Celular",
+        "TELEPHONE": "Teléfono",
+        "EMAIL": "E-mail",
+        "SUBMIT": "Enviar",
+        "PHOTOBARBERSHOP": "Foto de la Barbería",
+        "TEXTEFFECT": "Para hacer un buen caballero, se requieren varios oficios, pero principalmente un barbero.",
+        "TEXTEFFECTcont": "Doctor y Escritor",
+        "TEXTEFFECT2": "¡Elija la mejor foto de su barbería para deleitar a sus nuevos clientes!",
+        "CHOOSEPHOTO": "Elegir foto",
+        "CHOOSELOGO": "Elegir Logo",
+        "BUSINESSHOURS": "Horas Comerciales y Precios",
+        "TEXTEFFECT3": "Elija sus horarios de servicio disponibles para sus nuevos clientes.",
+        "CLOSED": "Cerrado",
+        "SUNDAY": "Domingo",
+        "MONDAY": "Lunes",
+        "TUESDAY": "Martes",
+        "WEDNESDAY": "Miércoles ",
+        "THURSDAY": "Jueves",
+        "FRIDAY": "viernes",
+        "SATURDAY": "Sabado",
+        "ADDSERVICE": "+Añadir Servicio",
+        "APPLY": "Aplicar"
+    },
+    "CONTACT": {
+        "TITLE": "Conectamos Clientes y Barberías.",
+        "BUTTON1": "BarberPro para Clientes",
+        "BUTTON2": "BarberPro para Barberías"
+    },
+    "LOGIN": {
+        "LOGIN": "Login",
+        "EMAIL": "E-mail",
+        "PASSWORD": "Contraseña",
+        "AUTH": "Autenticar",
+        "RESET": "Restablecer Cuenta",
+        "REGISTER": "Regístrese Ahora",
+        "NOACCOUNT": "¿Aún no tienes cuenta? "
+    },
+    "REGISTER": {
+        "TITLECREATE": "Crear Cuenta",
+        "BUTTONCREATE": "Crear"
+    },
+    "RESET": {
+        "TITLERESET": "Restablecer Cuenta",
+        "BUTTONRESET": "Restablecer"
+    },
+    "ERROMODAL": {
+        "ERROMODAL": "¡Ups! ¡Algo inesperado sucedió por favor revisa internet! :("
+    },
+    "MENU": {
+        "PREVIOUS": "Anterior",
+        "TODAY": "Hoy",
+        "NEXT": "Siguiente",
+        "MONTH": "Meses",
+        "WEEK": "Semana",
+        "DAY": "Días",
+        "EDITHOUR": "Editar Horario",
+        "ADDNEW": "Añadir Nuevo",
+        "CLIENTS": "Clientes",
+        "HORARY": "Horario"
+    },
+    "HOME": {
+        "TITLE1": "Conectando",
+        "TITLE1CONT": " Clientes a Usted",
+        "TITLE2": "Planificación de Barberías",
+        "TITLE3": "Déjate ver por miles de personas todos los días y administra tu Barbería al alcance de tu mano.",
+        "TITLE4": "Próximamente",
+        "TITLE5": "en el App Store",
+        "TITLE6": "Ponlo en",
+        "TITLE7": "Google Play",
+        "TITLE8": "¡Los clientes pueden programar directamente con usted a través de BarberPro!",
+        "TITLE9": "Recordatorios de texto automatizados cuando es el momento de obtener un corte.",
+        "TITLE10": "Mejorar Operaciones",
+        "TITLE11": "Sistema de arrastrar y soltar, le permite volver a etiquetar con sus clientes evitando las horas punta.",
+        "TITLE12":"Establece tus horarios y precios para cada día de la semana. También se accede desde un ordenador.",
+        "TITLE13": "No hay límites en horarios y clientes. Los planes comienzan en 29 € al mes. Comience una ",
+        "TITLE14": "Prueba Gratuita",
+        "TITLE15": " hoy!",
+        "TITLE16": "Contáctenos",
+        "TITLE17": "Información de Contacto",
+        "TITLE18": "Cancelar",
+        "TITLE19": "Enviar Mensaje",
+        "TITLE20": "Tu Nombre",
+        "TITLE21": "Tu Email",
+        "TITLE22": "Asunto",
+        "TITLE23": "Mensaje",
+        "TITLE24":"Soporte Técnico",
+        "TITLE25":"Suscribir",
+        "TITLE26":"¡Su versión de prueba de BarberPro ha caducado! ¿Quieres suscribirte?",
+        "FOTO1": "assets\\image\\foto1es.png",
+        "FOTO2": "assets\\image\\foto2es.png",
+        "FOTO3": "assets\\image\\foto3es.png",
+        "FOTO4": "assets\\image\\foto4es.png",
+        "FOTO5": "assets\\image\\foto5es.png"
+    }
+}

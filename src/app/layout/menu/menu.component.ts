@@ -143,13 +143,7 @@ export class MenuComponent implements OnInit, OnDestroy {
     private translate: TranslateService,
     private userservice: UserService
   ) {
-    this.afAuth.authState.pipe(take(1)).subscribe(user => {
-    //  this.dataUserCreate = user.metadata.creationTime;
-     // this.dataUserConnect = user.metadata.lastSignInTime;
-      this.codigoUsuario = user.uid;
-    });
-
-    this.translate.addLangs(['de', 'en', 'es', 'fr', 'it', 'pt']);
+        this.translate.addLangs(['de', 'en', 'es', 'fr', 'it', 'pt']);
     this.translate.setDefaultLang('en');
     const browserLang = this.translate.getBrowserLang();
     this.browserLg = this.translate.getBrowserCultureLang();
@@ -160,8 +154,14 @@ export class MenuComponent implements OnInit, OnDestroy {
 
 
   ngOnInit() {
+    this.afAuth.authState.subscribe(user => {
+      //  this.dataUserCreate = user.metadata.creationTime;
+       // this.dataUserConnect = user.metadata.lastSignInTime;
+        this.codigoUsuario = user.uid;
+        this.carregaCalendario(this.codigoUsuario);
+      });
     //  this.codigoUsuario = this.route.snapshot.params['id'];
-    this.carregaCalendario(this.codigoUsuario);
+    
     this.configurarFormulario();
    // this.configHandler();
   //  this.mostrarPreços();

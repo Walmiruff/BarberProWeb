@@ -1,0 +1,119 @@
+{
+    "PRECO": {
+        "SERVICE": "Servizio",
+        "PRICE": "Prezzo"
+    },
+    "NAV": {
+        "MYSCHEDULE": "Il Mio Programma",
+        "SETTINGS": "Impostazioni",
+        "LOGOUT": "Esci",
+        "HOME": "Pagina Principale",
+        "SERVICESSCHED": "Servizi e Programma",
+        "LOGIN": "Login",
+        "SUB": "L'abbonamento è Attivo"
+    },
+    "CONFIG": {
+        "MYSETTINGS": "Le Mie Impostazioni",
+        "NAMEOFBARBERSHOP": "Nome del Barbiere",
+        "COUNTRY": "Paese",
+        "STATE": "Stato / Provincia / Regione",
+        "CITY": "Città",
+        "NEIGHBORHOOD": "Quartieri",
+        "STREET": "Strada",
+        "NUMBER": "Numero",
+        "ZIPCODE": "Codice Postale",
+        "CELLPHONE": "Telefoni Cellulari",
+        "TELEPHONE": "Telefono",
+        "EMAIL": "E-mail",
+        "SUBMIT": "Invia",
+        "PHOTOBARBERSHOP": "Foto del Barbiere",
+        "TEXTEFFECT": "Per fare un buon gentiluomo, sono richieste diverse operazioni, ma principalmente un barbiere.",
+        "TEXTEFFECTcont": "Medico e Scrittore",
+        "TEXTEFFECT2": "Scegli la migliore foto dal tuo barbiere per deligth tuoi nuovi clienti!",
+        "CHOOSEPHOTO": "Scegli Foto",
+        "CHOOSELOGO": "Scegli Logo",
+        "BUSINESSHOURS": "Ore Lavorative e Prezzi",
+        "TEXTEFFECT3": "Scegli i tuoi piani di servizio disponibili per i tuoi nuovi clienti.",
+        "CLOSED": "Chiuso",
+        "SUNDAY": "Domenica",
+        "MONDAY": "Lunedì",
+        "TUESDAY": "Martedì",
+        "WEDNESDAY": "Mercoledì",
+        "THURSDAY": "Giovedì",
+        "FRIDAY": "Venerdì",
+        "SATURDAY": "Sabato",
+        "ADDSERVICE": "+Aggiungi Servizio",
+        "APPLY": "Domanda"
+    },
+    "CONTACT": {
+        "TITLE": "Colleghiamo Clienti e Barbieri",
+        "BUTTON1": "BarberPro per i clienti",
+        "BUTTON2": "BarberPro per Barbershop"
+    },
+    "LOGIN": {
+        "LOGIN": "Login",
+        "EMAIL": "E-mail",
+        "PASSWORD": "Password",
+        "AUTH": "Autentica",
+        "RESET": "Ripristina Account",
+        "REGISTER": "Registrati Ora",
+        "NOACCOUNT": "Nessun account ancora? "
+    },
+    "REGISTER": {
+        "TITLECREATE": "Crea Account",
+        "BUTTONCREATE": "Crea"
+    },
+    "RESET": {
+        "TITLERESET": "Ripristina Account",
+        "BUTTONRESET": "Ripristina"
+    },
+    "ERROMODAL": {
+        "ERROMODAL": "Oops! Qualcosa di inaspettato è accaduto per favore controlla su internet! :("
+    },
+    "MENU": {
+        "PREVIOUS": "Precedente",
+        "TODAY": "Oggi",
+        "NEXT": "Avanti",
+        "MONTH": "Mesi",
+        "WEEK": "Settimane",
+        "DAY": "Giorni",
+        "EDITHOUR": "Modifica",
+        "ADDNEW": "Aggiungi Nuovo",
+        "CLIENTS": "Clienti",
+        "HORARY": "Oraria"
+    },
+    "HOME": {
+        "TITLE1": "Connessione",
+        "TITLE1CONT": " i Clienti a Te",
+        "TITLE2": "Appuntamenti per i Barbieri",
+        "TITLE3": "Essere visto da migliaia di persone ogni giorno e gestire il tuo Barbershop a portata di mano.",
+        "TITLE4": "Prossimamente",
+        "TITLE5": "in App Store",
+        "TITLE6": "Andare su",
+        "TITLE7": "Google Play",
+        "TITLE8": " clienti possono pianificare direttamente con te tramite BarberPro!",
+        "TITLE9": "Promemoria automatici di testo quando è il momento di fare un taglio.",
+        "TITLE10": "Migliora le Operazioni",
+        "TITLE11": "Trascina e rilascia sistema, ti consente di re-taggare con i tuoi clienti evitando i picchi di tempo!",
+        "TITLE12": "Imposta i tuoi tempi e prezzi per ogni giorno della settimana. Anche l'accesso da un computer.",
+        "TITLE13": "Nessun limite per orari e clienti. I piani partono da € 29 al mese. Inizia una ",
+        "TITLE14": "Prova Gratuita",
+        "TITLE15": " oggi!",
+        "TITLE16": "Contattaci",
+        "TITLE17": "Informazioni di Contatto",
+        "TITLE18": "Annulla",
+        "TITLE19": "Invia M essaggio",
+        "TITLE20": "Il tuo nome",
+        "TITLE21": "La tua email",
+        "TITLE22": "Oggetto",
+        "TITLE23": "Messaggio",
+        "TITLE24":"Supporto Tecnico",
+        "TITLE25":"Sottoscrivi",
+        "TITLE26":"La tua prova BarberPro è scaduta! Vuoi iscriverti?",
+        "FOTO1": "assets\\image\\foto1it.png",
+        "FOTO2": "assets\\image\\foto2it.png",
+        "FOTO3": "assets\\image\\foto3it.png",
+        "FOTO4": "assets\\image\\foto4it.png",
+        "FOTO5": "assets\\image\\foto5it.png"
+    }
+}

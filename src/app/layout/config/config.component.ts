@@ -94,9 +94,7 @@ export class ConfigComponent implements OnInit {
     private usuarioService: UsuarioService,
     //  private activeModal: NgbActiveModal,
   ) {
-    this.afAuth.authState.pipe(take(1)).subscribe(user => {
-      this.codigoUsuario = user.uid;
-    });
+    
 
     this.translate.addLangs(['de', 'en', 'es', 'fr', 'it', 'pt']);
     this.translate.setDefaultLang('en');
@@ -108,34 +106,37 @@ export class ConfigComponent implements OnInit {
 
 
   ngOnInit() {
-    this.ativarDesativar = true;
-    // this.codigoUsuario = this.route.snapshot.params['id'];
-    this.configurarFormulario();
-    this.carregarUsuario(this.codigoUsuario);
-
-    this.configuraFormularioContato();
-
-    this.configurarformularioDom();
-    this.configurarformularioSeg();
-    this.configurarformularioTer();
-    this.configurarformularioQua();
-    this.configurarformularioQui();
-    this.configurarformularioSex();
-    this.configurarformularioSab();
-    this.carregarformularioHorario(this.codigoUsuario);
-
-    this.configurarformularioPrecos();
-
-    this.carregaObservables();
-
-    this.precos$ = this.precoService.getListaPrecos(this.codigoUsuario);
-    this.carregarformulariopreços(this.codigoUsuario);
-
-    this.paises$ = this.userService.getPaises();
-
-    this.carregaFoto();
-    this.carregaFotoLogo();
-    this.oneSignal();
+    this.afAuth.authState.pipe(take(1)).subscribe(user => {
+      this.codigoUsuario = user.uid;
+      this.ativarDesativar = true;
+      // this.codigoUsuario = this.route.snapshot.params['id'];
+      this.configurarFormulario();
+      this.carregarUsuario(this.codigoUsuario);
+  
+      this.configuraFormularioContato();
+  
+      this.configurarformularioDom();
+      this.configurarformularioSeg();
+      this.configurarformularioTer();
+      this.configurarformularioQua();
+      this.configurarformularioQui();
+      this.configurarformularioSex();
+      this.configurarformularioSab();
+      this.carregarformularioHorario(this.codigoUsuario);
+  
+      this.configurarformularioPrecos();
+  
+      this.carregaObservables();
+  
+      this.precos$ = this.precoService.getListaPrecos(this.codigoUsuario);
+      this.carregarformulariopreços(this.codigoUsuario);
+  
+      this.paises$ = this.userService.getPaises();
+  
+      this.carregaFoto();
+      this.carregaFotoLogo();
+      this.oneSignal();
+    });
   }
 
   oneSignal() {

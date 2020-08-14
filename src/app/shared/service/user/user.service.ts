@@ -211,7 +211,7 @@ putImageLogo(url1: string, formulario: FormGroup) {
 
   getPaises() {
     return this.http.get('assets/dados/paises.json')
-      .pipe(map((res: Response) => res.json()));
+      .pipe(map((res: any) => res.json()));
   }
 
 

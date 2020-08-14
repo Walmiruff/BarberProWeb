@@ -18,8 +18,10 @@ var firebase = _interopDefault(__webpack_require__(/*! @firebase/app */ "./node_
 var logger = __webpack_require__(/*! @firebase/logger */ "./node_modules/@firebase/logger/dist/index.esm.js");
 var tslib_1 = __webpack_require__(/*! tslib */ "./node_modules/@firebase/firestore/node_modules/tslib/tslib.es6.js");
 var webchannelWrapper = __webpack_require__(/*! @firebase/webchannel-wrapper */ "./node_modules/@firebase/webchannel-wrapper/dist/index.esm.js");
+var util = __webpack_require__(/*! @firebase/util */ "./node_modules/@firebase/util/dist/index.cjs.js");
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -38,6 +40,7 @@ var webchannelWrapper = __webpack_require__(/*! @firebase/webchannel-wrapper */ 
 var SDK_VERSION = firebase.SDK_VERSION;
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -129,6 +132,7 @@ function argToString(obj) {
 }
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -171,6 +175,7 @@ function assert(assertion, message) {
 }
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -216,6 +221,7 @@ function emptyByteString() {
 }
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -367,6 +373,7 @@ var FirestoreError = /** @class */ (function (_super) {
 }(Error));
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -414,6 +421,7 @@ function makeConstructorPrivate(cls, optionalMessage) {
 }
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -478,6 +486,7 @@ function shallowCopy(obj) {
 }
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -492,6 +501,21 @@ function shallowCopy(obj) {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+/**
+ * Validates that no arguments were passed in the invocation of functionName.
+ *
+ * Forward the magic "arguments" variable as second parameter on which the
+ * parameter validation is performed:
+ * validateNoArgs('myFunction', arguments);
+ */
+function validateNoArgs(functionName, args) {
+    if (args.length !== 0) {
+        throw new FirestoreError(Code.INVALID_ARGUMENT, "Function " + functionName + "() does not support arguments, " +
+            'but was called with ' +
+            formatPlural(args.length, 'argument') +
+            '.');
+    }
+}
 /**
  * Validates the invocation of functionName has the exact number of arguments.
  *
@@ -627,6 +651,21 @@ function validateNamedOptionalPropertyEquals(functionName, inputName, optionName
         validateNamedPropertyEquals(functionName, inputName, optionName, input, expected);
     }
 }
+/**
+ * Validates that the provided argument is a valid enum.
+ *
+ * @param functionName Function making the validation call.
+ * @param enums Array containing all possible values for the enum.
+ * @param position Position of the argument in `functionName`.
+ * @param argument Arugment to validate.
+ */
+function validateStringEnum(functionName, enums, position, argument) {
+    if (!enums.some(function (element) { return element === argument; })) {
+        throw new FirestoreError(Code.INVALID_ARGUMENT, "Invalid value " + valueDescription(argument) + " provided to function " +
+            (functionName + "() for its " + ordinal(position) + " argument. Acceptable ") +
+            ("values: " + enums.join(', ')));
+    }
+}
 /** Helper to validate the type of a provided input. */
 function validateType(functionName, type, inputName, input) {
     var valid = false;
@@ -754,6 +793,7 @@ function formatPlural(num, str) {
 }
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -824,6 +864,7 @@ function immediateSuccessor(s) {
 }
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -930,6 +971,7 @@ var Blob = /** @class */ (function () {
 var PublicBlob = makeConstructorPrivate(Blob, 'Use Blob.fromUint8Array() or Blob.fromBase64String() instead.');
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -997,6 +1039,7 @@ var GeoPoint = /** @class */ (function () {
 }());
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -1067,6 +1110,7 @@ var Timestamp = /** @class */ (function () {
 }());
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -1091,12 +1135,15 @@ var DatabaseInfo = /** @class */ (function () {
      * storage (used in conjunction with the databaseId).
      * @param host The Firestore backend host to connect to.
      * @param ssl Whether to use SSL when connecting.
+     * @param forceLongPolling Whether to use the forceLongPolling option
+     * when using WebChannel as the network transport.
      */
-    function DatabaseInfo(databaseId, persistenceKey, host, ssl) {
+    function DatabaseInfo(databaseId, persistenceKey, host, ssl, forceLongPolling) {
         this.databaseId = databaseId;
         this.persistenceKey = persistenceKey;
         this.host = host;
         this.ssl = ssl;
+        this.forceLongPolling = forceLongPolling;
     }
     return DatabaseInfo;
 }());
@@ -1128,6 +1175,7 @@ var DatabaseId = /** @class */ (function () {
 }());
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -1225,8 +1273,7 @@ var Path = /** @class */ (function () {
         return this.segments[this.offset];
     };
     Path.prototype.lastSegment = function () {
-        assert(!this.isEmpty(), "Can't call lastSegment() on empty path");
-        return this.segments[this.limit() - 1];
+        return this.get(this.length - 1);
     };
     Path.prototype.get = function (index) {
         assert(index < this.length, 'Index out of range');
@@ -1419,6 +1466,7 @@ var FieldPath = /** @class */ (function (_super) {
 }(Path));
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -1439,6 +1487,11 @@ var DocumentKey = /** @class */ (function () {
         assert(DocumentKey.isDocumentKey(path), 'Invalid DocumentKey with an odd number of segments: ' +
             path.toArray().join('/'));
     }
+    /** Returns true if the document is in the specified collectionId. */
+    DocumentKey.prototype.hasCollectionId = function (collectionId) {
+        return (this.path.length >= 2 &&
+            this.path.get(this.path.length - 2) === collectionId);
+    };
     DocumentKey.prototype.isEqual = function (other) {
         return (other !== null && ResourcePath.comparator(this.path, other.path) === 0);
     };
@@ -1475,6 +1528,7 @@ var DocumentKey = /** @class */ (function () {
 }());
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -1622,6 +1676,7 @@ var UnknownDocument = /** @class */ (function (_super) {
 }(MaybeDocument));
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -1726,6 +1781,14 @@ var SortedMap = /** @class */ (function () {
             fn(k, v);
             return false;
         });
+    };
+    SortedMap.prototype.toString = function () {
+        var descriptions = [];
+        this.inorderTraversal(function (k, v) {
+            descriptions.push(k + ":" + v);
+            return false;
+        });
+        return "{" + descriptions.join(', ') + "}";
     };
     // Traverses the map in reverse key order and calls the specified action
     // function for each key/value pair. If action returns true, traversal is
@@ -2055,6 +2118,7 @@ var LLRBEmptyNode = /** @class */ (function () {
 LLRBNode.EMPTY = new LLRBEmptyNode();
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -2309,7 +2373,7 @@ var TimestampValue = /** @class */ (function (_super) {
         return _this;
     }
     TimestampValue.prototype.value = function (options) {
-        if (options && options.timestampsInSnapshots) {
+        if (!options || options.timestampsInSnapshots) {
             return this.internalValue;
         }
         else {
@@ -2568,7 +2632,7 @@ var ObjectValue = /** @class */ (function (_super) {
         return field;
     };
     ObjectValue.prototype.toString = function () {
-        return JSON.stringify(this.value());
+        return this.internalValue.toString();
     };
     ObjectValue.prototype.child = function (childName) {
         return this.internalValue.get(childName) || undefined;
@@ -2623,12 +2687,14 @@ var ArrayValue = /** @class */ (function (_super) {
         }
     };
     ArrayValue.prototype.toString = function () {
-        return JSON.stringify(this.value());
+        var descriptions = this.internalValue.map(function (v) { return v.toString(); });
+        return "[" + descriptions.join(',') + "]";
     };
     return ArrayValue;
 }(FieldValue));
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -2685,6 +2751,7 @@ function isSafeInteger(value) {
 }
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -2700,13 +2767,19 @@ function isSafeInteger(value) {
  * limitations under the License.
  */
 var Query = /** @class */ (function () {
-    function Query(path, explicitOrderBy, filters, limit, startAt, endAt) {
+    /**
+     * Initializes a Query with a path and optional additional query constraints.
+     * Path must currently be empty if this is a collection group query.
+     */
+    function Query(path, collectionGroup, explicitOrderBy, filters, limit, startAt, endAt) {
+        if (collectionGroup === void 0) { collectionGroup = null; }
         if (explicitOrderBy === void 0) { explicitOrderBy = []; }
         if (filters === void 0) { filters = []; }
         if (limit === void 0) { limit = null; }
         if (startAt === void 0) { startAt = null; }
         if (endAt === void 0) { endAt = null; }
         this.path = path;
+        this.collectionGroup = collectionGroup;
         this.explicitOrderBy = explicitOrderBy;
         this.filters = filters;
         this.limit = limit;
@@ -2778,25 +2851,34 @@ var Query = /** @class */ (function () {
             !(filter instanceof RelationFilter) ||
             !filter.isInequality() ||
             filter.field.isEqual(this.getInequalityFilterField()), 'Query must only have one inequality field.');
-        assert(!DocumentKey.isDocumentKey(this.path), 'No filtering allowed for document query');
+        assert(!this.isDocumentQuery(), 'No filtering allowed for document query');
         var newFilters = this.filters.concat([filter]);
-        return new Query(this.path, this.explicitOrderBy.slice(), newFilters, this.limit, this.startAt, this.endAt);
+        return new Query(this.path, this.collectionGroup, this.explicitOrderBy.slice(), newFilters, this.limit, this.startAt, this.endAt);
     };
     Query.prototype.addOrderBy = function (orderBy) {
-        assert(!DocumentKey.isDocumentKey(this.path), 'No ordering allowed for document query');
         assert(!this.startAt && !this.endAt, 'Bounds must be set after orderBy');
         // TODO(dimond): validate that orderBy does not list the same key twice.
         var newOrderBy = this.explicitOrderBy.concat([orderBy]);
-        return new Query(this.path, newOrderBy, this.filters.slice(), this.limit, this.startAt, this.endAt);
+        return new Query(this.path, this.collectionGroup, newOrderBy, this.filters.slice(), this.limit, this.startAt, this.endAt);
     };
     Query.prototype.withLimit = function (limit) {
-        return new Query(this.path, this.explicitOrderBy.slice(), this.filters.slice(), limit, this.startAt, this.endAt);
+        return new Query(this.path, this.collectionGroup, this.explicitOrderBy.slice(), this.filters.slice(), limit, this.startAt, this.endAt);
     };
     Query.prototype.withStartAt = function (bound) {
-        return new Query(this.path, this.explicitOrderBy.slice(), this.filters.slice(), this.limit, bound, this.endAt);
+        return new Query(this.path, this.collectionGroup, this.explicitOrderBy.slice(), this.filters.slice(), this.limit, bound, this.endAt);
     };
     Query.prototype.withEndAt = function (bound) {
-        return new Query(this.path, this.explicitOrderBy.slice(), this.filters.slice(), this.limit, this.startAt, bound);
+        return new Query(this.path, this.collectionGroup, this.explicitOrderBy.slice(), this.filters.slice(), this.limit, this.startAt, bound);
+    };
+    /**
+     * Helper to convert a collection group query into a collection query at a
+     * specific path. This is used when executing collection group queries, since
+     * we have to split the query into a set of collection queries at multiple
+     * paths.
+     */
+    Query.prototype.asCollectionQueryAtPath = function (path) {
+        return new Query(path, 
+        /*collectionGroup=*/ null, this.explicitOrderBy.slice(), this.filters.slice(), this.limit, this.startAt, this.endAt);
     };
     // TODO(b/29183165): This is used to get a unique string from a query to, for
     // example, use as a dictionary key, but the implementation is subject to
@@ -2804,6 +2886,9 @@ var Query = /** @class */ (function () {
     Query.prototype.canonicalId = function () {
         if (this.memoizedCanonicalId === null) {
             var canonicalId = this.path.canonicalString();
+            if (this.isCollectionGroupQuery()) {
+                canonicalId += '|cg:' + this.collectionGroup;
+            }
             canonicalId += '|f:';
             for (var _i = 0, _a = this.filters; _i < _a.length; _i++) {
                 var filter = _a[_i];
@@ -2835,6 +2920,9 @@ var Query = /** @class */ (function () {
     };
     Query.prototype.toString = function () {
         var str = 'Query(' + this.path.canonicalString();
+        if (this.isCollectionGroupQuery()) {
+            str += ' collectionGroup=' + this.collectionGroup;
+        }
         if (this.filters.length > 0) {
             str += ", filters: [" + this.filters.join(', ') + "]";
         }
@@ -2872,6 +2960,9 @@ var Query = /** @class */ (function () {
                 return false;
             }
         }
+        if (this.collectionGroup !== other.collectionGroup) {
+            return false;
+        }
         if (!this.path.isEqual(other.path)) {
             return false;
         }
@@ -2898,7 +2989,7 @@ var Query = /** @class */ (function () {
         return 0;
     };
     Query.prototype.matches = function (doc) {
-        return (this.matchesAncestor(doc) &&
+        return (this.matchesPathAndCollectionGroup(doc) &&
             this.matchesOrderBy(doc) &&
             this.matchesFilters(doc) &&
             this.matchesBounds(doc));
@@ -2927,17 +3018,28 @@ var Query = /** @class */ (function () {
         }) !== undefined);
     };
     Query.prototype.isDocumentQuery = function () {
-        return DocumentKey.isDocumentKey(this.path) && this.filters.length === 0;
+        return (DocumentKey.isDocumentKey(this.path) &&
+            this.collectionGroup === null &&
+            this.filters.length === 0);
     };
-    Query.prototype.matchesAncestor = function (doc) {
+    Query.prototype.isCollectionGroupQuery = function () {
+        return this.collectionGroup !== null;
+    };
+    Query.prototype.matchesPathAndCollectionGroup = function (doc) {
         var docPath = doc.key.path;
-        if (DocumentKey.isDocumentKey(this.path)) {
+        if (this.collectionGroup !== null) {
+            // NOTE: this.path is currently always empty since we don't expose Collection
+            // Group queries rooted at a document path yet.
+            return (doc.key.hasCollectionId(this.collectionGroup) &&
+                this.path.isPrefixOf(docPath));
+        }
+        else if (DocumentKey.isDocumentKey(this.path)) {
             // exact match for document queries
             return this.path.isEqual(docPath);
         }
         else {
             // shallow ancestor queries by default
-            return (this.path.isPrefixOf(docPath) && this.path.length === docPath.length - 1);
+            return this.path.isImmediateParentOf(docPath);
         }
     };
     /**
@@ -3306,6 +3408,7 @@ var KEY_ORDERING_ASC = new OrderBy(FieldPath.keyField(), Direction.ASCENDING);
 var KEY_ORDERING_DESC = new OrderBy(FieldPath.keyField(), Direction.DESCENDING);
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -3363,6 +3466,7 @@ var SnapshotVersion = /** @class */ (function () {
 }());
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -3448,6 +3552,7 @@ var QueryData = /** @class */ (function () {
 }());
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -3618,6 +3723,7 @@ var SortedSetIterator = /** @class */ (function () {
 }());
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -3647,6 +3753,9 @@ var FieldMask = /** @class */ (function () {
         this.fields = fields;
         // TODO(dimond): validation of FieldMask
     }
+    FieldMask.fromSet = function (fields) {
+        return new FieldMask(fields);
+    };
     FieldMask.fromArray = function (fields) {
         var fieldsAsSet = new SortedSet(FieldPath.comparator);
         fields.forEach(function (fieldPath) { return (fieldsAsSet = fieldsAsSet.add(fieldPath)); });
@@ -3667,6 +3776,26 @@ var FieldMask = /** @class */ (function () {
         });
         return found;
     };
+    /**
+     * Applies this field mask to the provided object value and returns an object
+     * that only contains fields that are specified in both the input object and
+     * this field mask.
+     */
+    FieldMask.prototype.applyTo = function (data) {
+        var filteredObject = ObjectValue.EMPTY;
+        this.fields.forEach(function (fieldMaskPath) {
+            if (fieldMaskPath.isEmpty()) {
+                return data;
+            }
+            else {
+                var newValue = data.field(fieldMaskPath);
+                if (newValue !== undefined) {
+                    filteredObject = filteredObject.set(fieldMaskPath, newValue);
+                }
+            }
+        });
+        return filteredObject;
+    };
     FieldMask.prototype.isEqual = function (other) {
         return this.fields.isEqual(other.fields);
     };
@@ -3678,6 +3807,14 @@ var FieldTransform = /** @class */ (function () {
         this.field = field;
         this.transform = transform;
     }
+    Object.defineProperty(FieldTransform.prototype, "isIdempotent", {
+        /** Whether this field transform is idempotent. */
+        get: function () {
+            return this.transform.isIdempotent;
+        },
+        enumerable: true,
+        configurable: true
+    });
     FieldTransform.prototype.isEqual = function (other) {
         return (this.field.isEqual(other.field) && this.transform.isEqual(other.transform));
     };
@@ -3876,6 +4013,20 @@ var SetMutation = /** @class */ (function (_super) {
             hasLocalMutations: true
         });
     };
+    Object.defineProperty(SetMutation.prototype, "isIdempotent", {
+        get: function () {
+            return true;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(SetMutation.prototype, "fieldMask", {
+        get: function () {
+            return null;
+        },
+        enumerable: true,
+        configurable: true
+    });
     SetMutation.prototype.isEqual = function (other) {
         return (other instanceof SetMutation &&
             this.key.isEqual(other.key) &&
@@ -3934,6 +4085,13 @@ var PatchMutation = /** @class */ (function (_super) {
             hasLocalMutations: true
         });
     };
+    Object.defineProperty(PatchMutation.prototype, "isIdempotent", {
+        get: function () {
+            return true;
+        },
+        enumerable: true,
+        configurable: true
+    });
     PatchMutation.prototype.isEqual = function (other) {
         return (other instanceof PatchMutation &&
             this.key.isEqual(other.key) &&
@@ -4024,6 +4182,28 @@ var TransformMutation = /** @class */ (function (_super) {
             hasLocalMutations: true
         });
     };
+    Object.defineProperty(TransformMutation.prototype, "isIdempotent", {
+        get: function () {
+            for (var _i = 0, _a = this.fieldTransforms; _i < _a.length; _i++) {
+                var fieldTransform = _a[_i];
+                if (!fieldTransform.isIdempotent) {
+                    return false;
+                }
+            }
+            return true;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(TransformMutation.prototype, "fieldMask", {
+        get: function () {
+            var fieldMask = new SortedSet(FieldPath.comparator);
+            this.fieldTransforms.forEach(function (transform) { return (fieldMask = fieldMask.add(transform.field)); });
+            return new FieldMask(fieldMask);
+        },
+        enumerable: true,
+        configurable: true
+    });
     TransformMutation.prototype.isEqual = function (other) {
         return (other instanceof TransformMutation &&
             this.key.isEqual(other.key) &&
@@ -4135,10 +4315,25 @@ var DeleteMutation = /** @class */ (function (_super) {
             this.key.isEqual(other.key) &&
             this.precondition.isEqual(other.precondition));
     };
+    Object.defineProperty(DeleteMutation.prototype, "isIdempotent", {
+        get: function () {
+            return true;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(DeleteMutation.prototype, "fieldMask", {
+        get: function () {
+            return null;
+        },
+        enumerable: true,
+        configurable: true
+    });
     return DeleteMutation;
 }(Mutation));
 
 /**
+ * @license
  * Copyright 2018 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -4156,6 +4351,7 @@ var DeleteMutation = /** @class */ (function (_super) {
 /** Transforms a value into a server-generated timestamp. */
 var ServerTimestampTransform = /** @class */ (function () {
     function ServerTimestampTransform() {
+        this.isIdempotent = true;
     }
     ServerTimestampTransform.prototype.applyToLocalView = function (previousValue, localWriteTime) {
         return new ServerTimestampValue(localWriteTime, previousValue);
@@ -4173,6 +4369,7 @@ var ServerTimestampTransform = /** @class */ (function () {
 var ArrayUnionTransformOperation = /** @class */ (function () {
     function ArrayUnionTransformOperation(elements) {
         this.elements = elements;
+        this.isIdempotent = true;
     }
     ArrayUnionTransformOperation.prototype.applyToLocalView = function (previousValue, localWriteTime) {
         return this.apply(previousValue);
@@ -4206,6 +4403,7 @@ var ArrayUnionTransformOperation = /** @class */ (function () {
 var ArrayRemoveTransformOperation = /** @class */ (function () {
     function ArrayRemoveTransformOperation(elements) {
         this.elements = elements;
+        this.isIdempotent = true;
     }
     ArrayRemoveTransformOperation.prototype.applyToLocalView = function (previousValue, localWriteTime) {
         return this.apply(previousValue);
@@ -4233,6 +4431,48 @@ var ArrayRemoveTransformOperation = /** @class */ (function () {
     };
     return ArrayRemoveTransformOperation;
 }());
+/**
+ * Implements the backend semantics for locally computed NUMERIC_ADD (increment)
+ * transforms. Converts all field values to integers or doubles, but unlike the
+ * backend does not cap integer values at 2^63. Instead, JavaScript number
+ * arithmetic is used and precision loss can occur for values greater than 2^53.
+ */
+var NumericIncrementTransformOperation = /** @class */ (function () {
+    function NumericIncrementTransformOperation(operand) {
+        this.operand = operand;
+        this.isIdempotent = false;
+    }
+    NumericIncrementTransformOperation.prototype.applyToLocalView = function (previousValue, localWriteTime) {
+        // PORTING NOTE: Since JavaScript's integer arithmetic is limited to 53 bit
+        // precision and resolves overflows by reducing precision, we do not
+        // manually cap overflows at 2^63.
+        // Return an integer value iff the previous value and the operand is an
+        // integer.
+        if (previousValue instanceof IntegerValue &&
+            this.operand instanceof IntegerValue) {
+            var sum = previousValue.internalValue + this.operand.internalValue;
+            return new IntegerValue(sum);
+        }
+        else if (previousValue instanceof NumberValue) {
+            var sum = previousValue.internalValue + this.operand.internalValue;
+            return new DoubleValue(sum);
+        }
+        else {
+            // If the existing value is not a number, use the value of the transform as
+            // the new base value.
+            return this.operand;
+        }
+    };
+    NumericIncrementTransformOperation.prototype.applyToRemoteDocument = function (previousValue, transformResult) {
+        assert(transformResult !== null, "Didn't receive transformResult for NUMERIC_ADD transform");
+        return transformResult;
+    };
+    NumericIncrementTransformOperation.prototype.isEqual = function (other) {
+        return (other instanceof NumericIncrementTransformOperation &&
+            this.operand.isEqual(other.operand));
+    };
+    return NumericIncrementTransformOperation;
+}());
 function coercedFieldValuesArray(value) {
     if (value instanceof ArrayValue) {
         return value.internalValue.slice();
@@ -4244,6 +4484,7 @@ function coercedFieldValuesArray(value) {
 }
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -4270,6 +4511,7 @@ var ExistenceFilter = /** @class */ (function () {
 }());
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -4314,6 +4556,12 @@ var RpcCode;
     RpcCode[RpcCode["UNAVAILABLE"] = 14] = "UNAVAILABLE";
     RpcCode[RpcCode["DATA_LOSS"] = 15] = "DATA_LOSS";
 })(RpcCode || (RpcCode = {}));
+/**
+ * Determines whether an error code represents a permanent error when received
+ * in response to a non-write operation.
+ *
+ * See isPermanentWriteError for classifying write errors.
+ */
 function isPermanentError(code) {
     switch (code) {
         case Code.OK:
@@ -4344,6 +4592,21 @@ function isPermanentError(code) {
         default:
             return fail('Unknown status code: ' + code);
     }
+}
+/**
+ * Determines whether an error code represents a permanent error when received
+ * in response to a write operation.
+ *
+ * Write operations must be handled specially because as of b/119437764, ABORTED
+ * errors on the write stream should be retried too (even though ABORTED errors
+ * are not generally retryable).
+ *
+ * Note that during the initial handshake on the write stream an ABORTED error
+ * signals that we should discard our stream token (i.e. it is permanent). This
+ * means a handshake error should be classified with isPermanentError, above.
+ */
+function isPermanentWriteError(code) {
+    return isPermanentError(code) && code !== Code.ABORTED;
 }
 /**
  * Maps an error Code from a GRPC status identifier like 'NOT_FOUND'.
@@ -4520,6 +4783,7 @@ function mapCodeFromHttpStatus(status) {
 }
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -4568,6 +4832,7 @@ function targetIdSet() {
 }
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -4702,6 +4967,7 @@ var DocumentSet = /** @class */ (function () {
 }());
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -4862,6 +5128,7 @@ var ViewSnapshot = /** @class */ (function () {
 }());
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -4919,9 +5186,11 @@ var RemoteEvent = /** @class */ (function () {
      */
     // PORTING NOTE: Multi-tab only
     RemoteEvent.createSynthesizedRemoteEventForCurrentChange = function (targetId, current) {
-        var targetChanges = (_a = {}, _a[targetId] = TargetChange.createSynthesizedTargetChangeForCurrentChange(targetId, current), _a);
-        return new RemoteEvent(SnapshotVersion.MIN, targetChanges, targetIdSet(), maybeDocumentMap(), documentKeySet());
         var _a;
+        var targetChanges = (_a = {},
+            _a[targetId] = TargetChange.createSynthesizedTargetChangeForCurrentChange(targetId, current),
+            _a);
+        return new RemoteEvent(SnapshotVersion.MIN, targetChanges, targetIdSet(), maybeDocumentMap(), documentKeySet());
     };
     return RemoteEvent;
 }());
@@ -4983,6 +5252,7 @@ var TargetChange = /** @class */ (function () {
 }());
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -5523,6 +5793,7 @@ function snapshotChangesMap() {
 }
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -5755,15 +6026,14 @@ var JsonProtoSerializer = /** @class */ (function () {
         return new DocumentKey(this.extractLocalPathFromResourceName(resource));
     };
     JsonProtoSerializer.prototype.toQueryPath = function (path) {
-        if (path.length === 0) {
-            // If the path is empty, the backend requires we leave off the /documents
-            // at the end.
-            return this.encodedDatabaseId;
-        }
         return this.toResourceName(this.databaseId, path);
     };
     JsonProtoSerializer.prototype.fromQueryPath = function (name) {
         var resourceName = this.fromResourceName(name);
+        // In v1beta1 queries for collections at the root did not have a trailing
+        // "/documents". In v1 all resource paths contain "/documents". Preserve the
+        // ability to read the v1beta1 form for compatibility with queries persisted
+        // in the local query cache.
         if (resourceName.length === 4) {
             return ResourcePath.EMPTY_PATH;
         }
@@ -5901,8 +6171,8 @@ var JsonProtoSerializer = /** @class */ (function () {
         else if (hasTag(obj, type, 'arrayValue')) {
             // "values" is not present if the array is empty
             assertPresent(obj.arrayValue, 'arrayValue');
-            var values$$1 = obj.arrayValue.values || [];
-            return new ArrayValue(values$$1.map(function (v) { return _this.fromValue(v); }));
+            var values = obj.arrayValue.values || [];
+            return new ArrayValue(values.map(function (v) { return _this.fromValue(v); }));
         }
         else if (hasTag(obj, type, 'timestampValue')) {
             assertPresent(obj.timestampValue, 'timestampValue');
@@ -6330,6 +6600,12 @@ var JsonProtoSerializer = /** @class */ (function () {
                 }
             };
         }
+        else if (transform instanceof NumericIncrementTransformOperation) {
+            return {
+                fieldPath: fieldTransform.field.canonicalString(),
+                increment: this.toValue(transform.operand)
+            };
+        }
         else {
             throw fail('Unknown transform: ' + fieldTransform.transform);
         }
@@ -6344,12 +6620,17 @@ var JsonProtoSerializer = /** @class */ (function () {
             transform = ServerTimestampTransform.instance;
         }
         else if (hasTag(proto, type, 'appendMissingElements')) {
-            var values$$1 = proto.appendMissingElements.values || [];
-            transform = new ArrayUnionTransformOperation(values$$1.map(function (v) { return _this.fromValue(v); }));
+            var values = proto.appendMissingElements.values || [];
+            transform = new ArrayUnionTransformOperation(values.map(function (v) { return _this.fromValue(v); }));
         }
         else if (hasTag(proto, type, 'removeAllFromArray')) {
-            var values$$1 = proto.removeAllFromArray.values || [];
-            transform = new ArrayRemoveTransformOperation(values$$1.map(function (v) { return _this.fromValue(v); }));
+            var values = proto.removeAllFromArray.values || [];
+            transform = new ArrayRemoveTransformOperation(values.map(function (v) { return _this.fromValue(v); }));
+        }
+        else if (hasTag(proto, type, 'increment')) {
+            var operand = this.fromValue(proto.increment);
+            assert(operand instanceof NumberValue, 'NUMERIC_ADD transform requires a NumberValue');
+            transform = new NumericIncrementTransformOperation(operand);
         }
         else {
             fail('Unknown transform proto: ' + JSON.stringify(proto));
@@ -6369,11 +6650,18 @@ var JsonProtoSerializer = /** @class */ (function () {
     JsonProtoSerializer.prototype.toQueryTarget = function (query) {
         // Dissect the path into parent, collectionId, and optional key filter.
         var result = { structuredQuery: {} };
-        if (query.path.isEmpty()) {
-            result.parent = this.toQueryPath(ResourcePath.EMPTY_PATH);
+        var path = query.path;
+        if (query.collectionGroup !== null) {
+            assert(path.length % 2 === 0, 'Collection Group queries should be within a document path or root.');
+            result.parent = this.toQueryPath(path);
+            result.structuredQuery.from = [
+                {
+                    collectionId: query.collectionGroup,
+                    allDescendants: true
+                }
+            ];
         }
         else {
-            var path = query.path;
             assert(path.length % 2 !== 0, 'Document queries with filters are not supported.');
             result.parent = this.toQueryPath(path.popLast());
             result.structuredQuery.from = [{ collectionId: path.lastSegment() }];
@@ -6402,10 +6690,16 @@ var JsonProtoSerializer = /** @class */ (function () {
         var path = this.fromQueryPath(target.parent);
         var query = target.structuredQuery;
         var fromCount = query.from ? query.from.length : 0;
+        var collectionGroup = null;
         if (fromCount > 0) {
             assert(fromCount === 1, 'StructuredQuery.from with more than one collection is not supported.');
             var from = query.from[0];
-            path = path.child(from.collectionId);
+            if (from.allDescendants) {
+                collectionGroup = from.collectionId;
+            }
+            else {
+                path = path.child(from.collectionId);
+            }
         }
         var filterBy = [];
         if (query.where) {
@@ -6427,7 +6721,7 @@ var JsonProtoSerializer = /** @class */ (function () {
         if (query.endAt) {
             endAt = this.fromCursor(query.endAt);
         }
-        return new Query(path, orderBy, filterBy, limit, startAt, endAt);
+        return new Query(path, collectionGroup, orderBy, filterBy, limit, startAt, endAt);
     };
     JsonProtoSerializer.prototype.toListenRequestLabels = function (queryData) {
         var value = this.toLabel(queryData.purpose);
@@ -6682,406 +6976,7 @@ function hasTag(obj, type, tag) {
 }
 
 /**
- * Detect React Native.
- *
- * @return {boolean} True if ReactNative environment is detected.
- */
-var isReactNative = function () {
-    return (typeof navigator === 'object' && navigator['product'] === 'ReactNative');
-};
-
-var ERROR_NAME = 'FirebaseError';
-var captureStackTrace = Error
-    .captureStackTrace;
-var FirebaseError = /** @class */ (function () {
-    function FirebaseError(code, message) {
-        this.code = code;
-        this.message = message;
-        // We want the stack value, if implemented by Error
-        if (captureStackTrace) {
-            // Patches this.stack, omitted calls above ErrorFactory#create
-            captureStackTrace(this, ErrorFactory.prototype.create);
-        }
-        else {
-            try {
-                // In case of IE11, stack will be set only after error is raised.
-                // https://docs.microsoft.com/en-us/scripting/javascript/reference/stack-property-error-javascript
-                throw Error.apply(this, arguments);
-            }
-            catch (err) {
-                this.name = ERROR_NAME;
-                // Make non-enumerable getter for the property.
-                Object.defineProperty(this, 'stack', {
-                    get: function () {
-                        return err.stack;
-                    }
-                });
-            }
-        }
-    }
-    return FirebaseError;
-}());
-// Back-door inheritance
-FirebaseError.prototype = Object.create(Error.prototype);
-FirebaseError.prototype.constructor = FirebaseError;
-FirebaseError.prototype.name = ERROR_NAME;
-var ErrorFactory = /** @class */ (function () {
-    function ErrorFactory(service, serviceName, errors) {
-        this.service = service;
-        this.serviceName = serviceName;
-        this.errors = errors;
-        // Matches {$name}, by default.
-        this.pattern = /\{\$([^}]+)}/g;
-        // empty
-    }
-    ErrorFactory.prototype.create = function (code, data) {
-        if (data === undefined) {
-            data = {};
-        }
-        var template = this.errors[code];
-        var fullCode = this.service + '/' + code;
-        var message;
-        if (template === undefined) {
-            message = 'Error';
-        }
-        else {
-            message = template.replace(this.pattern, function (match, key) {
-                var value = data[key];
-                return value !== undefined ? value.toString() : '<' + key + '?>';
-            });
-        }
-        // Service: Error message (service/code).
-        message = this.serviceName + ': ' + message + ' (' + fullCode + ').';
-        var err = new FirebaseError(fullCode, message);
-        // Populate the Error object with message parts for programmatic
-        // accesses (e.g., e.file).
-        for (var prop in data) {
-            if (!data.hasOwnProperty(prop) || prop.slice(-1) === '_') {
-                continue;
-            }
-            err[prop] = data[prop];
-        }
-        return err;
-    };
-    return ErrorFactory;
-}());
-
-/**
- * Copyright 2017 Google Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-// Copyright 2011 The Closure Library Authors. All Rights Reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS-IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-/**
- * @fileoverview Abstract cryptographic hash interface.
- *
- * See Sha1 and Md5 for sample implementations.
- *
- */
-/**
- * Create a cryptographic hash instance.
- *
- * @constructor
- * @struct
- */
-var Hash = /** @class */ (function () {
-    function Hash() {
-        /**
-         * The block size for the hasher.
-         * @type {number}
-         */
-        this.blockSize = -1;
-    }
-    return Hash;
-}());
-
-/**
- * Copyright 2017 Google Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-/**
- * @fileoverview SHA-1 cryptographic hash.
- * Variable names follow the notation in FIPS PUB 180-3:
- * http://csrc.nist.gov/publications/fips/fips180-3/fips180-3_final.pdf.
- *
- * Usage:
- *   var sha1 = new sha1();
- *   sha1.update(bytes);
- *   var hash = sha1.digest();
- *
- * Performance:
- *   Chrome 23:   ~400 Mbit/s
- *   Firefox 16:  ~250 Mbit/s
- *
- */
-/**
- * SHA-1 cryptographic hash constructor.
- *
- * The properties declared here are discussed in the above algorithm document.
- * @constructor
- * @extends {Hash}
- * @final
- * @struct
- */
-var Sha1 = /** @class */ (function (_super) {
-    tslib_1.__extends(Sha1, _super);
-    function Sha1() {
-        var _this = _super.call(this) || this;
-        /**
-         * Holds the previous values of accumulated variables a-e in the compress_
-         * function.
-         * @type {!Array<number>}
-         * @private
-         */
-        _this.chain_ = [];
-        /**
-         * A buffer holding the partially computed hash result.
-         * @type {!Array<number>}
-         * @private
-         */
-        _this.buf_ = [];
-        /**
-         * An array of 80 bytes, each a part of the message to be hashed.  Referred to
-         * as the message schedule in the docs.
-         * @type {!Array<number>}
-         * @private
-         */
-        _this.W_ = [];
-        /**
-         * Contains data needed to pad messages less than 64 bytes.
-         * @type {!Array<number>}
-         * @private
-         */
-        _this.pad_ = [];
-        /**
-         * @private {number}
-         */
-        _this.inbuf_ = 0;
-        /**
-         * @private {number}
-         */
-        _this.total_ = 0;
-        _this.blockSize = 512 / 8;
-        _this.pad_[0] = 128;
-        for (var i = 1; i < _this.blockSize; ++i) {
-            _this.pad_[i] = 0;
-        }
-        _this.reset();
-        return _this;
-    }
-    Sha1.prototype.reset = function () {
-        this.chain_[0] = 0x67452301;
-        this.chain_[1] = 0xefcdab89;
-        this.chain_[2] = 0x98badcfe;
-        this.chain_[3] = 0x10325476;
-        this.chain_[4] = 0xc3d2e1f0;
-        this.inbuf_ = 0;
-        this.total_ = 0;
-    };
-    /**
-     * Internal compress helper function.
-     * @param {!Array<number>|!Uint8Array|string} buf Block to compress.
-     * @param {number=} opt_offset Offset of the block in the buffer.
-     * @private
-     */
-    Sha1.prototype.compress_ = function (buf, opt_offset) {
-        if (!opt_offset) {
-            opt_offset = 0;
-        }
-        var W = this.W_;
-        // get 16 big endian words
-        if (typeof buf === 'string') {
-            for (var i = 0; i < 16; i++) {
-                // TODO(user): [bug 8140122] Recent versions of Safari for Mac OS and iOS
-                // have a bug that turns the post-increment ++ operator into pre-increment
-                // during JIT compilation.  We have code that depends heavily on SHA-1 for
-                // correctness and which is affected by this bug, so I've removed all uses
-                // of post-increment ++ in which the result value is used.  We can revert
-                // this change once the Safari bug
-                // (https://bugs.webkit.org/show_bug.cgi?id=109036) has been fixed and
-                // most clients have been updated.
-                W[i] =
-                    (buf.charCodeAt(opt_offset) << 24) |
-                        (buf.charCodeAt(opt_offset + 1) << 16) |
-                        (buf.charCodeAt(opt_offset + 2) << 8) |
-                        buf.charCodeAt(opt_offset + 3);
-                opt_offset += 4;
-            }
-        }
-        else {
-            for (var i = 0; i < 16; i++) {
-                W[i] =
-                    (buf[opt_offset] << 24) |
-                        (buf[opt_offset + 1] << 16) |
-                        (buf[opt_offset + 2] << 8) |
-                        buf[opt_offset + 3];
-                opt_offset += 4;
-            }
-        }
-        // expand to 80 words
-        for (var i = 16; i < 80; i++) {
-            var t = W[i - 3] ^ W[i - 8] ^ W[i - 14] ^ W[i - 16];
-            W[i] = ((t << 1) | (t >>> 31)) & 0xffffffff;
-        }
-        var a = this.chain_[0];
-        var b = this.chain_[1];
-        var c = this.chain_[2];
-        var d = this.chain_[3];
-        var e = this.chain_[4];
-        var f, k;
-        // TODO(user): Try to unroll this loop to speed up the computation.
-        for (var i = 0; i < 80; i++) {
-            if (i < 40) {
-                if (i < 20) {
-                    f = d ^ (b & (c ^ d));
-                    k = 0x5a827999;
-                }
-                else {
-                    f = b ^ c ^ d;
-                    k = 0x6ed9eba1;
-                }
-            }
-            else {
-                if (i < 60) {
-                    f = (b & c) | (d & (b | c));
-                    k = 0x8f1bbcdc;
-                }
-                else {
-                    f = b ^ c ^ d;
-                    k = 0xca62c1d6;
-                }
-            }
-            var t = (((a << 5) | (a >>> 27)) + f + e + k + W[i]) & 0xffffffff;
-            e = d;
-            d = c;
-            c = ((b << 30) | (b >>> 2)) & 0xffffffff;
-            b = a;
-            a = t;
-        }
-        this.chain_[0] = (this.chain_[0] + a) & 0xffffffff;
-        this.chain_[1] = (this.chain_[1] + b) & 0xffffffff;
-        this.chain_[2] = (this.chain_[2] + c) & 0xffffffff;
-        this.chain_[3] = (this.chain_[3] + d) & 0xffffffff;
-        this.chain_[4] = (this.chain_[4] + e) & 0xffffffff;
-    };
-    Sha1.prototype.update = function (bytes, opt_length) {
-        // TODO(johnlenz): tighten the function signature and remove this check
-        if (bytes == null) {
-            return;
-        }
-        if (opt_length === undefined) {
-            opt_length = bytes.length;
-        }
-        var lengthMinusBlock = opt_length - this.blockSize;
-        var n = 0;
-        // Using local instead of member variables gives ~5% speedup on Firefox 16.
-        var buf = this.buf_;
-        var inbuf = this.inbuf_;
-        // The outer while loop should execute at most twice.
-        while (n < opt_length) {
-            // When we have no data in the block to top up, we can directly process the
-            // input buffer (assuming it contains sufficient data). This gives ~25%
-            // speedup on Chrome 23 and ~15% speedup on Firefox 16, but requires that
-            // the data is provided in large chunks (or in multiples of 64 bytes).
-            if (inbuf == 0) {
-                while (n <= lengthMinusBlock) {
-                    this.compress_(bytes, n);
-                    n += this.blockSize;
-                }
-            }
-            if (typeof bytes === 'string') {
-                while (n < opt_length) {
-                    buf[inbuf] = bytes.charCodeAt(n);
-                    ++inbuf;
-                    ++n;
-                    if (inbuf == this.blockSize) {
-                        this.compress_(buf);
-                        inbuf = 0;
-                        // Jump to the outer loop so we use the full-block optimization.
-                        break;
-                    }
-                }
-            }
-            else {
-                while (n < opt_length) {
-                    buf[inbuf] = bytes[n];
-                    ++inbuf;
-                    ++n;
-                    if (inbuf == this.blockSize) {
-                        this.compress_(buf);
-                        inbuf = 0;
-                        // Jump to the outer loop so we use the full-block optimization.
-                        break;
-                    }
-                }
-            }
-        }
-        this.inbuf_ = inbuf;
-        this.total_ += opt_length;
-    };
-    /** @override */
-    Sha1.prototype.digest = function () {
-        var digest = [];
-        var totalBits = this.total_ * 8;
-        // Add pad 0x80 0x00*.
-        if (this.inbuf_ < 56) {
-            this.update(this.pad_, 56 - this.inbuf_);
-        }
-        else {
-            this.update(this.pad_, this.blockSize - (this.inbuf_ - 56));
-        }
-        // Add # bits.
-        for (var i = this.blockSize - 1; i >= 56; i--) {
-            this.buf_[i] = totalBits & 255;
-            totalBits /= 256; // Don't use bit-shifting here!
-        }
-        this.compress_(this.buf_);
-        var n = 0;
-        for (var i = 0; i < 5; i++) {
-            for (var j = 24; j >= 0; j -= 8) {
-                digest[n] = (this.chain_[i] >> j) & 255;
-                ++n;
-            }
-        }
-        return digest;
-    };
-    return Sha1;
-}(Hash));
-
-/**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -7140,6 +7035,7 @@ var StreamBridge = /** @class */ (function () {
 }());
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -7155,8 +7051,8 @@ var StreamBridge = /** @class */ (function () {
  * limitations under the License.
  */
 var LOG_TAG = 'Connection';
-var RPC_STREAM_SERVICE = 'google.firestore.v1beta1.Firestore';
-var RPC_URL_VERSION = 'v1beta1';
+var RPC_STREAM_SERVICE = 'google.firestore.v1.Firestore';
+var RPC_URL_VERSION = 'v1';
 /** Maps RPC names to the corresponding REST endpoint name. */
 var RPC_NAME_REST_MAPPING = {
     BatchGetDocuments: 'batchGet',
@@ -7170,9 +7066,9 @@ var XHR_TIMEOUT_SECS = 15;
 var WebChannelConnection = /** @class */ (function () {
     function WebChannelConnection(info) {
         this.databaseId = info.databaseId;
-        this.pool = new webchannelWrapper.XhrIoPool();
         var proto = info.ssl ? 'https' : 'http';
         this.baseUrl = proto + '://' + info.host;
+        this.forceLongPolling = info.forceLongPolling;
     }
     /**
      * Modifies the headers for a request, adding any authorization token if
@@ -7192,60 +7088,58 @@ var WebChannelConnection = /** @class */ (function () {
         var _this = this;
         var url = this.makeUrl(rpcName);
         return new Promise(function (resolve, reject) {
-            // tslint:disable-next-line:no-any XhrIoPool doesn't have TS typings.
-            _this.pool.getObject(function (xhr) {
-                xhr.listenOnce(webchannelWrapper.EventType.COMPLETE, function () {
-                    try {
-                        switch (xhr.getLastErrorCode()) {
-                            case webchannelWrapper.ErrorCode.NO_ERROR:
-                                var json = xhr.getResponseJson();
-                                debug(LOG_TAG, 'XHR received:', JSON.stringify(json));
-                                resolve(json);
-                                break;
-                            case webchannelWrapper.ErrorCode.TIMEOUT:
-                                debug(LOG_TAG, 'RPC "' + rpcName + '" timed out');
-                                reject(new FirestoreError(Code.DEADLINE_EXCEEDED, 'Request time out'));
-                                break;
-                            case webchannelWrapper.ErrorCode.HTTP_ERROR:
-                                var status_1 = xhr.getStatus();
-                                debug(LOG_TAG, 'RPC "' + rpcName + '" failed with status:', status_1, 'response text:', xhr.getResponseText());
-                                if (status_1 > 0) {
-                                    reject(new FirestoreError(mapCodeFromHttpStatus(status_1), 'Server responded with status ' + xhr.getStatusText()));
-                                }
-                                else {
-                                    // If we received an HTTP_ERROR but there's no status code,
-                                    // it's most probably a connection issue
-                                    debug(LOG_TAG, 'RPC "' + rpcName + '" failed');
-                                    reject(new FirestoreError(Code.UNAVAILABLE, 'Connection failed.'));
-                                }
-                                break;
-                            default:
-                                fail('RPC "' +
-                                    rpcName +
-                                    '" failed with unanticipated ' +
-                                    'webchannel error ' +
-                                    xhr.getLastErrorCode() +
-                                    ': ' +
-                                    xhr.getLastError() +
-                                    ', giving up.');
-                        }
+            // tslint:disable-next-line:no-any XhrIo doesn't have TS typings.
+            var xhr = new webchannelWrapper.XhrIo();
+            xhr.listenOnce(webchannelWrapper.EventType.COMPLETE, function () {
+                try {
+                    switch (xhr.getLastErrorCode()) {
+                        case webchannelWrapper.ErrorCode.NO_ERROR:
+                            var json = xhr.getResponseJson();
+                            debug(LOG_TAG, 'XHR received:', JSON.stringify(json));
+                            resolve(json);
+                            break;
+                        case webchannelWrapper.ErrorCode.TIMEOUT:
+                            debug(LOG_TAG, 'RPC "' + rpcName + '" timed out');
+                            reject(new FirestoreError(Code.DEADLINE_EXCEEDED, 'Request time out'));
+                            break;
+                        case webchannelWrapper.ErrorCode.HTTP_ERROR:
+                            var status_1 = xhr.getStatus();
+                            debug(LOG_TAG, 'RPC "' + rpcName + '" failed with status:', status_1, 'response text:', xhr.getResponseText());
+                            if (status_1 > 0) {
+                                reject(new FirestoreError(mapCodeFromHttpStatus(status_1), 'Server responded with status ' + xhr.getStatusText()));
+                            }
+                            else {
+                                // If we received an HTTP_ERROR but there's no status code,
+                                // it's most probably a connection issue
+                                debug(LOG_TAG, 'RPC "' + rpcName + '" failed');
+                                reject(new FirestoreError(Code.UNAVAILABLE, 'Connection failed.'));
+                            }
+                            break;
+                        default:
+                            fail('RPC "' +
+                                rpcName +
+                                '" failed with unanticipated ' +
+                                'webchannel error ' +
+                                xhr.getLastErrorCode() +
+                                ': ' +
+                                xhr.getLastError() +
+                                ', giving up.');
                     }
-                    finally {
-                        debug(LOG_TAG, 'RPC "' + rpcName + '" completed.');
-                        _this.pool.releaseObject(xhr);
-                    }
-                });
-                var requestString = JSON.stringify(request);
-                debug(LOG_TAG, 'XHR sending: ', url + ' ' + requestString);
-                // Content-Type: text/plain will avoid preflight requests which might
-                // mess with CORS and redirects by proxies. If we add custom headers
-                // we will need to change this code to potentially use the
-                // $httpOverwrite parameter supported by ESF to avoid
-                // triggering preflight requests.
-                var headers = { 'Content-Type': 'text/plain' };
-                _this.modifyHeadersForRequest(headers, token);
-                xhr.send(url, 'POST', requestString, headers, XHR_TIMEOUT_SECS);
+                }
+                finally {
+                    debug(LOG_TAG, 'RPC "' + rpcName + '" completed.');
+                }
             });
+            var requestString = JSON.stringify(request);
+            debug(LOG_TAG, 'XHR sending: ', url + ' ' + requestString);
+            // Content-Type: text/plain will avoid preflight requests which might
+            // mess with CORS and redirects by proxies. If we add custom headers
+            // we will need to change this code to potentially use the
+            // $httpOverwrite parameter supported by ESF to avoid
+            // triggering preflight requests.
+            var headers = { 'Content-Type': 'text/plain' };
+            _this.modifyHeadersForRequest(headers, token);
+            xhr.send(url, 'POST', requestString, headers, XHR_TIMEOUT_SECS);
         });
     };
     WebChannelConnection.prototype.invokeStreamingRPC = function (rpcName, request, token) {
@@ -7279,7 +7173,17 @@ var WebChannelConnection = /** @class */ (function () {
                 database: "projects/" + this.databaseId.projectId + "/databases/" + this.databaseId.database
             },
             sendRawJson: true,
-            supportsCrossDomainXhr: true
+            supportsCrossDomainXhr: true,
+            internalChannelParams: {
+                // Override the default timeout (randomized between 10-20 seconds) since
+                // a large write batch on a slow internet connection may take a long
+                // time to send to the backend. Rather than have WebChannel impose a
+                // tight timeout which could lead to infinite timeouts and retries, we
+                // set it very large (5-10 minutes) and rely on the browser's builtin
+                // timeouts to kick in if the request isn't working.
+                forwardChannelRequestTimeoutMs: 10 * 60 * 1000
+            },
+            forceLongPolling: this.forceLongPolling
         };
         this.modifyHeadersForRequest(request.initMessageHeaders, token);
         // Sending the custom headers we just added to request.initMessageHeaders
@@ -7299,7 +7203,7 @@ var WebChannelConnection = /** @class */ (function () {
         // https://github.com/firebase/firebase-js-sdk/issues/703), this breaks
         // ReactNative and so we exclude it, which just means ReactNative may be
         // subject to the extra network roundtrip for CORS preflight.
-        if (!isReactNative()) {
+        if (!util.isReactNative()) {
             request['httpHeadersOverwriteParam'] = '$httpHeaders';
         }
         var url = urlParts.join('');
@@ -7378,22 +7282,22 @@ var WebChannelConnection = /** @class */ (function () {
                 // (and only errors) to be wrapped in an extra array. To be forward
                 // compatible with the bug we need to check either condition. The latter
                 // can be removed once the fix has been rolled out.
-                var error$$1 = 
+                var error = 
                 // tslint:disable-next-line:no-any msgData.error is not typed.
                 msgData.error || (msgData[0] && msgData[0].error);
-                if (error$$1) {
-                    debug(LOG_TAG, 'WebChannel received error:', error$$1);
+                if (error) {
+                    debug(LOG_TAG, 'WebChannel received error:', error);
                     // error.status will be a string like 'OK' or 'NOT_FOUND'.
-                    var status_2 = error$$1.status;
+                    var status_2 = error.status;
                     var code = mapCodeFromRpcStatus(status_2);
-                    var message = error$$1.message;
+                    var message = error.message;
                     if (code === undefined) {
                         code = Code.INTERNAL;
                         message =
                             'Unknown error status: ' +
                                 status_2 +
                                 ' with message ' +
-                                error$$1.message;
+                                error.message;
                     }
                     // Mark closed so no further events are propagated
                     closed = true;
@@ -7433,6 +7337,7 @@ var WebChannelConnection = /** @class */ (function () {
 }());
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -7485,6 +7390,7 @@ var BrowserPlatform = /** @class */ (function () {
 }());
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -7509,6 +7415,7 @@ var BrowserPlatform = /** @class */ (function () {
 PlatformSupport.setPlatform(new BrowserPlatform());
 
 /**
+ * @license
  * Copyright 2018 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -7558,6 +7465,7 @@ var ListenSequence = /** @class */ (function () {
 }());
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -7572,7 +7480,7 @@ var ListenSequence = /** @class */ (function () {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-var Deferred$1 = /** @class */ (function () {
+var Deferred = /** @class */ (function () {
     function Deferred() {
         var _this = this;
         this.promise = new Promise(function (resolve, reject) {
@@ -7584,6 +7492,7 @@ var Deferred$1 = /** @class */ (function () {
 }());
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -7647,7 +7556,7 @@ var DelayedOperation = /** @class */ (function () {
         this.targetTimeMs = targetTimeMs;
         this.op = op;
         this.removalCallback = removalCallback;
-        this.deferred = new Deferred$1();
+        this.deferred = new Deferred();
         this.then = this.deferred.promise.then.bind(this.deferred.promise);
         this.catch = this.deferred.promise.catch.bind(this.deferred.promise);
         // It's normal for the deferred promise to be canceled (due to cancellation)
@@ -7755,23 +7664,23 @@ var AsyncQueue = /** @class */ (function () {
         var newTail = this.tail.then(function () {
             _this.operationInProgress = true;
             return op()
-                .catch(function (error$$1) {
-                _this.failure = error$$1;
+                .catch(function (error$1) {
+                _this.failure = error$1;
                 _this.operationInProgress = false;
-                var message = error$$1.stack || error$$1.message || '';
+                var message = error$1.stack || error$1.message || '';
                 error('INTERNAL UNHANDLED ERROR: ', message);
                 // Escape the promise chain and throw the error globally so that
                 // e.g. any global crash reporting library detects and reports it.
                 // (but not for simulated errors in our tests since this breaks mocha)
                 if (message.indexOf('Firestore Test Simulated Error') < 0) {
                     setTimeout(function () {
-                        throw error$$1;
+                        throw error$1;
                     }, 0);
                 }
                 // Re-throw the error so that this.tail becomes a rejected Promise and
                 // all further attempts to chain (via .then) will just short-circuit
                 // and return the rejected Promise.
-                throw error$$1;
+                throw error$1;
             })
                 .then(function (result) {
                 _this.operationInProgress = false;
@@ -7869,6 +7778,7 @@ var AsyncQueue = /** @class */ (function () {
 }());
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -7929,7 +7839,7 @@ function encodeSeparator(result) {
  * decoding resource names from the server; those are One Platform format
  * strings.
  */
-function decode$1(path) {
+function decode(path) {
     // Event the empty path must encode as a path of at least length 2. A path
     // with exactly 2 must be the empty path.
     var length = path.length;
@@ -7984,6 +7894,7 @@ function decode$1(path) {
 }
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -8003,9 +7914,21 @@ var BATCHID_UNKNOWN = -1;
  * A batch of mutations that will be sent as one unit to the backend.
  */
 var MutationBatch = /** @class */ (function () {
-    function MutationBatch(batchId, localWriteTime, mutations) {
+    /**
+     * @param batchId The unique ID of this mutation batch.
+     * @param localWriteTime The original write time of this mutation.
+     * @param baseMutations Mutations that are used to populate the base
+     * values when this mutation is applied locally. This can be used to locally
+     * overwrite values that are persisted in the remote document cache. Base
+     * mutations are never sent to the backend.
+     * @param mutations The user-provided mutations in this mutation batch.
+     * User-provided mutations are applied both locally and remotely on the
+     * backend.
+     */
+    function MutationBatch(batchId, localWriteTime, baseMutations, mutations) {
         this.batchId = batchId;
         this.localWriteTime = localWriteTime;
+        this.baseMutations = baseMutations;
         this.mutations = mutations;
         assert(mutations.length > 0, 'Cannot create an empty mutation batch');
     }
@@ -8044,26 +7967,49 @@ var MutationBatch = /** @class */ (function () {
         if (maybeDoc) {
             assert(maybeDoc.key.isEqual(docKey), "applyToLocalDocument: key " + docKey + " should match maybeDoc key\n        " + maybeDoc.key);
         }
+        // First, apply the base state. This allows us to apply non-idempotent
+        // transform against a consistent set of values.
+        for (var _i = 0, _a = this.baseMutations; _i < _a.length; _i++) {
+            var mutation = _a[_i];
+            if (mutation.key.isEqual(docKey)) {
+                maybeDoc = mutation.applyToLocalView(maybeDoc, maybeDoc, this.localWriteTime);
+            }
+        }
         var baseDoc = maybeDoc;
-        for (var i = 0; i < this.mutations.length; i++) {
-            var mutation = this.mutations[i];
+        // Second, apply all user-provided mutations.
+        for (var _b = 0, _c = this.mutations; _b < _c.length; _b++) {
+            var mutation = _c[_b];
             if (mutation.key.isEqual(docKey)) {
                 maybeDoc = mutation.applyToLocalView(maybeDoc, baseDoc, this.localWriteTime);
             }
         }
         return maybeDoc;
     };
+    /**
+     * Computes the local view for all provided documents given the mutations in
+     * this batch.
+     */
+    MutationBatch.prototype.applyToLocalDocumentSet = function (maybeDocs) {
+        var _this = this;
+        // TODO(mrschmidt): This implementation is O(n^2). If we apply the mutations
+        // directly (as done in `applyToLocalView()`), we can reduce the complexity
+        // to O(n).
+        var mutatedDocuments = maybeDocs;
+        this.mutations.forEach(function (m) {
+            var mutatedDocument = _this.applyToLocalView(m.key, maybeDocs.get(m.key));
+            if (mutatedDocument) {
+                mutatedDocuments = mutatedDocuments.insert(m.key, mutatedDocument);
+            }
+        });
+        return mutatedDocuments;
+    };
     MutationBatch.prototype.keys = function () {
-        var keySet = documentKeySet();
-        for (var _i = 0, _a = this.mutations; _i < _a.length; _i++) {
-            var mutation = _a[_i];
-            keySet = keySet.add(mutation.key);
-        }
-        return keySet;
+        return this.mutations.reduce(function (keys, m) { return keys.add(m.key); }, documentKeySet());
     };
     MutationBatch.prototype.isEqual = function (other) {
         return (this.batchId === other.batchId &&
-            arrayEquals(this.mutations, other.mutations));
+            arrayEquals(this.mutations, other.mutations) &&
+            arrayEquals(this.baseMutations, other.baseMutations));
     };
     return MutationBatch;
 }());
@@ -8102,86 +8048,7 @@ var MutationBatchResult = /** @class */ (function () {
 }());
 
 /**
- * Copyright 2017 Google Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-var RESERVED_BITS = 1;
-var GeneratorIds;
-(function (GeneratorIds) {
-    GeneratorIds[GeneratorIds["QueryCache"] = 0] = "QueryCache";
-    GeneratorIds[GeneratorIds["SyncEngine"] = 1] = "SyncEngine"; // The target IDs for limbo detection are odd (end in 1).
-})(GeneratorIds || (GeneratorIds = {}));
-/**
- * Generates monotonically increasing target IDs for sending targets to the
- * watch stream.
- *
- * The client constructs two generators, one for the query cache (via
- * forQueryCache()), and one for limbo documents (via forSyncEngine()). These
- * two generators produce non-overlapping IDs (by using even and odd IDs
- * respectively).
- *
- * By separating the target ID space, the query cache can generate target IDs
- * that persist across client restarts, while sync engine can independently
- * generate in-memory target IDs that are transient and can be reused after a
- * restart.
- */
-// TODO(mrschmidt): Explore removing this class in favor of generating these IDs
-// directly in SyncEngine and LocalStore.
-var TargetIdGenerator = /** @class */ (function () {
-    /**
-     * Instantiates a new TargetIdGenerator. If a seed is provided, the generator
-     * will use the seed value as the next target ID.
-     */
-    function TargetIdGenerator(generatorId, seed) {
-        this.generatorId = generatorId;
-        assert((generatorId & RESERVED_BITS) === generatorId, "Generator ID " + generatorId + " contains more than " + RESERVED_BITS + " reserved bits");
-        this.seek(seed !== undefined ? seed : this.generatorId);
-    }
-    TargetIdGenerator.prototype.next = function () {
-        var nextId = this.nextId;
-        this.nextId += 1 << RESERVED_BITS;
-        return nextId;
-    };
-    /**
-     * Returns the ID that follows the given ID. Subsequent calls to `next()`
-     * use the newly returned target ID as their base.
-     */
-    // PORTING NOTE: Multi-tab only.
-    TargetIdGenerator.prototype.after = function (targetId) {
-        this.seek(targetId + (1 << RESERVED_BITS));
-        return this.next();
-    };
-    TargetIdGenerator.prototype.seek = function (targetId) {
-        assert((targetId & RESERVED_BITS) === this.generatorId, 'Cannot supply target ID from different generator ID');
-        this.nextId = targetId;
-    };
-    TargetIdGenerator.forQueryCache = function () {
-        // We seed the query cache generator to return '2' as its first ID, as there
-        // is no differentiation in the protocol layer between an unset number and
-        // the number '0'. If we were to sent a target with target ID '0', the
-        // backend would consider it unset and replace it with its own ID.
-        var targetIdGenerator = new TargetIdGenerator(GeneratorIds.QueryCache, 2);
-        return targetIdGenerator;
-    };
-    TargetIdGenerator.forSyncEngine = function () {
-        // Sync engine assigns target IDs for limbo document detection.
-        return new TargetIdGenerator(GeneratorIds.SyncEngine);
-    };
-    return TargetIdGenerator;
-}());
-
-/**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -8381,6 +8248,530 @@ var PersistencePromise = /** @class */ (function () {
 }());
 
 /**
+ * @license
+ * Copyright 2017 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+/** A mutation queue for a specific user, backed by IndexedDB. */
+var IndexedDbMutationQueue = /** @class */ (function () {
+    function IndexedDbMutationQueue(
+    /**
+     * The normalized userId (e.g. null UID => "" userId) used to store /
+     * retrieve mutations.
+     */
+    userId, serializer, indexManager, referenceDelegate) {
+        this.userId = userId;
+        this.serializer = serializer;
+        this.indexManager = indexManager;
+        this.referenceDelegate = referenceDelegate;
+        /**
+         * Caches the document keys for pending mutation batches. If the mutation
+         * has been removed from IndexedDb, the cached value may continue to
+         * be used to retrieve the batch's document keys. To remove a cached value
+         * locally, `removeCachedMutationKeys()` should be invoked either directly
+         * or through `removeMutationBatches()`.
+         *
+         * With multi-tab, when the primary client acknowledges or rejects a mutation,
+         * this cache is used by secondary clients to invalidate the local
+         * view of the documents that were previously affected by the mutation.
+         */
+        // PORTING NOTE: Multi-tab only.
+        this.documentKeysByBatchId = {};
+    }
+    /**
+     * Creates a new mutation queue for the given user.
+     * @param user The user for which to create a mutation queue.
+     * @param serializer The serializer to use when persisting to IndexedDb.
+     */
+    IndexedDbMutationQueue.forUser = function (user, serializer, indexManager, referenceDelegate) {
+        // TODO(mcg): Figure out what constraints there are on userIDs
+        // In particular, are there any reserved characters? are empty ids allowed?
+        // For the moment store these together in the same mutations table assuming
+        // that empty userIDs aren't allowed.
+        assert(user.uid !== '', 'UserID must not be an empty string.');
+        var userId = user.isAuthenticated() ? user.uid : '';
+        return new IndexedDbMutationQueue(userId, serializer, indexManager, referenceDelegate);
+    };
+    IndexedDbMutationQueue.prototype.checkEmpty = function (transaction) {
+        var empty = true;
+        var range = IDBKeyRange.bound([this.userId, Number.NEGATIVE_INFINITY], [this.userId, Number.POSITIVE_INFINITY]);
+        return mutationsStore(transaction)
+            .iterate({ index: DbMutationBatch.userMutationsIndex, range: range }, function (key, value, control) {
+            empty = false;
+            control.done();
+        })
+            .next(function () { return empty; });
+    };
+    IndexedDbMutationQueue.prototype.acknowledgeBatch = function (transaction, batch, streamToken) {
+        return this.getMutationQueueMetadata(transaction).next(function (metadata) {
+            metadata.lastStreamToken = convertStreamToken(streamToken);
+            return mutationQueuesStore(transaction).put(metadata);
+        });
+    };
+    IndexedDbMutationQueue.prototype.getLastStreamToken = function (transaction) {
+        return this.getMutationQueueMetadata(transaction).next(function (metadata) { return metadata.lastStreamToken; });
+    };
+    IndexedDbMutationQueue.prototype.setLastStreamToken = function (transaction, streamToken) {
+        return this.getMutationQueueMetadata(transaction).next(function (metadata) {
+            metadata.lastStreamToken = convertStreamToken(streamToken);
+            return mutationQueuesStore(transaction).put(metadata);
+        });
+    };
+    IndexedDbMutationQueue.prototype.addMutationBatch = function (transaction, localWriteTime, baseMutations, mutations) {
+        var _this = this;
+        var documentStore = documentMutationsStore(transaction);
+        var mutationStore = mutationsStore(transaction);
+        // The IndexedDb implementation in Chrome (and Firefox) does not handle
+        // compound indices that include auto-generated keys correctly. To ensure
+        // that the index entry is added correctly in all browsers, we perform two
+        // writes: The first write is used to retrieve the next auto-generated Batch
+        // ID, and the second write populates the index and stores the actual
+        // mutation batch.
+        // See: https://bugs.chromium.org/p/chromium/issues/detail?id=701972
+        // tslint:disable-next-line:no-any We write an empty object to obtain key
+        return mutationStore.add({}).next(function (batchId) {
+            assert(typeof batchId === 'number', 'Auto-generated key is not a number');
+            var batch = new MutationBatch(batchId, localWriteTime, baseMutations, mutations);
+            var dbBatch = _this.serializer.toDbMutationBatch(_this.userId, batch);
+            _this.documentKeysByBatchId[batchId] = batch.keys();
+            var promises = [];
+            for (var _i = 0, mutations_1 = mutations; _i < mutations_1.length; _i++) {
+                var mutation = mutations_1[_i];
+                var indexKey = DbDocumentMutation.key(_this.userId, mutation.key.path, batchId);
+                promises.push(mutationStore.put(dbBatch));
+                promises.push(documentStore.put(indexKey, DbDocumentMutation.PLACEHOLDER));
+                promises.push(_this.indexManager.addToCollectionParentIndex(transaction, mutation.key.path.popLast()));
+            }
+            return PersistencePromise.waitFor(promises).next(function () { return batch; });
+        });
+    };
+    IndexedDbMutationQueue.prototype.lookupMutationBatch = function (transaction, batchId) {
+        var _this = this;
+        return mutationsStore(transaction)
+            .get(batchId)
+            .next(function (dbBatch) {
+            if (dbBatch) {
+                assert(dbBatch.userId === _this.userId, "Unexpected user '" + dbBatch.userId + "' for mutation batch " + batchId);
+                return _this.serializer.fromDbMutationBatch(dbBatch);
+            }
+            return null;
+        });
+    };
+    IndexedDbMutationQueue.prototype.lookupMutationKeys = function (transaction, batchId) {
+        var _this = this;
+        if (this.documentKeysByBatchId[batchId]) {
+            return PersistencePromise.resolve(this.documentKeysByBatchId[batchId]);
+        }
+        else {
+            return this.lookupMutationBatch(transaction, batchId).next(function (batch) {
+                if (batch) {
+                    var keys = batch.keys();
+                    _this.documentKeysByBatchId[batchId] = keys;
+                    return keys;
+                }
+                else {
+                    return null;
+                }
+            });
+        }
+    };
+    IndexedDbMutationQueue.prototype.getNextMutationBatchAfterBatchId = function (transaction, batchId) {
+        var _this = this;
+        return this.getMutationQueueMetadata(transaction).next(function (metadata) {
+            var nextBatchId = batchId + 1;
+            var range = IDBKeyRange.lowerBound([_this.userId, nextBatchId]);
+            var foundBatch = null;
+            return mutationsStore(transaction)
+                .iterate({ index: DbMutationBatch.userMutationsIndex, range: range }, function (key, dbBatch, control) {
+                if (dbBatch.userId === _this.userId) {
+                    assert(dbBatch.batchId >= nextBatchId, 'Should have found mutation after ' + nextBatchId);
+                    foundBatch = _this.serializer.fromDbMutationBatch(dbBatch);
+                }
+                control.done();
+            })
+                .next(function () { return foundBatch; });
+        });
+    };
+    IndexedDbMutationQueue.prototype.getAllMutationBatches = function (transaction) {
+        var _this = this;
+        var range = IDBKeyRange.bound([this.userId, BATCHID_UNKNOWN], [this.userId, Number.POSITIVE_INFINITY]);
+        return mutationsStore(transaction)
+            .loadAll(DbMutationBatch.userMutationsIndex, range)
+            .next(function (dbBatches) {
+            return dbBatches.map(function (dbBatch) { return _this.serializer.fromDbMutationBatch(dbBatch); });
+        });
+    };
+    IndexedDbMutationQueue.prototype.getAllMutationBatchesAffectingDocumentKey = function (transaction, documentKey) {
+        var _this = this;
+        // Scan the document-mutation index starting with a prefix starting with
+        // the given documentKey.
+        var indexPrefix = DbDocumentMutation.prefixForPath(this.userId, documentKey.path);
+        var indexStart = IDBKeyRange.lowerBound(indexPrefix);
+        var results = [];
+        return documentMutationsStore(transaction)
+            .iterate({ range: indexStart }, function (indexKey, _, control) {
+            var userID = indexKey[0], encodedPath = indexKey[1], batchId = indexKey[2];
+            // Only consider rows matching exactly the specific key of
+            // interest. Note that because we order by path first, and we
+            // order terminators before path separators, we'll encounter all
+            // the index rows for documentKey contiguously. In particular, all
+            // the rows for documentKey will occur before any rows for
+            // documents nested in a subcollection beneath documentKey so we
+            // can stop as soon as we hit any such row.
+            var path = decode(encodedPath);
+            if (userID !== _this.userId || !documentKey.path.isEqual(path)) {
+                control.done();
+                return;
+            }
+            // Look up the mutation batch in the store.
+            return mutationsStore(transaction)
+                .get(batchId)
+                .next(function (mutation) {
+                if (!mutation) {
+                    throw fail('Dangling document-mutation reference found: ' +
+                        indexKey +
+                        ' which points to ' +
+                        batchId);
+                }
+                assert(mutation.userId === _this.userId, "Unexpected user '" + mutation.userId + "' for mutation batch " + batchId);
+                results.push(_this.serializer.fromDbMutationBatch(mutation));
+            });
+        })
+            .next(function () { return results; });
+    };
+    IndexedDbMutationQueue.prototype.getAllMutationBatchesAffectingDocumentKeys = function (transaction, documentKeys) {
+        var _this = this;
+        var uniqueBatchIDs = new SortedSet(primitiveComparator);
+        var promises = [];
+        documentKeys.forEach(function (documentKey) {
+            var indexStart = DbDocumentMutation.prefixForPath(_this.userId, documentKey.path);
+            var range = IDBKeyRange.lowerBound(indexStart);
+            var promise = documentMutationsStore(transaction).iterate({ range: range }, function (indexKey, _, control) {
+                var userID = indexKey[0], encodedPath = indexKey[1], batchID = indexKey[2];
+                // Only consider rows matching exactly the specific key of
+                // interest. Note that because we order by path first, and we
+                // order terminators before path separators, we'll encounter all
+                // the index rows for documentKey contiguously. In particular, all
+                // the rows for documentKey will occur before any rows for
+                // documents nested in a subcollection beneath documentKey so we
+                // can stop as soon as we hit any such row.
+                var path = decode(encodedPath);
+                if (userID !== _this.userId || !documentKey.path.isEqual(path)) {
+                    control.done();
+                    return;
+                }
+                uniqueBatchIDs = uniqueBatchIDs.add(batchID);
+            });
+            promises.push(promise);
+        });
+        return PersistencePromise.waitFor(promises).next(function () {
+            return _this.lookupMutationBatches(transaction, uniqueBatchIDs);
+        });
+    };
+    IndexedDbMutationQueue.prototype.getAllMutationBatchesAffectingQuery = function (transaction, query) {
+        var _this = this;
+        assert(!query.isDocumentQuery(), "Document queries shouldn't go down this path");
+        assert(!query.isCollectionGroupQuery(), 'CollectionGroup queries should be handled in LocalDocumentsView');
+        var queryPath = query.path;
+        var immediateChildrenLength = queryPath.length + 1;
+        // TODO(mcg): Actually implement a single-collection query
+        //
+        // This is actually executing an ancestor query, traversing the whole
+        // subtree below the collection which can be horrifically inefficient for
+        // some structures. The right way to solve this is to implement the full
+        // value index, but that's not in the cards in the near future so this is
+        // the best we can do for the moment.
+        //
+        // Since we don't yet index the actual properties in the mutations, our
+        // current approach is to just return all mutation batches that affect
+        // documents in the collection being queried.
+        var indexPrefix = DbDocumentMutation.prefixForPath(this.userId, queryPath);
+        var indexStart = IDBKeyRange.lowerBound(indexPrefix);
+        // Collect up unique batchIDs encountered during a scan of the index. Use a
+        // SortedSet to accumulate batch IDs so they can be traversed in order in a
+        // scan of the main table.
+        var uniqueBatchIDs = new SortedSet(primitiveComparator);
+        return documentMutationsStore(transaction)
+            .iterate({ range: indexStart }, function (indexKey, _, control) {
+            var userID = indexKey[0], encodedPath = indexKey[1], batchID = indexKey[2];
+            var path = decode(encodedPath);
+            if (userID !== _this.userId || !queryPath.isPrefixOf(path)) {
+                control.done();
+                return;
+            }
+            // Rows with document keys more than one segment longer than the
+            // query path can't be matches. For example, a query on 'rooms'
+            // can't match the document /rooms/abc/messages/xyx.
+            // TODO(mcg): we'll need a different scanner when we implement
+            // ancestor queries.
+            if (path.length !== immediateChildrenLength) {
+                return;
+            }
+            uniqueBatchIDs = uniqueBatchIDs.add(batchID);
+        })
+            .next(function () { return _this.lookupMutationBatches(transaction, uniqueBatchIDs); });
+    };
+    IndexedDbMutationQueue.prototype.lookupMutationBatches = function (transaction, batchIDs) {
+        var _this = this;
+        var results = [];
+        var promises = [];
+        // TODO(rockwood): Implement this using iterate.
+        batchIDs.forEach(function (batchId) {
+            promises.push(mutationsStore(transaction)
+                .get(batchId)
+                .next(function (mutation) {
+                if (mutation === null) {
+                    throw fail('Dangling document-mutation reference found, ' +
+                        'which points to ' +
+                        batchId);
+                }
+                assert(mutation.userId === _this.userId, "Unexpected user '" + mutation.userId + "' for mutation batch " + batchId);
+                results.push(_this.serializer.fromDbMutationBatch(mutation));
+            }));
+        });
+        return PersistencePromise.waitFor(promises).next(function () { return results; });
+    };
+    IndexedDbMutationQueue.prototype.removeMutationBatch = function (transaction, batch) {
+        var _this = this;
+        return removeMutationBatch(transaction.simpleDbTransaction, this.userId, batch).next(function (removedDocuments) {
+            _this.removeCachedMutationKeys(batch.batchId);
+            return PersistencePromise.forEach(removedDocuments, function (key) {
+                return _this.referenceDelegate.removeMutationReference(transaction, key);
+            });
+        });
+    };
+    IndexedDbMutationQueue.prototype.removeCachedMutationKeys = function (batchId) {
+        delete this.documentKeysByBatchId[batchId];
+    };
+    IndexedDbMutationQueue.prototype.performConsistencyCheck = function (txn) {
+        var _this = this;
+        return this.checkEmpty(txn).next(function (empty) {
+            if (!empty) {
+                return PersistencePromise.resolve();
+            }
+            // Verify that there are no entries in the documentMutations index if
+            // the queue is empty.
+            var startRange = IDBKeyRange.lowerBound(DbDocumentMutation.prefixForUser(_this.userId));
+            var danglingMutationReferences = [];
+            return documentMutationsStore(txn)
+                .iterate({ range: startRange }, function (key, _, control) {
+                var userID = key[0];
+                if (userID !== _this.userId) {
+                    control.done();
+                    return;
+                }
+                else {
+                    var path = decode(key[1]);
+                    danglingMutationReferences.push(path);
+                }
+            })
+                .next(function () {
+                assert(danglingMutationReferences.length === 0, 'Document leak -- detected dangling mutation references when queue is empty. ' +
+                    'Dangling keys: ' +
+                    danglingMutationReferences.map(function (p) { return p.canonicalString(); }));
+            });
+        });
+    };
+    IndexedDbMutationQueue.prototype.containsKey = function (txn, key) {
+        return mutationQueueContainsKey(txn, this.userId, key);
+    };
+    // PORTING NOTE: Multi-tab only (state is held in memory in other clients).
+    /** Returns the mutation queue's metadata from IndexedDb. */
+    IndexedDbMutationQueue.prototype.getMutationQueueMetadata = function (transaction) {
+        var _this = this;
+        return mutationQueuesStore(transaction)
+            .get(this.userId)
+            .next(function (metadata) {
+            return (metadata ||
+                new DbMutationQueue(_this.userId, BATCHID_UNKNOWN, 
+                /*lastStreamToken=*/ ''));
+        });
+    };
+    return IndexedDbMutationQueue;
+}());
+/**
+ * @return true if the mutation queue for the given user contains a pending
+ *         mutation for the given key.
+ */
+function mutationQueueContainsKey(txn, userId, key) {
+    var indexKey = DbDocumentMutation.prefixForPath(userId, key.path);
+    var encodedPath = indexKey[1];
+    var startRange = IDBKeyRange.lowerBound(indexKey);
+    var containsKey = false;
+    return documentMutationsStore(txn)
+        .iterate({ range: startRange, keysOnly: true }, function (key, value, control) {
+        var userID = key[0], keyPath = key[1], /*batchID*/ _ = key[2];
+        if (userID === userId && keyPath === encodedPath) {
+            containsKey = true;
+        }
+        control.done();
+    })
+        .next(function () { return containsKey; });
+}
+/** Returns true if any mutation queue contains the given document. */
+function mutationQueuesContainKey(txn, docKey) {
+    var found = false;
+    return mutationQueuesStore(txn)
+        .iterateSerial(function (userId) {
+        return mutationQueueContainsKey(txn, userId, docKey).next(function (containsKey) {
+            if (containsKey) {
+                found = true;
+            }
+            return PersistencePromise.resolve(!containsKey);
+        });
+    })
+        .next(function () { return found; });
+}
+/**
+ * Delete a mutation batch and the associated document mutations.
+ * @return A PersistencePromise of the document mutations that were removed.
+ */
+function removeMutationBatch(txn, userId, batch) {
+    var mutationStore = txn.store(DbMutationBatch.store);
+    var indexTxn = txn.store(DbDocumentMutation.store);
+    var promises = [];
+    var range = IDBKeyRange.only(batch.batchId);
+    var numDeleted = 0;
+    var removePromise = mutationStore.iterate({ range: range }, function (key, value, control) {
+        numDeleted++;
+        return control.delete();
+    });
+    promises.push(removePromise.next(function () {
+        assert(numDeleted === 1, 'Dangling document-mutation reference found: Missing batch ' +
+            batch.batchId);
+    }));
+    var removedDocuments = [];
+    for (var _i = 0, _a = batch.mutations; _i < _a.length; _i++) {
+        var mutation = _a[_i];
+        var indexKey = DbDocumentMutation.key(userId, mutation.key.path, batch.batchId);
+        promises.push(indexTxn.delete(indexKey));
+        removedDocuments.push(mutation.key);
+    }
+    return PersistencePromise.waitFor(promises).next(function () { return removedDocuments; });
+}
+function convertStreamToken(token) {
+    if (token instanceof Uint8Array) {
+        // TODO(b/78771403): Convert tokens to strings during deserialization
+        assert(process.env.USE_MOCK_PERSISTENCE === 'YES', 'Persisting non-string stream tokens is only supported with mock persistence.');
+        return token.toString();
+    }
+    else {
+        return token;
+    }
+}
+/**
+ * Helper to get a typed SimpleDbStore for the mutations object store.
+ */
+function mutationsStore(txn) {
+    return IndexedDbPersistence.getStore(txn, DbMutationBatch.store);
+}
+/**
+ * Helper to get a typed SimpleDbStore for the mutationQueues object store.
+ */
+function documentMutationsStore(txn) {
+    return IndexedDbPersistence.getStore(txn, DbDocumentMutation.store);
+}
+/**
+ * Helper to get a typed SimpleDbStore for the mutationQueues object store.
+ */
+function mutationQueuesStore(txn) {
+    return IndexedDbPersistence.getStore(txn, DbMutationQueue.store);
+}
+
+/**
+ * @license
+ * Copyright 2017 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+var RESERVED_BITS = 1;
+var GeneratorIds;
+(function (GeneratorIds) {
+    GeneratorIds[GeneratorIds["QueryCache"] = 0] = "QueryCache";
+    GeneratorIds[GeneratorIds["SyncEngine"] = 1] = "SyncEngine"; // The target IDs for limbo detection are odd (end in 1).
+})(GeneratorIds || (GeneratorIds = {}));
+/**
+ * Generates monotonically increasing target IDs for sending targets to the
+ * watch stream.
+ *
+ * The client constructs two generators, one for the query cache (via
+ * forQueryCache()), and one for limbo documents (via forSyncEngine()). These
+ * two generators produce non-overlapping IDs (by using even and odd IDs
+ * respectively).
+ *
+ * By separating the target ID space, the query cache can generate target IDs
+ * that persist across client restarts, while sync engine can independently
+ * generate in-memory target IDs that are transient and can be reused after a
+ * restart.
+ */
+// TODO(mrschmidt): Explore removing this class in favor of generating these IDs
+// directly in SyncEngine and LocalStore.
+var TargetIdGenerator = /** @class */ (function () {
+    /**
+     * Instantiates a new TargetIdGenerator. If a seed is provided, the generator
+     * will use the seed value as the next target ID.
+     */
+    function TargetIdGenerator(generatorId, seed) {
+        this.generatorId = generatorId;
+        assert((generatorId & RESERVED_BITS) === generatorId, "Generator ID " + generatorId + " contains more than " + RESERVED_BITS + " reserved bits");
+        this.seek(seed !== undefined ? seed : this.generatorId);
+    }
+    TargetIdGenerator.prototype.next = function () {
+        var nextId = this.nextId;
+        this.nextId += 1 << RESERVED_BITS;
+        return nextId;
+    };
+    /**
+     * Returns the ID that follows the given ID. Subsequent calls to `next()`
+     * use the newly returned target ID as their base.
+     */
+    // PORTING NOTE: Multi-tab only.
+    TargetIdGenerator.prototype.after = function (targetId) {
+        this.seek(targetId + (1 << RESERVED_BITS));
+        return this.next();
+    };
+    TargetIdGenerator.prototype.seek = function (targetId) {
+        assert((targetId & RESERVED_BITS) === this.generatorId, 'Cannot supply target ID from different generator ID');
+        this.nextId = targetId;
+    };
+    TargetIdGenerator.forQueryCache = function () {
+        // We seed the query cache generator to return '2' as its first ID, as there
+        // is no differentiation in the protocol layer between an unset number and
+        // the number '0'. If we were to sent a target with target ID '0', the
+        // backend would consider it unset and replace it with its own ID.
+        var targetIdGenerator = new TargetIdGenerator(GeneratorIds.QueryCache, 2);
+        return targetIdGenerator;
+    };
+    TargetIdGenerator.forSyncEngine = function () {
+        // Sync engine assigns target IDs for limbo document detection.
+        return new TargetIdGenerator(GeneratorIds.SyncEngine);
+    };
+    return TargetIdGenerator;
+}());
+
+/**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -8434,8 +8825,8 @@ var SimpleDb = /** @class */ (function () {
                     'Close all tabs that access Firestore and reload this page to proceed.'));
             };
             request.onerror = function (event) {
-                var error$$1 = event.target.error;
-                if (error$$1.name === 'VersionError') {
+                var error = event.target.error;
+                if (error.name === 'VersionError') {
                     reject(new FirestoreError(Code.FAILED_PRECONDITION, 'A newer version of the Firestore SDK was previously used and so the persisted ' +
                         'data is not compatible with the version of the SDK you are now using. The SDK ' +
                         'will operate with persistence disabled. If you need persistence, please ' +
@@ -8443,7 +8834,7 @@ var SimpleDb = /** @class */ (function () {
                         'data for your app to start fresh.'));
                 }
                 else {
-                    reject(error$$1);
+                    reject(error);
                 }
             };
             request.onupgradeneeded = function (event) {
@@ -8493,9 +8884,17 @@ var SimpleDb = /** @class */ (function () {
         // Edge
         // ua = 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML,
         // like Gecko) Chrome/39.0.2171.71 Safari/537.36 Edge/12.0';
+        // iOS Safari: Disable for users running iOS version < 10.
+        var iOSVersion = SimpleDb.getIOSVersion(ua);
+        var isUnsupportedIOS = 0 < iOSVersion && iOSVersion < 10;
+        // Android browser: Disable for userse running version < 4.5.
+        var androidVersion = SimpleDb.getAndroidVersion(ua);
+        var isUnsupportedAndroid = 0 < androidVersion && androidVersion < 4.5;
         if (ua.indexOf('MSIE ') > 0 ||
             ua.indexOf('Trident/') > 0 ||
-            ua.indexOf('Edge/') > 0) {
+            ua.indexOf('Edge/') > 0 ||
+            isUnsupportedIOS ||
+            isUnsupportedAndroid) {
             return false;
         }
         else {
@@ -8506,19 +8905,41 @@ var SimpleDb = /** @class */ (function () {
     SimpleDb.getStore = function (txn, store) {
         return txn.store(store);
     };
+    // visible for testing
+    /** Parse User Agent to determine iOS version. Returns -1 if not found. */
+    SimpleDb.getIOSVersion = function (ua) {
+        var iOSVersionRegex = ua.match(/i(?:phone|pad|pod) os ([\d_]+)/i);
+        var version = iOSVersionRegex ? iOSVersionRegex[1].split('_')[0] : '-1';
+        return Number(version);
+    };
+    // visible for testing
+    /** Parse User Agent to determine Android version. Returns -1 if not found. */
+    SimpleDb.getAndroidVersion = function (ua) {
+        var androidVersionRegex = ua.match(/Android ([\d.]+)/i);
+        var version = androidVersionRegex
+            ? androidVersionRegex[1]
+                .split('.')
+                .slice(0, 2)
+                .join('.')
+            : '-1';
+        return Number(version);
+    };
     SimpleDb.prototype.runTransaction = function (mode, objectStores, transactionFn) {
         var transaction = SimpleDbTransaction.open(this.db, mode, objectStores);
         var transactionFnResult = transactionFn(transaction)
-            .catch(function (error$$1) {
+            .catch(function (error) {
             // Abort the transaction if there was an error.
-            transaction.abort(error$$1);
+            transaction.abort(error);
             // We cannot actually recover, and calling `abort()` will cause the transaction's
             // completion promise to be rejected. This in turn means that we won't use
             // `transactionFnResult` below. We return a rejection here so that we don't add the
             // possibility of returning `void` to the type of `transactionFnResult`.
-            return PersistencePromise.reject(error$$1);
+            return PersistencePromise.reject(error);
         })
             .toPromise();
+        // As noted above, errors are propagated by aborting the transaction. So
+        // we swallow any error here to avoid the browser logging it as unhandled.
+        transactionFnResult.catch(function () { });
         // Wait for the transaction to complete (i.e. IndexedDb's onsuccess event to
         // fire), but still return the original transactionFnResult back to the
         // caller.
@@ -8596,7 +9017,7 @@ var SimpleDbTransaction = /** @class */ (function () {
         /**
          * A promise that resolves with the result of the IndexedDb transaction.
          */
-        this.completionDeferred = new Deferred$1();
+        this.completionDeferred = new Deferred();
         this.transaction.oncomplete = function () {
             _this.completionDeferred.resolve();
         };
@@ -8622,12 +9043,12 @@ var SimpleDbTransaction = /** @class */ (function () {
         enumerable: true,
         configurable: true
     });
-    SimpleDbTransaction.prototype.abort = function (error$$1) {
-        if (error$$1) {
-            this.completionDeferred.reject(error$$1);
+    SimpleDbTransaction.prototype.abort = function (error) {
+        if (error) {
+            this.completionDeferred.reject(error);
         }
         if (!this.aborted) {
-            debug(LOG_TAG$1, 'Aborting transaction:', error$$1 ? error$$1.message : 'Client-initiated abort');
+            debug(LOG_TAG$1, 'Aborting transaction:', error ? error.message : 'Client-initiated abort');
             this.aborted = true;
             this.transaction.abort();
         }
@@ -8874,6 +9295,7 @@ function wrapRequest(request) {
 }
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -9073,7 +9495,7 @@ var IndexedDbQueryCache = /** @class */ (function () {
         var result = documentKeySet();
         return store
             .iterate({ range: range, keysOnly: true }, function (key, _, control) {
-            var path = decode$1(key[1]);
+            var path = decode(key[1]);
             var docKey = new DocumentKey(path);
             result = result.add(docKey);
         })
@@ -9147,6 +9569,7 @@ function documentTargetStore(txn) {
 }
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -9249,6 +9672,7 @@ var ObjectMap = /** @class */ (function () {
 }());
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -9368,6 +9792,7 @@ var RemoteDocumentChangeBuffer = /** @class */ (function () {
 }());
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -9387,13 +9812,15 @@ var REMOTE_DOCUMENT_CHANGE_MISSING_ERR_MSG = 'The remote document changelog no l
 var IndexedDbRemoteDocumentCache = /** @class */ (function () {
     /**
      * @param {LocalSerializer} serializer The document serializer.
+     * @param {IndexManager} indexManager The query indexes that need to be maintained.
      * @param keepDocumentChangeLog Whether to keep a document change log in
      * IndexedDb. This change log is required for Multi-Tab synchronization, but
      * not needed in clients that don't share access to their remote document
      * cache.
      */
-    function IndexedDbRemoteDocumentCache(serializer, keepDocumentChangeLog) {
+    function IndexedDbRemoteDocumentCache(serializer, indexManager, keepDocumentChangeLog) {
         this.serializer = serializer;
+        this.indexManager = indexManager;
         this.keepDocumentChangeLog = keepDocumentChangeLog;
         /** The last id read by `getNewDocumentChanges()`. */
         this._lastProcessedDocumentChangeId = 0;
@@ -9429,6 +9856,7 @@ var IndexedDbRemoteDocumentCache = /** @class */ (function () {
                 var _a = entries_1[_i], key = _a.key, doc = _a.doc;
                 promises.push(documentStore.put(dbKey(key), doc));
                 changedKeys = changedKeys.add(key);
+                promises.push(this.indexManager.addToCollectionParentIndex(transaction, key.path.popLast()));
             }
             if (this.keepDocumentChangeLog) {
                 promises.push(documentChangesStore(transaction).put({
@@ -9566,13 +9994,23 @@ var IndexedDbRemoteDocumentCache = /** @class */ (function () {
     };
     IndexedDbRemoteDocumentCache.prototype.getDocumentsMatchingQuery = function (transaction, query) {
         var _this = this;
+        assert(!query.isCollectionGroupQuery(), 'CollectionGroup queries should be handled in LocalDocumentsView');
         var results = documentMap();
+        var immediateChildrenPathLength = query.path.length + 1;
         // Documents are ordered by key, so we can use a prefix scan to narrow down
         // the documents we need to match the query against.
         var startKey = query.path.toArray();
         var range = IDBKeyRange.lowerBound(startKey);
         return remoteDocumentsStore(transaction)
             .iterate({ range: range }, function (key, dbRemoteDoc, control) {
+            // The query is actually returning any path that starts with the query
+            // path prefix which may include documents in subcollections. For
+            // example, a query on 'rooms' will return rooms/abc/messages/xyx but we
+            // shouldn't match it. Fix this by discarding rows with document keys
+            // more than one segment longer than the query path.
+            if (key.length !== immediateChildrenPathLength) {
+                return;
+            }
             var maybeDoc = _this.serializer.fromDbRemoteDocument(dbRemoteDoc);
             if (!query.path.isPrefixOf(maybeDoc.key.path)) {
                 control.done();
@@ -9751,6 +10189,67 @@ function dbDocumentSize(doc) {
 }
 
 /**
+ * @license
+ * Copyright 2019 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+/**
+ * An in-memory implementation of IndexManager.
+ */
+var MemoryIndexManager = /** @class */ (function () {
+    function MemoryIndexManager() {
+        this.collectionParentIndex = new MemoryCollectionParentIndex();
+    }
+    MemoryIndexManager.prototype.addToCollectionParentIndex = function (transaction, collectionPath) {
+        this.collectionParentIndex.add(collectionPath);
+        return PersistencePromise.resolve();
+    };
+    MemoryIndexManager.prototype.getCollectionParents = function (transaction, collectionId) {
+        return PersistencePromise.resolve(this.collectionParentIndex.getEntries(collectionId));
+    };
+    return MemoryIndexManager;
+}());
+/**
+ * Internal implementation of the collection-parent index exposed by MemoryIndexManager.
+ * Also used for in-memory caching by IndexedDbIndexManager and initial index population
+ * in indexeddb_schema.ts
+ */
+var MemoryCollectionParentIndex = /** @class */ (function () {
+    function MemoryCollectionParentIndex() {
+        this.index = {};
+    }
+    // Returns false if the entry already existed.
+    MemoryCollectionParentIndex.prototype.add = function (collectionPath) {
+        assert(collectionPath.length % 2 === 1, 'Expected a collection path.');
+        var collectionId = collectionPath.lastSegment();
+        var parentPath = collectionPath.popLast();
+        var existingParents = this.index[collectionId] ||
+            new SortedSet(ResourcePath.comparator);
+        var added = !existingParents.has(parentPath);
+        this.index[collectionId] = existingParents.add(parentPath);
+        return added;
+    };
+    MemoryCollectionParentIndex.prototype.getEntries = function (collectionId) {
+        var parentPaths = this.index[collectionId] ||
+            new SortedSet(ResourcePath.comparator);
+        return parentPaths.toArray();
+    };
+    return MemoryCollectionParentIndex;
+}());
+
+/**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -9778,8 +10277,9 @@ function dbDocumentSize(doc) {
  * 5. Removal of held write acks.
  * 6. Create document global for tracking document cache size.
  * 7. Ensure every cached document has a sentinel row with a sequence number.
+ * 8. Add collection-parent index for Collection Group queries.
  */
-var SCHEMA_VERSION = 7;
+var SCHEMA_VERSION = 8;
 /** Performs database creation and schema upgrades. */
 var SchemaConverter = /** @class */ (function () {
     function SchemaConverter(serializer) {
@@ -9842,6 +10342,9 @@ var SchemaConverter = /** @class */ (function () {
         if (fromVersion < 7 && toVersion >= 7) {
             p = p.next(function () { return _this.ensureSequenceNumbers(txn); });
         }
+        if (fromVersion < 8 && toVersion >= 8) {
+            p = p.next(function () { return _this.createCollectionParentIndex(db, txn); });
+        }
         return p;
     };
     SchemaConverter.prototype.addDocumentGlobal = function (txn) {
@@ -9882,18 +10385,18 @@ var SchemaConverter = /** @class */ (function () {
      * with a sequence number. Missing rows are given the most recently used sequence number.
      */
     SchemaConverter.prototype.ensureSequenceNumbers = function (txn) {
-        var documentTargetStore$$1 = txn.store(DbTargetDocument.store);
+        var documentTargetStore = txn.store(DbTargetDocument.store);
         var documentsStore = txn.store(DbRemoteDocument.store);
         return getHighestListenSequenceNumber(txn).next(function (currentSequenceNumber) {
             var writeSentinelKey = function (path) {
-                return documentTargetStore$$1.put(new DbTargetDocument(0, encode(path), currentSequenceNumber));
+                return documentTargetStore.put(new DbTargetDocument(0, encode(path), currentSequenceNumber));
             };
             var promises = [];
             return documentsStore
                 .iterate(function (key, doc) {
                 var path = new ResourcePath(key);
                 var docSentinelKey = sentinelKey(path);
-                promises.push(documentTargetStore$$1.get(docSentinelKey).next(function (maybeSentinel) {
+                promises.push(documentTargetStore.get(docSentinelKey).next(function (maybeSentinel) {
                     if (!maybeSentinel) {
                         return writeSentinelKey(path);
                     }
@@ -9903,6 +10406,42 @@ var SchemaConverter = /** @class */ (function () {
                 }));
             })
                 .next(function () { return PersistencePromise.waitFor(promises); });
+        });
+    };
+    SchemaConverter.prototype.createCollectionParentIndex = function (db, txn) {
+        // Create the index.
+        db.createObjectStore(DbCollectionParent.store, {
+            keyPath: DbCollectionParent.keyPath
+        });
+        var collectionParentsStore = txn.store(DbCollectionParent.store);
+        // Helper to add an index entry iff we haven't already written it.
+        var cache = new MemoryCollectionParentIndex();
+        var addEntry = function (collectionPath) {
+            if (cache.add(collectionPath)) {
+                var collectionId = collectionPath.lastSegment();
+                var parentPath = collectionPath.popLast();
+                return collectionParentsStore.put({
+                    collectionId: collectionId,
+                    parent: encode(parentPath)
+                });
+            }
+        };
+        // Index existing remote documents.
+        return txn
+            .store(DbRemoteDocument.store)
+            .iterate({ keysOnly: true }, function (pathSegments, _) {
+            var path = new ResourcePath(pathSegments);
+            return addEntry(path.popLast());
+        })
+            .next(function () {
+            // Index existing mutations.
+            return txn
+                .store(DbDocumentMutation.store)
+                .iterate({ keysOnly: true }, function (_a, _) {
+                var userID = _a[0], encodedPath = _a[1], batchId = _a[2];
+                var path = decode(encodedPath);
+                return addEntry(path.popLast());
+            });
         });
     };
     return SchemaConverter;
@@ -9972,6 +10511,8 @@ var DbMutationQueue = /** @class */ (function () {
      * by the server. All MutationBatches in this queue with batchIds less
      * than or equal to this value are considered to have been acknowledged by
      * the server.
+     *
+     * NOTE: this is deprecated and no longer used by the code.
      */
     lastAcknowledgedBatchId, 
     /**
@@ -10017,6 +10558,19 @@ var DbMutationBatch = /** @class */ (function () {
      */
     localWriteTimeMs, 
     /**
+     * A list of "mutations" that represent a partial base state from when this
+     * write batch was initially created. During local application of the write
+     * batch, these baseMutations are applied prior to the real writes in order
+     * to override certain document fields from the remote document cache. This
+     * is necessary in the case of non-idempotent writes (e.g. `increment()`
+     * transforms) to make sure that the local view of the modified documents
+     * doesn't flicker if the remote document cache receives the result of the
+     * non-idempotent write before the write is removed from the queue.
+     *
+     * These mutations are never sent to the backend.
+     */
+    baseMutations, 
+    /**
      * A list of mutations to apply. All mutations will be applied atomically.
      *
      * Mutations are serialized via JsonProtoSerializer.toMutation().
@@ -10025,6 +10579,7 @@ var DbMutationBatch = /** @class */ (function () {
         this.userId = userId;
         this.batchId = batchId;
         this.localWriteTimeMs = localWriteTimeMs;
+        this.baseMutations = baseMutations;
         this.mutations = mutations;
     }
     /** Name of the IndexedDb object store.  */
@@ -10378,6 +10933,32 @@ var DbTargetGlobal = /** @class */ (function () {
     DbTargetGlobal.store = 'targetGlobal';
     return DbTargetGlobal;
 }());
+/**
+ * An object representing an association between a Collection id (e.g. 'messages')
+ * to a parent path (e.g. '/chats/123') that contains it as a (sub)collection.
+ * This is used to efficiently find all collections to query when performing
+ * a Collection Group query.
+ */
+var DbCollectionParent = /** @class */ (function () {
+    function DbCollectionParent(
+    /**
+     * The collectionId (e.g. 'messages')
+     */
+    collectionId, 
+    /**
+     * The path to the parent (either a document location or an empty path for
+     * a root-level collection).
+     */
+    parent) {
+        this.collectionId = collectionId;
+        this.parent = parent;
+    }
+    /** Name of the IndexedDb object store. */
+    DbCollectionParent.store = 'collectionParents';
+    /** Keys are automatically assigned via the collectionId, parent properties. */
+    DbCollectionParent.keyPath = ['collectionId', 'parent'];
+    return DbCollectionParent;
+}());
 function createQueryCache(db) {
     var targetDocumentsStore = db.createObjectStore(DbTargetDocument.store, {
         keyPath: DbTargetDocument.keyPath
@@ -10492,15 +11073,18 @@ var V4_STORES = V3_STORES.concat([
 ]);
 // V5 does not change the set of stores.
 var V6_STORES = V4_STORES.concat([DbRemoteDocumentGlobal.store]);
+// V7 does not change the set of stores.
+var V8_STORES = V6_STORES.concat([DbCollectionParent.store]);
 /**
  * The list of all default IndexedDB stores used throughout the SDK. This is
  * used when creating transactions so that access across all stores is done
  * atomically.
  */
-var ALL_STORES = V6_STORES;
+var ALL_STORES = V8_STORES;
 
 /**
- * Copyright 2017 Google Inc.
+ * @license
+ * Copyright 2019 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -10514,436 +11098,67 @@ var ALL_STORES = V6_STORES;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/** A mutation queue for a specific user, backed by IndexedDB. */
-var IndexedDbMutationQueue = /** @class */ (function () {
-    function IndexedDbMutationQueue(
-    /**
-     * The normalized userId (e.g. null UID => "" userId) used to store /
-     * retrieve mutations.
-     */
-    userId, serializer, referenceDelegate) {
-        this.userId = userId;
-        this.serializer = serializer;
-        this.referenceDelegate = referenceDelegate;
+/**
+ * A persisted implementation of IndexManager.
+ */
+var IndexedDbIndexManager = /** @class */ (function () {
+    function IndexedDbIndexManager() {
         /**
-         * Caches the document keys for pending mutation batches. If the mutation
-         * has been removed from IndexedDb, the cached value may continue to
-         * be used to retrieve the batch's document keys. To remove a cached value
-         * locally, `removeCachedMutationKeys()` should be invoked either directly
-         * or through `removeMutationBatches()`.
+         * An in-memory copy of the index entries we've already written since the SDK
+         * launched. Used to avoid re-writing the same entry repeatedly.
          *
-         * With multi-tab, when the primary client acknowledges or rejects a mutation,
-         * this cache is used by secondary clients to invalidate the local
-         * view of the documents that were previously affected by the mutation.
+         * This is *NOT* a complete cache of what's in persistence and so can never be used to
+         * satisfy reads.
          */
-        // PORTING NOTE: Multi-tab only.
-        this.documentKeysByBatchId = {};
+        this.collectionParentsCache = new MemoryCollectionParentIndex();
     }
-    /**
-     * Creates a new mutation queue for the given user.
-     * @param user The user for which to create a mutation queue.
-     * @param serializer The serializer to use when persisting to IndexedDb.
-     */
-    IndexedDbMutationQueue.forUser = function (user, serializer, referenceDelegate) {
-        // TODO(mcg): Figure out what constraints there are on userIDs
-        // In particular, are there any reserved characters? are empty ids allowed?
-        // For the moment store these together in the same mutations table assuming
-        // that empty userIDs aren't allowed.
-        assert(user.uid !== '', 'UserID must not be an empty string.');
-        var userId = user.isAuthenticated() ? user.uid : '';
-        return new IndexedDbMutationQueue(userId, serializer, referenceDelegate);
-    };
-    IndexedDbMutationQueue.prototype.checkEmpty = function (transaction) {
-        var empty = true;
-        var range = IDBKeyRange.bound([this.userId, Number.NEGATIVE_INFINITY], [this.userId, Number.POSITIVE_INFINITY]);
-        return mutationsStore(transaction)
-            .iterate({ index: DbMutationBatch.userMutationsIndex, range: range }, function (key, value, control) {
-            empty = false;
-            control.done();
-        })
-            .next(function () { return empty; });
-    };
-    IndexedDbMutationQueue.prototype.acknowledgeBatch = function (transaction, batch, streamToken) {
-        return this.getMutationQueueMetadata(transaction).next(function (metadata) {
-            var batchId = batch.batchId;
-            assert(batchId > metadata.lastAcknowledgedBatchId, 'Mutation batchIDs must be acknowledged in order');
-            metadata.lastAcknowledgedBatchId = batchId;
-            metadata.lastStreamToken = convertStreamToken(streamToken);
-            return mutationQueuesStore(transaction).put(metadata);
-        });
-    };
-    IndexedDbMutationQueue.prototype.getLastStreamToken = function (transaction) {
-        return this.getMutationQueueMetadata(transaction).next(function (metadata) { return metadata.lastStreamToken; });
-    };
-    IndexedDbMutationQueue.prototype.setLastStreamToken = function (transaction, streamToken) {
-        return this.getMutationQueueMetadata(transaction).next(function (metadata) {
-            metadata.lastStreamToken = convertStreamToken(streamToken);
-            return mutationQueuesStore(transaction).put(metadata);
-        });
-    };
-    IndexedDbMutationQueue.prototype.addMutationBatch = function (transaction, localWriteTime, mutations) {
-        var _this = this;
-        var documentStore = documentMutationsStore(transaction);
-        var mutationStore = mutationsStore(transaction);
-        // The IndexedDb implementation in Chrome (and Firefox) does not handle
-        // compound indices that include auto-generated keys correctly. To ensure
-        // that the index entry is added correctly in all browsers, we perform two
-        // writes: The first write is used to retrieve the next auto-generated Batch
-        // ID, and the second write populates the index and stores the actual
-        // mutation batch.
-        // See: https://bugs.chromium.org/p/chromium/issues/detail?id=701972
-        // tslint:disable-next-line:no-any We write an empty object to obtain key
-        return mutationStore.add({}).next(function (batchId) {
-            assert(typeof batchId === 'number', 'Auto-generated key is not a number');
-            var batch = new MutationBatch(batchId, localWriteTime, mutations);
-            var dbBatch = _this.serializer.toDbMutationBatch(_this.userId, batch);
-            _this.documentKeysByBatchId[batchId] = batch.keys();
-            var promises = [];
-            for (var _i = 0, mutations_1 = mutations; _i < mutations_1.length; _i++) {
-                var mutation = mutations_1[_i];
-                var indexKey = DbDocumentMutation.key(_this.userId, mutation.key.path, batchId);
-                promises.push(mutationStore.put(dbBatch));
-                promises.push(documentStore.put(indexKey, DbDocumentMutation.PLACEHOLDER));
-            }
-            return PersistencePromise.waitFor(promises).next(function () { return batch; });
-        });
-    };
-    IndexedDbMutationQueue.prototype.lookupMutationBatch = function (transaction, batchId) {
-        var _this = this;
-        return mutationsStore(transaction)
-            .get(batchId)
-            .next(function (dbBatch) {
-            if (dbBatch) {
-                assert(dbBatch.userId === _this.userId, "Unexpected user '" + dbBatch.userId + "' for mutation batch " + batchId);
-                return _this.serializer.fromDbMutationBatch(dbBatch);
-            }
-            return null;
-        });
-    };
-    IndexedDbMutationQueue.prototype.lookupMutationKeys = function (transaction, batchId) {
-        var _this = this;
-        if (this.documentKeysByBatchId[batchId]) {
-            return PersistencePromise.resolve(this.documentKeysByBatchId[batchId]);
-        }
-        else {
-            return this.lookupMutationBatch(transaction, batchId).next(function (batch) {
-                if (batch) {
-                    var keys = batch.keys();
-                    _this.documentKeysByBatchId[batchId] = keys;
-                    return keys;
-                }
-                else {
-                    return null;
-                }
+    IndexedDbIndexManager.prototype.addToCollectionParentIndex = function (transaction, collectionPath) {
+        assert(collectionPath.length % 2 === 1, 'Expected a collection path.');
+        if (this.collectionParentsCache.add(collectionPath)) {
+            assert(collectionPath.length >= 1, 'Invalid collection path.');
+            var collectionId = collectionPath.lastSegment();
+            var parentPath = collectionPath.popLast();
+            return collectionParentsStore(transaction).put({
+                collectionId: collectionId,
+                parent: encode(parentPath)
             });
         }
+        return PersistencePromise.resolve();
     };
-    IndexedDbMutationQueue.prototype.getNextMutationBatchAfterBatchId = function (transaction, batchId) {
-        var _this = this;
-        return this.getMutationQueueMetadata(transaction).next(function (metadata) {
-            // All batches with batchId <= this.metadata.lastAcknowledgedBatchId have
-            // been acknowledged so the first unacknowledged batch after batchID will
-            // have a batchID larger than both of these values.
-            var nextBatchId = Math.max(batchId, metadata.lastAcknowledgedBatchId) + 1;
-            var range = IDBKeyRange.lowerBound([_this.userId, nextBatchId]);
-            var foundBatch = null;
-            return mutationsStore(transaction)
-                .iterate({ index: DbMutationBatch.userMutationsIndex, range: range }, function (key, dbBatch, control) {
-                if (dbBatch.userId === _this.userId) {
-                    assert(dbBatch.batchId >= nextBatchId, 'Should have found mutation after ' + nextBatchId);
-                    foundBatch = _this.serializer.fromDbMutationBatch(dbBatch);
+    IndexedDbIndexManager.prototype.getCollectionParents = function (transaction, collectionId) {
+        var parentPaths = [];
+        var range = IDBKeyRange.bound([collectionId, ''], [immediateSuccessor(collectionId), ''], 
+        /*lowerOpen=*/ false, 
+        /*upperOpen=*/ true);
+        return collectionParentsStore(transaction)
+            .loadAll(range)
+            .next(function (entries) {
+            for (var _i = 0, entries_1 = entries; _i < entries_1.length; _i++) {
+                var entry = entries_1[_i];
+                // This collectionId guard shouldn't be necessary (and isn't as long
+                // as we're running in a real browser), but there's a bug in
+                // indexeddbshim that breaks our range in our tests running in node:
+                // https://github.com/axemclion/IndexedDBShim/issues/334
+                if (entry.collectionId !== collectionId) {
+                    break;
                 }
-                control.done();
-            })
-                .next(function () { return foundBatch; });
-        });
-    };
-    IndexedDbMutationQueue.prototype.getAllMutationBatches = function (transaction) {
-        var _this = this;
-        var range = IDBKeyRange.bound([this.userId, BATCHID_UNKNOWN], [this.userId, Number.POSITIVE_INFINITY]);
-        return mutationsStore(transaction)
-            .loadAll(DbMutationBatch.userMutationsIndex, range)
-            .next(function (dbBatches) {
-            return dbBatches.map(function (dbBatch) { return _this.serializer.fromDbMutationBatch(dbBatch); });
-        });
-    };
-    IndexedDbMutationQueue.prototype.getAllMutationBatchesAffectingDocumentKey = function (transaction, documentKey) {
-        var _this = this;
-        // Scan the document-mutation index starting with a prefix starting with
-        // the given documentKey.
-        var indexPrefix = DbDocumentMutation.prefixForPath(this.userId, documentKey.path);
-        var indexStart = IDBKeyRange.lowerBound(indexPrefix);
-        var results = [];
-        return documentMutationsStore(transaction)
-            .iterate({ range: indexStart }, function (indexKey, _, control) {
-            var userID = indexKey[0], encodedPath = indexKey[1], batchId = indexKey[2];
-            // Only consider rows matching exactly the specific key of
-            // interest. Note that because we order by path first, and we
-            // order terminators before path separators, we'll encounter all
-            // the index rows for documentKey contiguously. In particular, all
-            // the rows for documentKey will occur before any rows for
-            // documents nested in a subcollection beneath documentKey so we
-            // can stop as soon as we hit any such row.
-            var path = decode$1(encodedPath);
-            if (userID !== _this.userId || !documentKey.path.isEqual(path)) {
-                control.done();
-                return;
+                parentPaths.push(decode(entry.parent));
             }
-            // Look up the mutation batch in the store.
-            return mutationsStore(transaction)
-                .get(batchId)
-                .next(function (mutation) {
-                if (!mutation) {
-                    throw fail('Dangling document-mutation reference found: ' +
-                        indexKey +
-                        ' which points to ' +
-                        batchId);
-                }
-                assert(mutation.userId === _this.userId, "Unexpected user '" + mutation.userId + "' for mutation batch " + batchId);
-                results.push(_this.serializer.fromDbMutationBatch(mutation));
-            });
-        })
-            .next(function () { return results; });
-    };
-    IndexedDbMutationQueue.prototype.getAllMutationBatchesAffectingDocumentKeys = function (transaction, documentKeys) {
-        var _this = this;
-        var uniqueBatchIDs = new SortedSet(primitiveComparator);
-        var promises = [];
-        documentKeys.forEach(function (documentKey) {
-            var indexStart = DbDocumentMutation.prefixForPath(_this.userId, documentKey.path);
-            var range = IDBKeyRange.lowerBound(indexStart);
-            var promise = documentMutationsStore(transaction).iterate({ range: range }, function (indexKey, _, control) {
-                var userID = indexKey[0], encodedPath = indexKey[1], batchID = indexKey[2];
-                // Only consider rows matching exactly the specific key of
-                // interest. Note that because we order by path first, and we
-                // order terminators before path separators, we'll encounter all
-                // the index rows for documentKey contiguously. In particular, all
-                // the rows for documentKey will occur before any rows for
-                // documents nested in a subcollection beneath documentKey so we
-                // can stop as soon as we hit any such row.
-                var path = decode$1(encodedPath);
-                if (userID !== _this.userId || !documentKey.path.isEqual(path)) {
-                    control.done();
-                    return;
-                }
-                uniqueBatchIDs = uniqueBatchIDs.add(batchID);
-            });
-            promises.push(promise);
-        });
-        return PersistencePromise.waitFor(promises).next(function () {
-            return _this.lookupMutationBatches(transaction, uniqueBatchIDs);
+            return parentPaths;
         });
     };
-    IndexedDbMutationQueue.prototype.getAllMutationBatchesAffectingQuery = function (transaction, query) {
-        var _this = this;
-        assert(!query.isDocumentQuery(), "Document queries shouldn't go down this path");
-        var queryPath = query.path;
-        var immediateChildrenLength = queryPath.length + 1;
-        // TODO(mcg): Actually implement a single-collection query
-        //
-        // This is actually executing an ancestor query, traversing the whole
-        // subtree below the collection which can be horrifically inefficient for
-        // some structures. The right way to solve this is to implement the full
-        // value index, but that's not in the cards in the near future so this is
-        // the best we can do for the moment.
-        //
-        // Since we don't yet index the actual properties in the mutations, our
-        // current approach is to just return all mutation batches that affect
-        // documents in the collection being queried.
-        var indexPrefix = DbDocumentMutation.prefixForPath(this.userId, queryPath);
-        var indexStart = IDBKeyRange.lowerBound(indexPrefix);
-        // Collect up unique batchIDs encountered during a scan of the index. Use a
-        // SortedSet to accumulate batch IDs so they can be traversed in order in a
-        // scan of the main table.
-        var uniqueBatchIDs = new SortedSet(primitiveComparator);
-        return documentMutationsStore(transaction)
-            .iterate({ range: indexStart }, function (indexKey, _, control) {
-            var userID = indexKey[0], encodedPath = indexKey[1], batchID = indexKey[2];
-            var path = decode$1(encodedPath);
-            if (userID !== _this.userId || !queryPath.isPrefixOf(path)) {
-                control.done();
-                return;
-            }
-            // Rows with document keys more than one segment longer than the
-            // query path can't be matches. For example, a query on 'rooms'
-            // can't match the document /rooms/abc/messages/xyx.
-            // TODO(mcg): we'll need a different scanner when we implement
-            // ancestor queries.
-            if (path.length !== immediateChildrenLength) {
-                return;
-            }
-            uniqueBatchIDs = uniqueBatchIDs.add(batchID);
-        })
-            .next(function () { return _this.lookupMutationBatches(transaction, uniqueBatchIDs); });
-    };
-    IndexedDbMutationQueue.prototype.lookupMutationBatches = function (transaction, batchIDs) {
-        var _this = this;
-        var results = [];
-        var promises = [];
-        // TODO(rockwood): Implement this using iterate.
-        batchIDs.forEach(function (batchId) {
-            promises.push(mutationsStore(transaction)
-                .get(batchId)
-                .next(function (mutation) {
-                if (mutation === null) {
-                    throw fail('Dangling document-mutation reference found, ' +
-                        'which points to ' +
-                        batchId);
-                }
-                assert(mutation.userId === _this.userId, "Unexpected user '" + mutation.userId + "' for mutation batch " + batchId);
-                results.push(_this.serializer.fromDbMutationBatch(mutation));
-            }));
-        });
-        return PersistencePromise.waitFor(promises).next(function () { return results; });
-    };
-    IndexedDbMutationQueue.prototype.removeMutationBatch = function (transaction, batch) {
-        var _this = this;
-        return removeMutationBatch(transaction.simpleDbTransaction, this.userId, batch).next(function (removedDocuments) {
-            _this.removeCachedMutationKeys(batch.batchId);
-            return PersistencePromise.forEach(removedDocuments, function (key) {
-                return _this.referenceDelegate.removeMutationReference(transaction, key);
-            });
-        });
-    };
-    IndexedDbMutationQueue.prototype.removeCachedMutationKeys = function (batchId) {
-        delete this.documentKeysByBatchId[batchId];
-    };
-    IndexedDbMutationQueue.prototype.performConsistencyCheck = function (txn) {
-        var _this = this;
-        return this.checkEmpty(txn).next(function (empty) {
-            if (!empty) {
-                return PersistencePromise.resolve();
-            }
-            // Verify that there are no entries in the documentMutations index if
-            // the queue is empty.
-            var startRange = IDBKeyRange.lowerBound(DbDocumentMutation.prefixForUser(_this.userId));
-            var danglingMutationReferences = [];
-            return documentMutationsStore(txn)
-                .iterate({ range: startRange }, function (key, _, control) {
-                var userID = key[0];
-                if (userID !== _this.userId) {
-                    control.done();
-                    return;
-                }
-                else {
-                    var path = decode$1(key[1]);
-                    danglingMutationReferences.push(path);
-                }
-            })
-                .next(function () {
-                assert(danglingMutationReferences.length === 0, 'Document leak -- detected dangling mutation references when queue is empty. ' +
-                    'Dangling keys: ' +
-                    danglingMutationReferences.map(function (p) { return p.canonicalString(); }));
-            });
-        });
-    };
-    IndexedDbMutationQueue.prototype.containsKey = function (txn, key) {
-        return mutationQueueContainsKey(txn, this.userId, key);
-    };
-    // PORTING NOTE: Multi-tab only (state is held in memory in other clients).
-    /** Returns the mutation queue's metadata from IndexedDb. */
-    IndexedDbMutationQueue.prototype.getMutationQueueMetadata = function (transaction) {
-        var _this = this;
-        return mutationQueuesStore(transaction)
-            .get(this.userId)
-            .next(function (metadata) {
-            return (metadata ||
-                new DbMutationQueue(_this.userId, BATCHID_UNKNOWN, 
-                /*lastStreamToken=*/ ''));
-        });
-    };
-    return IndexedDbMutationQueue;
+    return IndexedDbIndexManager;
 }());
 /**
- * @return true if the mutation queue for the given user contains a pending
- *         mutation for the given key.
+ * Helper to get a typed SimpleDbStore for the collectionParents
+ * document store.
  */
-function mutationQueueContainsKey(txn, userId, key) {
-    var indexKey = DbDocumentMutation.prefixForPath(userId, key.path);
-    var encodedPath = indexKey[1];
-    var startRange = IDBKeyRange.lowerBound(indexKey);
-    var containsKey = false;
-    return documentMutationsStore(txn)
-        .iterate({ range: startRange, keysOnly: true }, function (key, value, control) {
-        var userID = key[0], keyPath = key[1], /*batchID*/ _ = key[2];
-        if (userID === userId && keyPath === encodedPath) {
-            containsKey = true;
-        }
-        control.done();
-    })
-        .next(function () { return containsKey; });
-}
-/** Returns true if any mutation queue contains the given document. */
-function mutationQueuesContainKey(txn, docKey) {
-    var found = false;
-    return mutationQueuesStore(txn)
-        .iterateSerial(function (userId) {
-        return mutationQueueContainsKey(txn, userId, docKey).next(function (containsKey) {
-            if (containsKey) {
-                found = true;
-            }
-            return PersistencePromise.resolve(!containsKey);
-        });
-    })
-        .next(function () { return found; });
-}
-/**
- * Delete a mutation batch and the associated document mutations.
- * @return A PersistencePromise of the document mutations that were removed.
- */
-function removeMutationBatch(txn, userId, batch) {
-    var mutationStore = txn.store(DbMutationBatch.store);
-    var indexTxn = txn.store(DbDocumentMutation.store);
-    var promises = [];
-    var range = IDBKeyRange.only(batch.batchId);
-    var numDeleted = 0;
-    var removePromise = mutationStore.iterate({ range: range }, function (key, value, control) {
-        numDeleted++;
-        return control.delete();
-    });
-    promises.push(removePromise.next(function () {
-        assert(numDeleted === 1, 'Dangling document-mutation reference found: Missing batch ' +
-            batch.batchId);
-    }));
-    var removedDocuments = [];
-    for (var _i = 0, _a = batch.mutations; _i < _a.length; _i++) {
-        var mutation = _a[_i];
-        var indexKey = DbDocumentMutation.key(userId, mutation.key.path, batch.batchId);
-        promises.push(indexTxn.delete(indexKey));
-        removedDocuments.push(mutation.key);
-    }
-    return PersistencePromise.waitFor(promises).next(function () { return removedDocuments; });
-}
-function convertStreamToken(token) {
-    if (token instanceof Uint8Array) {
-        // TODO(b/78771403): Convert tokens to strings during deserialization
-        assert(process.env.USE_MOCK_PERSISTENCE === 'YES', 'Persisting non-string stream tokens is only supported with mock persistence.');
-        return token.toString();
-    }
-    else {
-        return token;
-    }
-}
-/**
- * Helper to get a typed SimpleDbStore for the mutations object store.
- */
-function mutationsStore(txn) {
-    return IndexedDbPersistence.getStore(txn, DbMutationBatch.store);
-}
-/**
- * Helper to get a typed SimpleDbStore for the mutationQueues object store.
- */
-function documentMutationsStore(txn) {
-    return IndexedDbPersistence.getStore(txn, DbDocumentMutation.store);
-}
-/**
- * Helper to get a typed SimpleDbStore for the mutationQueues object store.
- */
-function mutationQueuesStore(txn) {
-    return IndexedDbPersistence.getStore(txn, DbMutationQueue.store);
+function collectionParentsStore(txn) {
+    return IndexedDbPersistence.getStore(txn, DbCollectionParent.store);
 }
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -11026,19 +11241,25 @@ var LocalSerializer = /** @class */ (function () {
     /** Encodes a batch of mutations into a DbMutationBatch for local storage. */
     LocalSerializer.prototype.toDbMutationBatch = function (userId, batch) {
         var _this = this;
+        var serializedBaseMutations = batch.baseMutations.map(function (m) {
+            return _this.remoteSerializer.toMutation(m);
+        });
         var serializedMutations = batch.mutations.map(function (m) {
             return _this.remoteSerializer.toMutation(m);
         });
-        return new DbMutationBatch(userId, batch.batchId, batch.localWriteTime.toMillis(), serializedMutations);
+        return new DbMutationBatch(userId, batch.batchId, batch.localWriteTime.toMillis(), serializedBaseMutations, serializedMutations);
     };
     /** Decodes a DbMutationBatch into a MutationBatch */
     LocalSerializer.prototype.fromDbMutationBatch = function (dbBatch) {
         var _this = this;
+        var baseMutations = (dbBatch.baseMutations || []).map(function (m) {
+            return _this.remoteSerializer.fromMutation(m);
+        });
         var mutations = dbBatch.mutations.map(function (m) {
             return _this.remoteSerializer.fromMutation(m);
         });
         var timestamp = Timestamp.fromMillis(dbBatch.localWriteTimeMs);
-        return new MutationBatch(dbBatch.batchId, timestamp, mutations);
+        return new MutationBatch(dbBatch.batchId, timestamp, baseMutations, mutations);
     };
     /*
      * Encodes a set of document keys into an array of EncodedResourcePaths.
@@ -11055,7 +11276,7 @@ var LocalSerializer = /** @class */ (function () {
         var keys = documentKeySet();
         for (var _i = 0, encodedPaths_1 = encodedPaths; _i < encodedPaths_1.length; _i++) {
             var documentKey = encodedPaths_1[_i];
-            keys = keys.add(new DocumentKey(decode$1(documentKey)));
+            keys = keys.add(new DocumentKey(decode(documentKey)));
         }
         return keys;
     };
@@ -11107,6 +11328,7 @@ function isDocumentQuery(dbQuery) {
 }
 
 /**
+ * @license
  * Copyright 2018 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -11225,7 +11447,7 @@ var LruScheduler = /** @class */ (function () {
     LruScheduler.prototype.start = function () {
         assert(this.gcTask === null, 'Cannot start an already started LruScheduler');
         if (this.garbageCollector.params.cacheSizeCollectionThreshold !==
-            CACHE_SIZE_UNLIMITED) {
+            LruParams.COLLECTION_DISABLED) {
             this.scheduleGC();
         }
     };
@@ -11267,7 +11489,7 @@ var LruGarbageCollector = /** @class */ (function () {
     /** Given a percentile of target to collect, returns the number of targets to collect. */
     LruGarbageCollector.prototype.calculateTargetCount = function (txn, percentile) {
         return this.delegate.getSequenceNumberCount(txn).next(function (targetCount) {
-            return Math.floor(percentile / 100.0 * targetCount);
+            return Math.floor((percentile / 100.0) * targetCount);
         });
     };
     /** Returns the nth sequence number, counting in order from the smallest. */
@@ -11377,6 +11599,7 @@ var LruGarbageCollector = /** @class */ (function () {
 }());
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -11405,6 +11628,7 @@ var PersistenceTransaction = /** @class */ (function () {
 }());
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -11489,7 +11713,8 @@ var IndexedDbPersistence = /** @class */ (function () {
         this.document = platform.document;
         this.allowTabSynchronization = multiClientParams !== undefined;
         this.queryCache = new IndexedDbQueryCache(this.referenceDelegate, this.serializer);
-        this.remoteDocumentCache = new IndexedDbRemoteDocumentCache(this.serializer, 
+        this.indexManager = new IndexedDbIndexManager();
+        this.remoteDocumentCache = new IndexedDbRemoteDocumentCache(this.serializer, this.indexManager, 
         /*keepDocumentChangeLog=*/ this.allowTabSynchronization);
         if (platform.window && platform.window.localStorage) {
             this.window = platform.window;
@@ -11549,14 +11774,15 @@ var IndexedDbPersistence = /** @class */ (function () {
         return SimpleDb.openOrCreate(this.dbName, SCHEMA_VERSION, new SchemaConverter(this.serializer))
             .then(function (db) {
             _this.simpleDb = db;
+            // NOTE: This is expected to fail sometimes (in the case of another tab already
+            // having the persistence lock), so it's the first thing we should do.
+            return _this.updateClientMetadataAndTryBecomePrimary();
         })
-            .then(function () { return _this.startRemoteDocumentCache(); })
             .then(function () {
             _this.attachVisibilityHandler();
             _this.attachWindowUnloadHook();
-            return _this.updateClientMetadataAndTryBecomePrimary().then(function () {
-                return _this.scheduleClientMetadataAndPrimaryLeaseRefreshes();
-            });
+            _this.scheduleClientMetadataAndPrimaryLeaseRefreshes();
+            return _this.startRemoteDocumentCache();
         })
             .then(function () {
             return _this.simpleDb.runTransaction('readonly', [DbTargetGlobal.store], function (txn) {
@@ -11675,8 +11901,8 @@ var IndexedDbPersistence = /** @class */ (function () {
      */
     IndexedDbPersistence.prototype.maybeGarbageCollectMultiClientState = function () {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
-            var _this = this;
             var activeClients_1, inactiveClients_1;
+            var _this = this;
             return tslib_1.__generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -11821,7 +12047,7 @@ var IndexedDbPersistence = /** @class */ (function () {
             return canActAsPrimary;
         });
     };
-    IndexedDbPersistence.prototype.shutdown = function (deleteData) {
+    IndexedDbPersistence.prototype.shutdown = function () {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
             var _this = this;
             return tslib_1.__generator(this, function (_a) {
@@ -11847,12 +12073,7 @@ var IndexedDbPersistence = /** @class */ (function () {
                         // Remove the entry marking the client as zombied from LocalStorage since
                         // we successfully deleted its metadata from IndexedDb.
                         this.removeClientZombiedEntry();
-                        if (!deleteData) return [3 /*break*/, 3];
-                        return [4 /*yield*/, SimpleDb.delete(this.dbName)];
-                    case 2:
-                        _a.sent();
-                        _a.label = 3;
-                    case 3: return [2 /*return*/];
+                        return [2 /*return*/];
                 }
             });
         });
@@ -11878,6 +12099,24 @@ var IndexedDbPersistence = /** @class */ (function () {
             });
         });
     };
+    IndexedDbPersistence.clearPersistence = function (persistenceKey) {
+        return tslib_1.__awaiter(this, void 0, void 0, function () {
+            var dbName;
+            return tslib_1.__generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        if (!IndexedDbPersistence.isAvailable()) {
+                            return [2 /*return*/, Promise.resolve()];
+                        }
+                        dbName = persistenceKey + IndexedDbPersistence.MAIN_DATABASE;
+                        return [4 /*yield*/, SimpleDb.delete(dbName)];
+                    case 1:
+                        _a.sent();
+                        return [2 /*return*/];
+                }
+            });
+        });
+    };
     Object.defineProperty(IndexedDbPersistence.prototype, "started", {
         get: function () {
             return this._started;
@@ -11887,7 +12126,7 @@ var IndexedDbPersistence = /** @class */ (function () {
     });
     IndexedDbPersistence.prototype.getMutationQueue = function (user) {
         assert(this.started, 'Cannot initialize MutationQueue before persistence is started.');
-        return IndexedDbMutationQueue.forUser(user, this.serializer, this.referenceDelegate);
+        return IndexedDbMutationQueue.forUser(user, this.serializer, this.indexManager, this.referenceDelegate);
     };
     IndexedDbPersistence.prototype.getQueryCache = function () {
         assert(this.started, 'Cannot initialize QueryCache before persistence is started.');
@@ -11896,6 +12135,10 @@ var IndexedDbPersistence = /** @class */ (function () {
     IndexedDbPersistence.prototype.getRemoteDocumentCache = function () {
         assert(this.started, 'Cannot initialize RemoteDocumentCache before persistence is started.');
         return this.remoteDocumentCache;
+    };
+    IndexedDbPersistence.prototype.getIndexManager = function () {
+        assert(this.started, 'Cannot initialize IndexManager before persistence is started.');
+        return this.indexManager;
     };
     IndexedDbPersistence.prototype.runTransaction = function (action, mode, transactionOperation) {
         var _this = this;
@@ -12283,7 +12526,7 @@ var IndexedDbLruDelegate = /** @class */ (function () {
                 // if nextToReport is valid, report it, this is a new key so the
                 // last one must not be a member of any targets.
                 if (nextToReport !== ListenSequence.INVALID) {
-                    f(new DocumentKey(decode$1(nextPath)), nextToReport);
+                    f(new DocumentKey(decode(nextPath)), nextToReport);
                 }
                 // set nextToReport to be this sequence number. It's the next one we
                 // might report, if we don't find any targets for this document.
@@ -12303,7 +12546,7 @@ var IndexedDbLruDelegate = /** @class */ (function () {
             // need to check if the last key we iterated over was an orphaned
             // document and report it.
             if (nextToReport !== ListenSequence.INVALID) {
-                f(new DocumentKey(decode$1(nextPath)), nextToReport);
+                f(new DocumentKey(decode(nextPath)), nextToReport);
             }
         });
     };
@@ -12327,6 +12570,7 @@ function writeSentinelKey(txn, key) {
 }
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -12348,9 +12592,10 @@ function writeSentinelKey(txn, key) {
  * MutationQueue to the RemoteDocumentCache.
  */
 var LocalDocumentsView = /** @class */ (function () {
-    function LocalDocumentsView(remoteDocumentCache, mutationQueue) {
+    function LocalDocumentsView(remoteDocumentCache, mutationQueue, indexManager) {
         this.remoteDocumentCache = remoteDocumentCache;
         this.mutationQueue = mutationQueue;
+        this.indexManager = indexManager;
     }
     /**
      * Get the local view of the document identified by `key`.
@@ -12422,8 +12667,11 @@ var LocalDocumentsView = /** @class */ (function () {
     };
     /** Performs a query against the local view of all documents. */
     LocalDocumentsView.prototype.getDocumentsMatchingQuery = function (transaction, query) {
-        if (DocumentKey.isDocumentKey(query.path)) {
+        if (query.isDocumentQuery()) {
             return this.getDocumentsMatchingDocumentQuery(transaction, query.path);
+        }
+        else if (query.isCollectionGroupQuery()) {
+            return this.getDocumentsMatchingCollectionGroupQuery(transaction, query);
         }
         else {
             return this.getDocumentsMatchingCollectionQuery(transaction, query);
@@ -12437,6 +12685,26 @@ var LocalDocumentsView = /** @class */ (function () {
                 result = result.insert(maybeDoc.key, maybeDoc);
             }
             return result;
+        });
+    };
+    LocalDocumentsView.prototype.getDocumentsMatchingCollectionGroupQuery = function (transaction, query) {
+        var _this = this;
+        assert(query.path.isEmpty(), 'Currently we only support collection group queries at the root.');
+        var collectionId = query.collectionGroup;
+        var results = documentMap();
+        return this.indexManager
+            .getCollectionParents(transaction, collectionId)
+            .next(function (parents) {
+            // Perform a collection query against each parent that contains the
+            // collectionId and aggregate the results.
+            return PersistencePromise.forEach(parents, function (parent) {
+                var collectionQuery = query.asCollectionQueryAtPath(parent.child(collectionId));
+                return _this.getDocumentsMatchingCollectionQuery(transaction, collectionQuery).next(function (r) {
+                    r.forEach(function (key, doc) {
+                        results = results.insert(key, doc);
+                    });
+                });
+            }).next(function () { return results; });
         });
     };
     LocalDocumentsView.prototype.getDocumentsMatchingCollectionQuery = function (transaction, query) {
@@ -12485,6 +12753,7 @@ var LocalDocumentsView = /** @class */ (function () {
 }());
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -12607,6 +12876,7 @@ var DocReference = /** @class */ (function () {
 }());
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -12689,7 +12959,7 @@ var LocalStore = /** @class */ (function () {
         this.mutationQueue = persistence.getMutationQueue(initialUser);
         this.remoteDocuments = persistence.getRemoteDocumentCache();
         this.queryCache = persistence.getQueryCache();
-        this.localDocuments = new LocalDocumentsView(this.remoteDocuments, this.mutationQueue);
+        this.localDocuments = new LocalDocumentsView(this.remoteDocuments, this.mutationQueue, this.persistence.getIndexManager());
     }
     /**
      * Tells the LocalStore that the currently authenticated user has changed.
@@ -12712,7 +12982,7 @@ var LocalStore = /** @class */ (function () {
                 _this.mutationQueue = _this.persistence.getMutationQueue(user);
                 // Recreate our LocalDocumentsView using the new
                 // MutationQueue.
-                _this.localDocuments = new LocalDocumentsView(_this.remoteDocuments, _this.mutationQueue);
+                _this.localDocuments = new LocalDocumentsView(_this.remoteDocuments, _this.mutationQueue, _this.persistence.getIndexManager());
                 return _this.mutationQueue.getAllMutationBatches(txn);
             })
                 .next(function (newBatches) {
@@ -12753,21 +13023,49 @@ var LocalStore = /** @class */ (function () {
     /* Accept locally generated Mutations and commit them to storage. */
     LocalStore.prototype.localWrite = function (mutations) {
         var _this = this;
+        var localWriteTime = Timestamp.now();
+        var keys = mutations.reduce(function (keys, m) { return keys.add(m.key); }, documentKeySet());
         return this.persistence.runTransaction('Locally write mutations', 'readwrite', function (txn) {
-            var batch;
-            var localWriteTime = Timestamp.now();
-            return _this.mutationQueue
-                .addMutationBatch(txn, localWriteTime, mutations)
-                .next(function (promisedBatch) {
-                batch = promisedBatch;
-                // TODO(koss): This is doing an N^2 update by replaying ALL the
-                // mutations on each document (instead of just the ones added) in
-                // this batch.
-                var keys = batch.keys();
-                return _this.localDocuments.getDocuments(txn, keys);
-            })
-                .next(function (changedDocuments) {
-                return { batchId: batch.batchId, changes: changedDocuments };
+            // Load and apply all existing mutations. This lets us compute the
+            // current base state for all non-idempotent transforms before applying
+            // any additional user-provided writes.
+            return _this.localDocuments
+                .getDocuments(txn, keys)
+                .next(function (existingDocs) {
+                // For non-idempotent mutations (such as `FieldValue.increment()`),
+                // we record the base state in a separate patch mutation. This is
+                // later used to guarantee consistent values and prevents flicker
+                // even if the backend sends us an update that already includes our
+                // transform.
+                var baseMutations = [];
+                for (var _i = 0, mutations_1 = mutations; _i < mutations_1.length; _i++) {
+                    var mutation = mutations_1[_i];
+                    var maybeDoc = existingDocs.get(mutation.key);
+                    if (!mutation.isIdempotent) {
+                        // Theoretically, we should only include non-idempotent fields
+                        // in this field mask as this mask is used to populate the base
+                        // state for all DocumentTransforms.  By  including all fields,
+                        // we incorrectly prevent rebasing of idempotent transforms
+                        // (such as `arrayUnion()`) when any non-idempotent transforms
+                        // are present.
+                        var fieldMask = mutation.fieldMask;
+                        if (fieldMask) {
+                            var baseValues = maybeDoc instanceof Document
+                                ? fieldMask.applyTo(maybeDoc.data)
+                                : ObjectValue.EMPTY;
+                            // NOTE: The base state should only be applied if there's some
+                            // existing document to override, so use a Precondition of
+                            // exists=true
+                            baseMutations.push(new PatchMutation(mutation.key, baseValues, fieldMask, Precondition.exists(true)));
+                        }
+                    }
+                }
+                return _this.mutationQueue
+                    .addMutationBatch(txn, localWriteTime, baseMutations, mutations)
+                    .next(function (batch) {
+                    var changes = batch.applyToLocalDocumentSet(existingDocs);
+                    return { batchId: batch.batchId, changes: changes };
+                });
             });
         });
     };
@@ -13224,6 +13522,7 @@ var LocalStore = /** @class */ (function () {
 }());
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -13239,7 +13538,8 @@ var LocalStore = /** @class */ (function () {
  * limitations under the License.
  */
 var MemoryMutationQueue = /** @class */ (function () {
-    function MemoryMutationQueue(referenceDelegate) {
+    function MemoryMutationQueue(indexManager, referenceDelegate) {
+        this.indexManager = indexManager;
         this.referenceDelegate = referenceDelegate;
         /**
          * The set of all mutations that have been sent but not yet been applied to
@@ -13248,8 +13548,6 @@ var MemoryMutationQueue = /** @class */ (function () {
         this.mutationQueue = [];
         /** Next value to use when assigning sequential IDs to each mutation batch. */
         this.nextBatchId = 1;
-        /** The highest acknowledged mutation in the queue. */
-        this.highestAcknowledgedBatchId = BATCHID_UNKNOWN;
         /** The last received stream token from the server, used to acknowledge which
          * responses the client has processed. Stream tokens are opaque checkpoint
          * markers whose only real value is their inclusion in the next request.
@@ -13263,7 +13561,6 @@ var MemoryMutationQueue = /** @class */ (function () {
     };
     MemoryMutationQueue.prototype.acknowledgeBatch = function (transaction, batch, streamToken) {
         var batchId = batch.batchId;
-        assert(batchId > this.highestAcknowledgedBatchId, 'Mutation batchIDs must be acknowledged in order');
         var batchIndex = this.indexOfExistingBatchId(batchId, 'acknowledged');
         assert(batchIndex === 0, 'Can only acknowledge the first batch in the mutation queue');
         // Verify that the batch in the queue is the one to be acknowledged.
@@ -13272,7 +13569,6 @@ var MemoryMutationQueue = /** @class */ (function () {
             batchId +
             ', got batch ' +
             check.batchId);
-        this.highestAcknowledgedBatchId = batchId;
         this.lastStreamToken = streamToken;
         return PersistencePromise.resolve();
     };
@@ -13283,7 +13579,7 @@ var MemoryMutationQueue = /** @class */ (function () {
         this.lastStreamToken = streamToken;
         return PersistencePromise.resolve();
     };
-    MemoryMutationQueue.prototype.addMutationBatch = function (transaction, localWriteTime, mutations) {
+    MemoryMutationQueue.prototype.addMutationBatch = function (transaction, localWriteTime, baseMutations, mutations) {
         assert(mutations.length !== 0, 'Mutation batches should not be empty');
         var batchId = this.nextBatchId;
         this.nextBatchId++;
@@ -13291,12 +13587,13 @@ var MemoryMutationQueue = /** @class */ (function () {
             var prior = this.mutationQueue[this.mutationQueue.length - 1];
             assert(prior.batchId < batchId, 'Mutation batchIDs must be monotonically increasing order');
         }
-        var batch = new MutationBatch(batchId, localWriteTime, mutations);
+        var batch = new MutationBatch(batchId, localWriteTime, baseMutations, mutations);
         this.mutationQueue.push(batch);
-        // Track references by document key.
+        // Track references by document key and index collection parents.
         for (var _i = 0, mutations_1 = mutations; _i < mutations_1.length; _i++) {
             var mutation = mutations_1[_i];
             this.batchesByDocumentKey = this.batchesByDocumentKey.add(new DocReference(mutation.key, batchId));
+            this.indexManager.addToCollectionParentIndex(transaction, mutation.key.path.popLast());
         }
         return PersistencePromise.resolve(batch);
     };
@@ -13309,10 +13606,7 @@ var MemoryMutationQueue = /** @class */ (function () {
         return PersistencePromise.resolve(mutationBatch.keys());
     };
     MemoryMutationQueue.prototype.getNextMutationBatchAfterBatchId = function (transaction, batchId) {
-        // All batches with batchId <= this.highestAcknowledgedBatchId have been
-        // acknowledged so the first unacknowledged batch after batchID will have a
-        // batchID larger than both of these values.
-        var nextBatchId = Math.max(batchId, this.highestAcknowledgedBatchId) + 1;
+        var nextBatchId = batchId + 1;
         // The requested batchId may still be out of range so normalize it to the
         // start of the queue.
         var rawIndex = this.indexOfBatchId(nextBatchId);
@@ -13349,6 +13643,7 @@ var MemoryMutationQueue = /** @class */ (function () {
         return PersistencePromise.resolve(this.findMutationBatches(uniqueBatchIDs));
     };
     MemoryMutationQueue.prototype.getAllMutationBatchesAffectingQuery = function (transaction, query) {
+        assert(!query.isCollectionGroupQuery(), 'CollectionGroup queries should be handled in LocalDocumentsView');
         // Use the query path as a prefix for testing if a document matches the
         // query.
         var prefix = query.path;
@@ -13478,6 +13773,7 @@ var MemoryMutationQueue = /** @class */ (function () {
 }());
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -13632,6 +13928,7 @@ var MemoryQueryCache = /** @class */ (function () {
 }());
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -13654,7 +13951,8 @@ var MemoryRemoteDocumentCache = /** @class */ (function () {
      * @param sizer Used to assess the size of a document. For eager GC, this is expected to just
      * return 0 to avoid unnecessarily doing the work of calculating the size.
      */
-    function MemoryRemoteDocumentCache(sizer) {
+    function MemoryRemoteDocumentCache(indexManager, sizer) {
+        this.indexManager = indexManager;
         this.sizer = sizer;
         this.docs = documentSizeMap();
         this.newDocumentChanges = documentKeySet();
@@ -13664,14 +13962,16 @@ var MemoryRemoteDocumentCache = /** @class */ (function () {
      * Adds the supplied entries to the cache. Adds the given size delta to the cached size.
      */
     MemoryRemoteDocumentCache.prototype.addEntries = function (transaction, entries, sizeDelta) {
+        var promises = [];
         for (var _i = 0, entries_1 = entries; _i < entries_1.length; _i++) {
             var entry = entries_1[_i];
             var key = entry.maybeDocument.key;
             this.docs = this.docs.insert(key, entry);
             this.newDocumentChanges = this.newDocumentChanges.add(key);
+            promises.push(this.indexManager.addToCollectionParentIndex(transaction, key.path.popLast()));
         }
         this.size += sizeDelta;
-        return PersistencePromise.resolve();
+        return PersistencePromise.waitFor(promises);
     };
     /**
      * Removes the specified entry from the cache and updates the size as appropriate.
@@ -13729,6 +14029,7 @@ var MemoryRemoteDocumentCache = /** @class */ (function () {
         return PersistencePromise.resolve({ maybeDocuments: results, sizeMap: sizeMap });
     };
     MemoryRemoteDocumentCache.prototype.getDocumentsMatchingQuery = function (transaction, query) {
+        assert(!query.isCollectionGroupQuery(), 'CollectionGroup queries should be handled in LocalDocumentsView');
         var results = documentMap();
         // Documents are ordered by key, so we can use a prefix scan to narrow down
         // the documents we need to match the query against.
@@ -13804,6 +14105,7 @@ var MemoryRemoteDocumentChangeBuffer = /** @class */ (function (_super) {
 }(RemoteDocumentChangeBuffer));
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -13833,13 +14135,6 @@ var MemoryPersistence = /** @class */ (function () {
     function MemoryPersistence(clientId, referenceDelegateFactory) {
         var _this = this;
         this.clientId = clientId;
-        /**
-         * Note that these are retained here to make it easier to write tests
-         * affecting both the in-memory and IndexedDB-backed persistence layers. Tests
-         * can create a new LocalStore wrapping this Persistence instance and this
-         * will make the in-memory persistence layer behave as if it were actually
-         * persisting values.
-         */
         this.mutationQueues = {};
         this.listenSequence = new ListenSequence(0);
         this._started = false;
@@ -13849,7 +14144,8 @@ var MemoryPersistence = /** @class */ (function () {
         var sizer = function (doc) {
             return _this.referenceDelegate.documentSize(doc);
         };
-        this.remoteDocumentCache = new MemoryRemoteDocumentCache(sizer);
+        this.indexManager = new MemoryIndexManager();
+        this.remoteDocumentCache = new MemoryRemoteDocumentCache(this.indexManager, sizer);
     }
     MemoryPersistence.createLruPersistence = function (clientId, serializer, params) {
         var factory = function (p) {
@@ -13863,7 +14159,7 @@ var MemoryPersistence = /** @class */ (function () {
         };
         return new MemoryPersistence(clientId, factory);
     };
-    MemoryPersistence.prototype.shutdown = function (deleteData) {
+    MemoryPersistence.prototype.shutdown = function () {
         // No durable state to ensure is closed on shutdown.
         this._started = false;
         return Promise.resolve();
@@ -13889,10 +14185,13 @@ var MemoryPersistence = /** @class */ (function () {
     MemoryPersistence.prototype.setNetworkEnabled = function (networkEnabled) {
         // No op.
     };
+    MemoryPersistence.prototype.getIndexManager = function () {
+        return this.indexManager;
+    };
     MemoryPersistence.prototype.getMutationQueue = function (user) {
         var queue = this.mutationQueues[user.toKey()];
         if (!queue) {
-            queue = new MemoryMutationQueue(this.referenceDelegate);
+            queue = new MemoryMutationQueue(this.indexManager, this.referenceDelegate);
             this.mutationQueues[user.toKey()] = queue;
         }
         return queue;
@@ -14136,6 +14435,7 @@ var MemoryLruDelegate = /** @class */ (function () {
 }());
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14264,6 +14564,7 @@ var ExponentialBackoff = /** @class */ (function () {
 }());
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14513,13 +14814,13 @@ var PersistentStream = /** @class */ (function () {
      * @param finalState the intended state of the stream after closing.
      * @param error the error the connection was closed with.
      */
-    PersistentStream.prototype.close = function (finalState, error$$1) {
+    PersistentStream.prototype.close = function (finalState, error$1) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
             return tslib_1.__generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         assert(this.isStarted(), 'Only started streams should be closed.');
-                        assert(finalState === PersistentStreamState.Error || isNullOrUndefined(error$$1), "Can't provide an error when not in an error state.");
+                        assert(finalState === PersistentStreamState.Error || isNullOrUndefined(error$1), "Can't provide an error when not in an error state.");
                         // Cancel any outstanding timers (they're guaranteed not to execute).
                         this.cancelIdleCheck();
                         this.backoff.cancel();
@@ -14530,13 +14831,13 @@ var PersistentStream = /** @class */ (function () {
                             // If this is an intentional close ensure we don't delay our next connection attempt.
                             this.backoff.reset();
                         }
-                        else if (error$$1 && error$$1.code === Code.RESOURCE_EXHAUSTED) {
+                        else if (error$1 && error$1.code === Code.RESOURCE_EXHAUSTED) {
                             // Log the error. (Probably either 'quota exceeded' or 'max queue length reached'.)
-                            error(error$$1.toString());
+                            error(error$1.toString());
                             error('Using maximum backoff delay to prevent overloading the backend.');
                             this.backoff.resetToMax();
                         }
-                        else if (error$$1 && error$$1.code === Code.UNAUTHENTICATED) {
+                        else if (error$1 && error$1.code === Code.UNAUTHENTICATED) {
                             // "unauthenticated" error means the token was rejected. Try force refreshing it in case it
                             // just expired.
                             this.credentialsProvider.invalidateToken();
@@ -14551,7 +14852,7 @@ var PersistentStream = /** @class */ (function () {
                         // inhibit backoff or otherwise manipulate the state in its non-started state.
                         this.state = finalState;
                         // Notify the listener that the stream closed.
-                        return [4 /*yield*/, this.listener.onClose(error$$1)];
+                        return [4 /*yield*/, this.listener.onClose(error$1)];
                     case 1:
                         // Notify the listener that the stream closed.
                         _a.sent();
@@ -14583,9 +14884,9 @@ var PersistentStream = /** @class */ (function () {
                 // AsyncQueue since they don't chain asynchronous calls
                 _this.startStream(token);
             }
-        }, function (error$$1) {
+        }, function (error) {
             dispatchIfNotClosed(function () {
-                var rpcError = new FirestoreError(Code.UNKNOWN, 'Fetching auth token failed: ' + error$$1.message);
+                var rpcError = new FirestoreError(Code.UNKNOWN, 'Fetching auth token failed: ' + error.message);
                 return _this.handleStreamClose(rpcError);
             });
         });
@@ -14602,9 +14903,9 @@ var PersistentStream = /** @class */ (function () {
                 return _this.listener.onOpen();
             });
         });
-        this.stream.onClose(function (error$$1) {
+        this.stream.onClose(function (error) {
             dispatchIfNotClosed(function () {
-                return _this.handleStreamClose(error$$1);
+                return _this.handleStreamClose(error);
             });
         });
         this.stream.onMessage(function (msg) {
@@ -14628,15 +14929,15 @@ var PersistentStream = /** @class */ (function () {
         }); });
     };
     // Visible for tests
-    PersistentStream.prototype.handleStreamClose = function (error$$1) {
+    PersistentStream.prototype.handleStreamClose = function (error) {
         assert(this.isStarted(), "Can't handle server close on non-started stream");
-        debug(LOG_TAG$6, "close with error: " + error$$1);
+        debug(LOG_TAG$6, "close with error: " + error);
         this.stream = null;
         // In theory the stream could close cleanly, however, in our current model
         // we never expect this to happen because if we stop a stream ourselves,
         // this callback will never be called. To prevent cases where we retry
         // without a backoff accidentally, we set the stream to error in all cases.
-        return this.close(PersistentStreamState.Error, error$$1);
+        return this.close(PersistentStreamState.Error, error);
     };
     /**
      * Returns a "dispatcher" function that dispatches operations onto the
@@ -14813,6 +15114,7 @@ var PersistentWriteStream = /** @class */ (function (_super) {
 }(PersistentStream));
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14910,6 +15212,7 @@ var Datastore = /** @class */ (function () {
 }());
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15047,6 +15350,7 @@ var Transaction = /** @class */ (function () {
 }());
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15098,6 +15402,7 @@ var OnlineStateSource;
 })(OnlineStateSource || (OnlineStateSource = {}));
 
 /**
+ * @license
  * Copyright 2018 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15191,7 +15496,7 @@ var OnlineStateTracker = /** @class */ (function () {
      * allow multiple failures (based on MAX_WATCH_STREAM_FAILURES) before we
      * actually transition to the 'Offline' state.
      */
-    OnlineStateTracker.prototype.handleWatchStreamFailure = function (error$$1) {
+    OnlineStateTracker.prototype.handleWatchStreamFailure = function (error) {
         if (this.state === OnlineState.Online) {
             this.setAndBroadcast(OnlineState.Unknown);
             // To get to OnlineState.Online, set() must have been called which would
@@ -15204,7 +15509,7 @@ var OnlineStateTracker = /** @class */ (function () {
             if (this.watchStreamFailures >= MAX_WATCH_STREAM_FAILURES) {
                 this.clearOnlineStateTimer();
                 this.logClientOfflineWarningIfNecessary("Connection failed " + MAX_WATCH_STREAM_FAILURES + " " +
-                    ("times. Most recent error: " + error$$1.toString()));
+                    ("times. Most recent error: " + error.toString()));
                 this.setAndBroadcast(OnlineState.Offline);
             }
         }
@@ -15255,6 +15560,7 @@ var OnlineStateTracker = /** @class */ (function () {
 }());
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15534,10 +15840,10 @@ var RemoteStore = /** @class */ (function () {
             });
         });
     };
-    RemoteStore.prototype.onWatchStreamClose = function (error$$1) {
+    RemoteStore.prototype.onWatchStreamClose = function (error) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
             return tslib_1.__generator(this, function (_a) {
-                if (error$$1 === undefined) {
+                if (error === undefined) {
                     // Graceful stop (due to stop() or idle timeout). Make sure that's
                     // desirable.
                     assert(!this.shouldStartWatchStream(), 'Watch stream was stopped gracefully while still needed.');
@@ -15545,7 +15851,7 @@ var RemoteStore = /** @class */ (function () {
                 this.cleanUpWatchStreamState();
                 // If we still need the watch stream, retry the connection.
                 if (this.shouldStartWatchStream()) {
-                    this.onlineStateTracker.handleWatchStreamFailure(error$$1);
+                    this.onlineStateTracker.handleWatchStreamFailure(error);
                     this.startWatchStream();
                 }
                 else {
@@ -15654,7 +15960,7 @@ var RemoteStore = /** @class */ (function () {
     RemoteStore.prototype.handleTargetError = function (watchChange) {
         var _this = this;
         assert(!!watchChange.cause, 'Handling target error without a cause');
-        var error$$1 = watchChange.cause;
+        var error = watchChange.cause;
         var promiseChain = Promise.resolve();
         watchChange.targetIds.forEach(function (targetId) {
             promiseChain = promiseChain.then(function () { return tslib_1.__awaiter(_this, void 0, void 0, function () {
@@ -15663,7 +15969,7 @@ var RemoteStore = /** @class */ (function () {
                     if (contains(this.listenTargets, targetId)) {
                         delete this.listenTargets[targetId];
                         this.watchChangeAggregator.removeTarget(targetId);
-                        return [2 /*return*/, this.syncEngine.rejectListen(targetId, error$$1)];
+                        return [2 /*return*/, this.syncEngine.rejectListen(targetId, error)];
                     }
                     return [2 /*return*/];
                 });
@@ -15778,29 +16084,29 @@ var RemoteStore = /** @class */ (function () {
             return _this.fillWritePipeline();
         });
     };
-    RemoteStore.prototype.onWriteStreamClose = function (error$$1) {
+    RemoteStore.prototype.onWriteStreamClose = function (error) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
-            var _this = this;
             var errorHandling;
+            var _this = this;
             return tslib_1.__generator(this, function (_a) {
-                if (error$$1 === undefined) {
+                if (error === undefined) {
                     // Graceful stop (due to stop() or idle timeout). Make sure that's
                     // desirable.
                     assert(!this.shouldStartWriteStream(), 'Write stream was stopped gracefully while still needed.');
                 }
                 // If the write stream closed due to an error, invoke the error callbacks if
                 // there are pending writes.
-                if (error$$1 && this.writePipeline.length > 0) {
+                if (error && this.writePipeline.length > 0) {
                     errorHandling = void 0;
                     if (this.writeStream.handshakeComplete) {
                         // This error affects the actual write.
-                        errorHandling = this.handleWriteError(error$$1);
+                        errorHandling = this.handleWriteError(error);
                     }
                     else {
                         // If there was an error before the handshake has finished, it's
                         // possible that the server is unable to process the stream token
                         // we're sending. (Perhaps it's too old?)
-                        errorHandling = this.handleHandshakeError(error$$1);
+                        errorHandling = this.handleHandshakeError(error);
                     }
                     return [2 /*return*/, errorHandling.then(function () {
                             // The write stream might have been started by refilling the write
@@ -15814,47 +16120,43 @@ var RemoteStore = /** @class */ (function () {
             });
         });
     };
-    RemoteStore.prototype.handleHandshakeError = function (error$$1) {
+    RemoteStore.prototype.handleHandshakeError = function (error) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
             return tslib_1.__generator(this, function (_a) {
-                // Reset the token if it's a permanent error or the error code is
-                // ABORTED, signaling the write stream is no longer valid.
-                if (isPermanentError(error$$1.code) || error$$1.code === Code.ABORTED) {
+                // Reset the token if it's a permanent error, signaling the write stream is
+                // no longer valid. Note that the handshake does not count as a write: see
+                // comments on isPermanentWriteError for details.
+                if (isPermanentError(error.code)) {
                     debug(LOG_TAG$8, 'RemoteStore error before completed handshake; resetting stream token: ', this.writeStream.lastStreamToken);
                     this.writeStream.lastStreamToken = emptyByteString();
                     return [2 /*return*/, this.localStore
                             .setLastStreamToken(emptyByteString())
                             .catch(ignoreIfPrimaryLeaseLoss)];
                 }
-                else {
-                    // Some other error, don't reset stream token. Our stream logic will
-                    // just retry with exponential backoff.
-                }
                 return [2 /*return*/];
             });
         });
     };
-    RemoteStore.prototype.handleWriteError = function (error$$1) {
+    RemoteStore.prototype.handleWriteError = function (error) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
-            var _this = this;
             var batch;
+            var _this = this;
             return tslib_1.__generator(this, function (_a) {
-                if (isPermanentError(error$$1.code)) {
+                // Only handle permanent errors here. If it's transient, just let the retry
+                // logic kick in.
+                if (isPermanentWriteError(error.code)) {
                     batch = this.writePipeline.shift();
                     // In this case it's also unlikely that the server itself is melting
                     // down -- this was just a bad request so inhibit backoff on the next
                     // restart.
                     this.writeStream.inhibitBackoff();
                     return [2 /*return*/, this.syncEngine
-                            .rejectFailedWrite(batch.batchId, error$$1)
+                            .rejectFailedWrite(batch.batchId, error)
                             .then(function () {
                             // It's possible that with the completion of this mutation
                             // another slot has freed up.
                             return _this.fillWritePipeline();
                         })];
-                }
-                else {
-                    // Transient error, just let the retry logic kick in.
                 }
                 return [2 /*return*/];
             });
@@ -15917,6 +16219,7 @@ var RemoteStore = /** @class */ (function () {
 }());
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16135,6 +16438,7 @@ var QueryListener = /** @class */ (function () {
 }());
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16182,6 +16486,7 @@ var LocalViewChanges = /** @class */ (function () {
 }());
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16574,6 +16879,7 @@ function compareChangeType(c1, c2) {
 }
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16691,7 +16997,7 @@ var SyncEngine = /** @class */ (function () {
                         this.assertSubscribed('listen()');
                         queryView = this.queryViewsByQuery.get(query);
                         if (!queryView) return [3 /*break*/, 1];
-                        // PORTING NOTE: With Mult-Tab Web, it is possible that a query view
+                        // PORTING NOTE: With Multi-Tab Web, it is possible that a query view
                         // already exists when EventManager calls us for the first time. This
                         // happens when the primary tab is already listening to this query on
                         // behalf of another tab and the user of the primary also starts listening
@@ -16771,8 +17077,8 @@ var SyncEngine = /** @class */ (function () {
     /** Stops listening to the query. */
     SyncEngine.prototype.unlisten = function (query) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
-            var _this = this;
             var queryView, targetRemainsActive;
+            var _this = this;
             return tslib_1.__generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -16834,8 +17140,8 @@ var SyncEngine = /** @class */ (function () {
         });
     };
     // TODO(klimt): Wrap the given error in a standard Firestore error object.
-    SyncEngine.prototype.wrapUpdateFunctionError = function (error$$1) {
-        return error$$1;
+    SyncEngine.prototype.wrapUpdateFunctionError = function (error) {
+        return error;
     };
     /**
      * Takes an updateFunction in which a set of reads and writes can be performed
@@ -16881,9 +17187,9 @@ var SyncEngine = /** @class */ (function () {
                 .then(function () {
                 return result;
             })
-                .catch(function (error$$1) {
+                .catch(function (error) {
                 if (retries === 0) {
-                    return Promise.reject(error$$1);
+                    return Promise.reject(error);
                 }
                 // TODO(klimt): Put in a retry delay?
                 return _this.runTransaction(updateFunction, retries - 1);
@@ -16915,9 +17221,6 @@ var SyncEngine = /** @class */ (function () {
                     else if (targetChange.removedDocuments.size > 0) {
                         assert(limboResolution.receivedDocument, 'Received remove for limbo target document without add.');
                         limboResolution.receivedDocument = false;
-                    }
-                    else {
-                        // This was probably just a CURRENT targetChange or similar.
                     }
                 }
             });
@@ -16954,8 +17257,8 @@ var SyncEngine = /** @class */ (function () {
     };
     SyncEngine.prototype.rejectListen = function (targetId, err) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
-            var _this = this;
             var limboResolution, limboKey, documentUpdates, resolvedLimboDocuments, event_1, queryView_1;
+            var _this = this;
             return tslib_1.__generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -16993,7 +17296,7 @@ var SyncEngine = /** @class */ (function () {
         });
     };
     // PORTING NOTE: Multi-tab only
-    SyncEngine.prototype.applyBatchState = function (batchId, batchState, error$$1) {
+    SyncEngine.prototype.applyBatchState = function (batchId, batchState, error) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
             var documents;
             return tslib_1.__generator(this, function (_a) {
@@ -17029,7 +17332,7 @@ var SyncEngine = /** @class */ (function () {
                         if (batchState === 'acknowledged' || batchState === 'rejected') {
                             // NOTE: Both these methods are no-ops for batches that originated from
                             // other clients.
-                            this.processUserCallback(batchId, error$$1 ? error$$1 : null);
+                            this.processUserCallback(batchId, error ? error : null);
                             this.localStore.removeCachedMutationBatchMetadata(batchId);
                         }
                         else {
@@ -17061,18 +17364,18 @@ var SyncEngine = /** @class */ (function () {
         })
             .catch(ignoreIfPrimaryLeaseLoss);
     };
-    SyncEngine.prototype.rejectFailedWrite = function (batchId, error$$1) {
+    SyncEngine.prototype.rejectFailedWrite = function (batchId, error) {
         var _this = this;
         this.assertSubscribed('rejectFailedWrite()');
         // The local store may or may not be able to apply the write result and
         // raise events immediately (depending on whether the watcher is caught up),
         // so we raise user callbacks first so that they consistently happen before
         // listen events.
-        this.processUserCallback(batchId, error$$1);
+        this.processUserCallback(batchId, error);
         return this.localStore
             .rejectBatch(batchId)
             .then(function (changes) {
-            _this.sharedClientState.updateMutationState(batchId, 'rejected', error$$1);
+            _this.sharedClientState.updateMutationState(batchId, 'rejected', error);
             return _this.emitNewSnapsAndNotifyLocalStore(changes);
         })
             .catch(ignoreIfPrimaryLeaseLoss);
@@ -17089,7 +17392,7 @@ var SyncEngine = /** @class */ (function () {
      * Resolves or rejects the user callback for the given batch and then discards
      * it.
      */
-    SyncEngine.prototype.processUserCallback = function (batchId, error$$1) {
+    SyncEngine.prototype.processUserCallback = function (batchId, error) {
         var newCallbacks = this.mutationUserCallbacks[this.currentUser.toKey()];
         // NOTE: Mutations restored from persistence won't have callbacks, so it's
         // okay for there to be no callback for this ID.
@@ -17097,8 +17400,8 @@ var SyncEngine = /** @class */ (function () {
             var callback = newCallbacks.get(batchId);
             if (callback) {
                 assert(batchId === newCallbacks.minKey(), 'Mutation callbacks processed out-of-order?');
-                if (error$$1) {
-                    callback.reject(error$$1);
+                if (error) {
+                    callback.reject(error);
                 }
                 else {
                     callback.resolve();
@@ -17175,8 +17478,8 @@ var SyncEngine = /** @class */ (function () {
     };
     SyncEngine.prototype.emitNewSnapsAndNotifyLocalStore = function (changes, remoteEvent) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
-            var _this = this;
             var newSnaps, docChangesInAllViews, queriesProcessed;
+            var _this = this;
             return tslib_1.__generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -17256,8 +17559,8 @@ var SyncEngine = /** @class */ (function () {
     // PORTING NOTE: Multi-tab only
     SyncEngine.prototype.applyPrimaryState = function (isPrimary) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
-            var _this = this;
             var activeTargets, activeQueries, _i, activeQueries_1, queryData, activeTargets_1, p_1;
+            var _this = this;
             return tslib_1.__generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -17391,10 +17694,10 @@ var SyncEngine = /** @class */ (function () {
         return this.localStore.getActiveClients();
     };
     // PORTING NOTE: Multi-tab only
-    SyncEngine.prototype.applyTargetState = function (targetId, state, error$$1) {
+    SyncEngine.prototype.applyTargetState = function (targetId, state, error) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
-            var _this = this;
             var _a, queryView;
+            var _this = this;
             return tslib_1.__generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
@@ -17454,7 +17757,7 @@ var SyncEngine = /** @class */ (function () {
                             /*keepPersistedQueryData=*/ true)];
                     case 3:
                         _b.sent();
-                        this.syncEngineListener.onWatchError(queryView.query, error$$1);
+                        this.syncEngineListener.onWatchError(queryView.query, error);
                         return [3 /*break*/, 5];
                     case 4:
                         fail('Unexpected target state: ' + state);
@@ -17467,8 +17770,8 @@ var SyncEngine = /** @class */ (function () {
     // PORTING NOTE: Multi-tab only
     SyncEngine.prototype.applyActiveTargetsChange = function (added, removed) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
-            var _this = this;
             var _i, added_1, targetId, query, queryData, _loop_2, this_1, _a, removed_1, targetId;
+            var _this = this;
             return tslib_1.__generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
@@ -17564,6 +17867,7 @@ var SyncEngine = /** @class */ (function () {
 }());
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17614,6 +17918,7 @@ var User = /** @class */ (function () {
 }());
 
 /**
+ * @license
  * Copyright 2018 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17628,7 +17933,7 @@ var User = /** @class */ (function () {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-var LOG_TAG$10 = 'SharedClientState';
+var LOG_TAG$a = 'SharedClientState';
 // The format of the LocalStorage key that stores the client state is:
 //     firestore_clients_<persistence_prefix>_<instance_key>
 var CLIENT_STATE_KEY_PREFIX = 'firestore_clients';
@@ -17656,12 +17961,12 @@ var SEQUENCE_NUMBER_KEY_PREFIX = 'firestore_sequence_number';
  */
 // Visible for testing
 var MutationMetadata = /** @class */ (function () {
-    function MutationMetadata(user, batchId, state, error$$1) {
+    function MutationMetadata(user, batchId, state, error) {
         this.user = user;
         this.batchId = batchId;
         this.state = state;
-        this.error = error$$1;
-        assert((error$$1 !== undefined) === (state === 'rejected'), "MutationMetadata must contain an error iff state is 'rejected'");
+        this.error = error;
+        assert((error !== undefined) === (state === 'rejected'), "MutationMetadata must contain an error iff state is 'rejected'");
     }
     /**
      * Parses a MutationMetadata from its JSON representation in WebStorage.
@@ -17687,7 +17992,7 @@ var MutationMetadata = /** @class */ (function () {
             return new MutationMetadata(user, batchId, mutationBatch.state, firestoreError);
         }
         else {
-            error(LOG_TAG$10, "Failed to parse mutation state for ID '" + batchId + "': " + value);
+            error(LOG_TAG$a, "Failed to parse mutation state for ID '" + batchId + "': " + value);
             return null;
         }
     };
@@ -17712,11 +18017,11 @@ var MutationMetadata = /** @class */ (function () {
  */
 // Visible for testing
 var QueryTargetMetadata = /** @class */ (function () {
-    function QueryTargetMetadata(targetId, state, error$$1) {
+    function QueryTargetMetadata(targetId, state, error) {
         this.targetId = targetId;
         this.state = state;
-        this.error = error$$1;
-        assert((error$$1 !== undefined) === (state === 'rejected'), "QueryTargetMetadata must contain an error iff state is 'rejected'");
+        this.error = error;
+        assert((error !== undefined) === (state === 'rejected'), "QueryTargetMetadata must contain an error iff state is 'rejected'");
     }
     /**
      * Parses a QueryTargetMetadata from its JSON representation in WebStorage.
@@ -17742,7 +18047,7 @@ var QueryTargetMetadata = /** @class */ (function () {
             return new QueryTargetMetadata(targetId, targetState.state, firestoreError);
         }
         else {
-            error(LOG_TAG$10, "Failed to parse target state for ID '" + targetId + "': " + value);
+            error(LOG_TAG$a, "Failed to parse target state for ID '" + targetId + "': " + value);
             return null;
         }
     };
@@ -17787,7 +18092,7 @@ var RemoteClientState = /** @class */ (function () {
             return new RemoteClientState(clientId, activeTargetIdsSet);
         }
         else {
-            error(LOG_TAG$10, "Failed to parse client data for instance '" + clientId + "': " + value);
+            error(LOG_TAG$a, "Failed to parse client data for instance '" + clientId + "': " + value);
             return null;
         }
     };
@@ -17816,7 +18121,7 @@ var SharedOnlineState = /** @class */ (function () {
             return new SharedOnlineState(onlineState.clientId, OnlineState[onlineState.onlineState]);
         }
         else {
-            error(LOG_TAG$10, "Failed to parse online state: " + value);
+            error(LOG_TAG$a, "Failed to parse online state: " + value);
             return null;
         }
     };
@@ -17908,8 +18213,8 @@ var WebStorageSharedClientState = /** @class */ (function () {
     };
     WebStorageSharedClientState.prototype.start = function () {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
-            var _this = this;
             var existingClients, _i, existingClients_1, clientId, storageItem, clientState, onlineStateJSON, onlineState, _a, _b, event_1;
+            var _this = this;
             return tslib_1.__generator(this, function (_c) {
                 switch (_c.label) {
                     case 0:
@@ -17979,8 +18284,8 @@ var WebStorageSharedClientState = /** @class */ (function () {
     WebStorageSharedClientState.prototype.addPendingMutation = function (batchId) {
         this.persistMutationState(batchId, 'pending');
     };
-    WebStorageSharedClientState.prototype.updateMutationState = function (batchId, state, error$$1) {
-        this.persistMutationState(batchId, state, error$$1);
+    WebStorageSharedClientState.prototype.updateMutationState = function (batchId, state, error) {
+        this.persistMutationState(batchId, state, error);
         // Once a final mutation result is observed by other clients, they no longer
         // access the mutation's metadata entry. Since WebStorage replays events
         // in order, it is safe to delete the entry right after updating it.
@@ -18013,8 +18318,8 @@ var WebStorageSharedClientState = /** @class */ (function () {
     WebStorageSharedClientState.prototype.clearQueryState = function (targetId) {
         this.removeItem(this.toWebStorageQueryTargetMetadataKey(targetId));
     };
-    WebStorageSharedClientState.prototype.updateQueryState = function (targetId, state, error$$1) {
-        this.persistQueryTargetState(targetId, state, error$$1);
+    WebStorageSharedClientState.prototype.updateQueryState = function (targetId, state, error) {
+        this.persistQueryTargetState(targetId, state, error);
     };
     WebStorageSharedClientState.prototype.handleUserChange = function (user, removedBatchIds, addedBatchIds) {
         var _this = this;
@@ -18038,21 +18343,21 @@ var WebStorageSharedClientState = /** @class */ (function () {
     };
     WebStorageSharedClientState.prototype.getItem = function (key) {
         var value = this.storage.getItem(key);
-        debug(LOG_TAG$10, 'READ', key, value);
+        debug(LOG_TAG$a, 'READ', key, value);
         return value;
     };
     WebStorageSharedClientState.prototype.setItem = function (key, value) {
-        debug(LOG_TAG$10, 'SET', key, value);
+        debug(LOG_TAG$a, 'SET', key, value);
         this.storage.setItem(key, value);
     };
     WebStorageSharedClientState.prototype.removeItem = function (key) {
-        debug(LOG_TAG$10, 'REMOVE', key);
+        debug(LOG_TAG$a, 'REMOVE', key);
         this.storage.removeItem(key);
     };
     WebStorageSharedClientState.prototype.handleWebStorageEvent = function (event) {
         var _this = this;
         if (event.storageArea === this.storage) {
-            debug(LOG_TAG$10, 'EVENT', event.key, event.newValue);
+            debug(LOG_TAG$a, 'EVENT', event.key, event.newValue);
             if (event.key === this.localClientStorageKey) {
                 error('Received WebStorage notification for local change. Another client might have ' +
                     'garbage-collected our state');
@@ -18126,8 +18431,8 @@ var WebStorageSharedClientState = /** @class */ (function () {
     WebStorageSharedClientState.prototype.persistClientState = function () {
         this.setItem(this.localClientStorageKey, this.localClientState.toWebStorageJSON());
     };
-    WebStorageSharedClientState.prototype.persistMutationState = function (batchId, state, error$$1) {
-        var mutationState = new MutationMetadata(this.currentUser, batchId, state, error$$1);
+    WebStorageSharedClientState.prototype.persistMutationState = function (batchId, state, error) {
+        var mutationState = new MutationMetadata(this.currentUser, batchId, state, error);
         var mutationKey = this.toWebStorageMutationBatchKey(batchId);
         this.setItem(mutationKey, mutationState.toWebStorageJSON());
     };
@@ -18142,9 +18447,9 @@ var WebStorageSharedClientState = /** @class */ (function () {
         };
         this.storage.setItem(this.onlineStateKey, JSON.stringify(entry));
     };
-    WebStorageSharedClientState.prototype.persistQueryTargetState = function (targetId, state, error$$1) {
+    WebStorageSharedClientState.prototype.persistQueryTargetState = function (targetId, state, error) {
         var targetKey = this.toWebStorageQueryTargetMetadataKey(targetId);
-        var targetMetadata = new QueryTargetMetadata(targetId, state, error$$1);
+        var targetMetadata = new QueryTargetMetadata(targetId, state, error);
         this.setItem(targetKey, targetMetadata.toWebStorageJSON());
     };
     /** Assembles the key for a client state in WebStorage */
@@ -18213,7 +18518,7 @@ var WebStorageSharedClientState = /** @class */ (function () {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
             return tslib_1.__generator(this, function (_a) {
                 if (mutationBatch.user.uid !== this.currentUser.uid) {
-                    debug(LOG_TAG$10, "Ignoring mutation for non-active user " + mutationBatch.user.uid);
+                    debug(LOG_TAG$a, "Ignoring mutation for non-active user " + mutationBatch.user.uid);
                     return [2 /*return*/];
                 }
                 return [2 /*return*/, this.syncEngine.applyBatchState(mutationBatch.batchId, mutationBatch.state, mutationBatch.error)];
@@ -18274,7 +18579,7 @@ function fromWebStorageSequenceNumber(seqString) {
             sequenceNumber = parsed;
         }
         catch (e) {
-            error(LOG_TAG$10, 'Failed to read sequence number from WebStorage', e);
+            error(LOG_TAG$a, 'Failed to read sequence number from WebStorage', e);
         }
     }
     return sequenceNumber;
@@ -18295,14 +18600,14 @@ var MemorySharedClientState = /** @class */ (function () {
     MemorySharedClientState.prototype.addPendingMutation = function (batchId) {
         // No op.
     };
-    MemorySharedClientState.prototype.updateMutationState = function (batchId, state, error$$1) {
+    MemorySharedClientState.prototype.updateMutationState = function (batchId, state, error) {
         // No op.
     };
     MemorySharedClientState.prototype.addLocalQueryTarget = function (targetId) {
         this.localState.addQueryTarget(targetId);
         return this.queryState[targetId] || 'not-current';
     };
-    MemorySharedClientState.prototype.updateQueryState = function (targetId, state, error$$1) {
+    MemorySharedClientState.prototype.updateQueryState = function (targetId, state, error) {
         this.queryState[targetId] = state;
     };
     MemorySharedClientState.prototype.removeLocalQueryTarget = function (targetId) {
@@ -18336,6 +18641,7 @@ var MemorySharedClientState = /** @class */ (function () {
 }());
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -18350,7 +18656,7 @@ var MemorySharedClientState = /** @class */ (function () {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-var LOG_TAG$11 = 'FirestoreClient';
+var LOG_TAG$b = 'FirestoreClient';
 /** The DOMException code for an aborted operation. */
 var DOM_EXCEPTION_ABORTED = 20;
 /** The DOMException code for quota exceeded. */
@@ -18391,6 +18697,7 @@ var FirestoreClient = /** @class */ (function () {
         this.credentials = credentials;
         this.asyncQueue = asyncQueue;
         this.clientId = AutoId.newId();
+        this.isShutdown = false;
     }
     /**
      * Starts up the FirestoreClient, returning only whether or not enabling
@@ -18429,6 +18736,7 @@ var FirestoreClient = /** @class */ (function () {
      */
     FirestoreClient.prototype.start = function (persistenceSettings) {
         var _this = this;
+        this.verifyNotShutdown();
         // We defer our initialization until we get the current user from
         // setChangeListener(). We block the async queue until we got the initial
         // user and the initialization is completed. This will prevent any scheduled
@@ -18436,14 +18744,14 @@ var FirestoreClient = /** @class */ (function () {
         //
         // If initializationDone resolved then the FirestoreClient is in a usable
         // state.
-        var initializationDone = new Deferred$1();
+        var initializationDone = new Deferred();
         // If usePersistence is true, certain classes of errors while starting are
         // recoverable but only by falling back to persistence disabled.
         //
         // If there's an error in the first case but not in recovery we cannot
         // reject the promise blocking the async queue because this will cause the
         // async queue to panic.
-        var persistenceResult = new Deferred$1();
+        var persistenceResult = new Deferred();
         var initialized = false;
         this.credentials.setChangeListener(function (user) {
             if (!initialized) {
@@ -18470,6 +18778,7 @@ var FirestoreClient = /** @class */ (function () {
     /** Enables the network connection and requeues all pending operations. */
     FirestoreClient.prototype.enableNetwork = function () {
         var _this = this;
+        this.verifyNotShutdown();
         return this.asyncQueue.enqueue(function () {
             return _this.syncEngine.enableNetwork();
         });
@@ -18499,17 +18808,17 @@ var FirestoreClient = /** @class */ (function () {
                 persistenceResult.resolve();
                 return maybeLruGc;
             })
-                .catch(function (error$$1) {
+                .catch(function (error) {
                 // Regardless of whether or not the retry succeeds, from an user
                 // perspective, offline persistence has failed.
-                persistenceResult.reject(error$$1);
+                persistenceResult.reject(error);
                 // An unknown failure on the first stage shuts everything down.
-                if (!_this.canFallback(error$$1)) {
-                    throw error$$1;
+                if (!_this.canFallback(error)) {
+                    throw error;
                 }
                 console.warn('Error enabling offline storage. Falling back to' +
                     ' storage disabled: ' +
-                    error$$1);
+                    error);
                 return _this.startMemoryPersistence();
             });
         }
@@ -18526,23 +18835,32 @@ var FirestoreClient = /** @class */ (function () {
      * Decides whether the provided error allows us to gracefully disable
      * persistence (as opposed to crashing the client).
      */
-    FirestoreClient.prototype.canFallback = function (error$$1) {
-        if (error$$1 instanceof FirestoreError) {
-            return (error$$1.code === Code.FAILED_PRECONDITION ||
-                error$$1.code === Code.UNIMPLEMENTED);
+    FirestoreClient.prototype.canFallback = function (error) {
+        if (error instanceof FirestoreError) {
+            return (error.code === Code.FAILED_PRECONDITION ||
+                error.code === Code.UNIMPLEMENTED);
         }
         else if (typeof DOMException !== 'undefined' &&
-            error$$1 instanceof DOMException) {
+            error instanceof DOMException) {
             // We fall back to memory persistence if we cannot write the primary
             // lease. This can happen can during a schema migration, or if we run out
             // of quota when we try to write the primary lease.
             // For both the `QuotaExceededError` and the  `AbortError`, it is safe to
             // fall back to memory persistence since all modifications to IndexedDb
             // failed to commit.
-            return (error$$1.code === DOM_EXCEPTION_QUOTA_EXCEEDED ||
-                error$$1.code === DOM_EXCEPTION_ABORTED);
+            return (error.code === DOM_EXCEPTION_QUOTA_EXCEEDED ||
+                error.code === DOM_EXCEPTION_ABORTED);
         }
         return true;
+    };
+    /**
+     * Checks that the client has not been shutdown. Ensures that other methods on
+     * this class cannot be called after the client is shutdown.
+     */
+    FirestoreClient.prototype.verifyNotShutdown = function () {
+        if (this.isShutdown) {
+            throw new FirestoreError(Code.FAILED_PRECONDITION, 'The client has already been shutdown.');
+        }
     };
     /**
      * Starts IndexedDB-based persistence.
@@ -18604,12 +18922,12 @@ var FirestoreClient = /** @class */ (function () {
      */
     FirestoreClient.prototype.initializeRest = function (user, maybeLruGc) {
         var _this = this;
-        debug(LOG_TAG$11, 'Initializing. user=', user.uid);
+        debug(LOG_TAG$b, 'Initializing. user=', user.uid);
         return this.platform
             .loadConnection(this.databaseInfo)
             .then(function (connection) { return tslib_1.__awaiter(_this, void 0, void 0, function () {
-            var _this = this;
             var serializer, datastore, remoteStoreOnlineStateChangedHandler, sharedClientStateOnlineStateChangedHandler;
+            var _this = this;
             return tslib_1.__generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -18672,18 +18990,22 @@ var FirestoreClient = /** @class */ (function () {
     };
     FirestoreClient.prototype.handleCredentialChange = function (user) {
         this.asyncQueue.verifyOperationInProgress();
-        debug(LOG_TAG$11, 'Credential Changed. Current user: ' + user.uid);
+        debug(LOG_TAG$b, 'Credential Changed. Current user: ' + user.uid);
         return this.syncEngine.handleCredentialChange(user);
     };
     /** Disables the network connection. Pending operations will not complete. */
     FirestoreClient.prototype.disableNetwork = function () {
         var _this = this;
+        this.verifyNotShutdown();
         return this.asyncQueue.enqueue(function () {
             return _this.syncEngine.disableNetwork();
         });
     };
-    FirestoreClient.prototype.shutdown = function (options) {
+    FirestoreClient.prototype.shutdown = function () {
         var _this = this;
+        if (this.isShutdown === true) {
+            return Promise.resolve();
+        }
         return this.asyncQueue.enqueue(function () { return tslib_1.__awaiter(_this, void 0, void 0, function () {
             return tslib_1.__generator(this, function (_a) {
                 switch (_a.label) {
@@ -18698,13 +19020,14 @@ var FirestoreClient = /** @class */ (function () {
                         return [4 /*yield*/, this.sharedClientState.shutdown()];
                     case 2:
                         _a.sent();
-                        return [4 /*yield*/, this.persistence.shutdown(options && options.purgePersistenceWithDataLoss)];
+                        return [4 /*yield*/, this.persistence.shutdown()];
                     case 3:
                         _a.sent();
                         // `removeChangeListener` must be called after shutting down the
                         // RemoteStore as it will prevent the RemoteStore from retrieving
                         // auth tokens.
                         this.credentials.removeChangeListener();
+                        this.isShutdown = true;
                         return [2 /*return*/];
                 }
             });
@@ -18712,6 +19035,7 @@ var FirestoreClient = /** @class */ (function () {
     };
     FirestoreClient.prototype.listen = function (query, observer, options) {
         var _this = this;
+        this.verifyNotShutdown();
         var listener = new QueryListener(query, observer, options);
         this.asyncQueue.enqueueAndForget(function () {
             return _this.eventMgr.listen(listener);
@@ -18720,12 +19044,14 @@ var FirestoreClient = /** @class */ (function () {
     };
     FirestoreClient.prototype.unlisten = function (listener) {
         var _this = this;
+        this.verifyNotShutdown();
         this.asyncQueue.enqueueAndForget(function () {
             return _this.eventMgr.unlisten(listener);
         });
     };
     FirestoreClient.prototype.getDocumentFromLocalCache = function (docKey) {
         var _this = this;
+        this.verifyNotShutdown();
         return this.asyncQueue
             .enqueue(function () {
             return _this.localStore.readDocument(docKey);
@@ -18747,6 +19073,7 @@ var FirestoreClient = /** @class */ (function () {
     };
     FirestoreClient.prototype.getDocumentsFromLocalCache = function (query) {
         var _this = this;
+        this.verifyNotShutdown();
         return this.asyncQueue
             .enqueue(function () {
             return _this.localStore.executeQuery(query);
@@ -18761,7 +19088,8 @@ var FirestoreClient = /** @class */ (function () {
     };
     FirestoreClient.prototype.write = function (mutations) {
         var _this = this;
-        var deferred = new Deferred$1();
+        this.verifyNotShutdown();
+        var deferred = new Deferred();
         this.asyncQueue.enqueueAndForget(function () {
             return _this.syncEngine.write(mutations, deferred);
         });
@@ -18772,6 +19100,7 @@ var FirestoreClient = /** @class */ (function () {
     };
     FirestoreClient.prototype.transaction = function (updateFunction) {
         var _this = this;
+        this.verifyNotShutdown();
         // We have to wait for the async queue to be sure syncEngine is initialized.
         return this.asyncQueue
             .enqueue(function () { return tslib_1.__awaiter(_this, void 0, void 0, function () { return tslib_1.__generator(this, function (_a) {
@@ -18783,6 +19112,7 @@ var FirestoreClient = /** @class */ (function () {
 }());
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -18834,6 +19164,7 @@ var AsyncObserver = /** @class */ (function () {
 }());
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -18864,7 +19195,7 @@ var FieldPath$1 = /** @class */ (function () {
      *
      * @param fieldNames A list of field names.
      */
-    function FieldPath$$1() {
+    function FieldPath$1() {
         var fieldNames = [];
         for (var _i = 0; _i < arguments.length; _i++) {
             fieldNames[_i] = arguments[_i];
@@ -18879,11 +19210,11 @@ var FieldPath$1 = /** @class */ (function () {
         }
         this._internalPath = new FieldPath(fieldNames);
     }
-    FieldPath$$1.documentId = function () {
-        return FieldPath$$1._DOCUMENT_ID;
+    FieldPath$1.documentId = function () {
+        return FieldPath$1._DOCUMENT_ID;
     };
-    FieldPath$$1.prototype.isEqual = function (other) {
-        if (!(other instanceof FieldPath$$1)) {
+    FieldPath$1.prototype.isEqual = function (other) {
+        if (!(other instanceof FieldPath$1)) {
             throw invalidClassError('isEqual', 'FieldPath', 1, other);
         }
         return this._internalPath.isEqual(other._internalPath);
@@ -18894,8 +19225,8 @@ var FieldPath$1 = /** @class */ (function () {
      * included), but in the cases we currently support documentId(), the net
      * effect is the same.
      */
-    FieldPath$$1._DOCUMENT_ID = new FieldPath$$1(FieldPath.keyField().canonicalString());
-    return FieldPath$$1;
+    FieldPath$1._DOCUMENT_ID = new FieldPath$1(FieldPath.keyField().canonicalString());
+    return FieldPath$1;
 }());
 /**
  * Matches any characters in a field path string that are reserved.
@@ -18920,6 +19251,7 @@ function fromDotSeparatedString(path) {
 }
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -19051,9 +19383,9 @@ var FirebaseCredentialsProvider = /** @class */ (function () {
 /*
  * FirstPartyToken provides a fresh token each time its value
  * is requested, because if the token is too old, requests will be rejected.
- * TODO(b/33147818) this implementation violates the current assumption that
- * tokens are immutable.  We need to either revisit this assumption or come
- * up with some way for FPA to use the listen/unlisten interface.
+ * Technically this may no longer be necessary since the SDK should gracefully
+ * recover from unauthenticated errors (see b/33147818 for context), but it's
+ * safer to keep the implementation as-is.
  */
 var FirstPartyToken = /** @class */ (function () {
     function FirstPartyToken(gapi, sessionIndex) {
@@ -19061,16 +19393,17 @@ var FirstPartyToken = /** @class */ (function () {
         this.sessionIndex = sessionIndex;
         this.type = 'FirstParty';
         this.user = User.FIRST_PARTY;
-        assert(this.gapi &&
-            this.gapi['auth'] &&
-            this.gapi['auth']['getAuthHeaderValueForFirstParty'], 'unexpected gapi interface');
     }
     Object.defineProperty(FirstPartyToken.prototype, "authHeaders", {
         get: function () {
-            return {
-                Authorization: this.gapi['auth']['getAuthHeaderValueForFirstParty']([]),
+            var headers = {
                 'X-Goog-AuthUser': this.sessionIndex
             };
+            var authHeader = this.gapi.auth.getAuthHeaderValueForFirstParty([]);
+            if (authHeader) {
+                headers['Authorization'] = authHeader;
+            }
+            return headers;
         },
         enumerable: true,
         configurable: true
@@ -19086,15 +19419,10 @@ var FirstPartyCredentialsProvider = /** @class */ (function () {
     function FirstPartyCredentialsProvider(gapi, sessionIndex) {
         this.gapi = gapi;
         this.sessionIndex = sessionIndex;
-        assert(this.gapi &&
-            this.gapi['auth'] &&
-            this.gapi['auth']['getAuthHeaderValueForFirstParty'], 'unexpected gapi interface');
     }
     FirstPartyCredentialsProvider.prototype.getToken = function () {
         return Promise.resolve(new FirstPartyToken(this.gapi, this.sessionIndex));
     };
-    // TODO(33108925): can someone switch users w/o a page refresh?
-    // TODO(33110621): need to understand token/session lifecycle
     FirstPartyCredentialsProvider.prototype.setChangeListener = function (changeListener) {
         // Fire with initial uid.
         changeListener(User.FIRST_PARTY);
@@ -19113,7 +19441,13 @@ function makeCredentialsProvider(credentials) {
     }
     switch (credentials.type) {
         case 'gapi':
-            return new FirstPartyCredentialsProvider(credentials.client, credentials.sessionIndex || '0');
+            var client = credentials.client;
+            // Make sure this is a Gapi client.
+            assert(!!(typeof client === 'object' &&
+                client !== null &&
+                client['auth'] &&
+                client['auth']['getAuthHeaderValueForFirstParty']), 'unexpected gapi interface');
+            return new FirstPartyCredentialsProvider(client, credentials.sessionIndex || '0');
         case 'provider':
             return credentials.client;
         default:
@@ -19122,6 +19456,7 @@ function makeCredentialsProvider(credentials) {
 }
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -19137,13 +19472,13 @@ function makeCredentialsProvider(credentials) {
  * limitations under the License.
  */
 function isPartialObserver(obj) {
-    return implementsAnyMethods$1(obj, ['next', 'error', 'complete']);
+    return implementsAnyMethods(obj, ['next', 'error', 'complete']);
 }
 /**
  * Returns true if obj is an object and contains at least one of the specified
  * methods.
  */
-function implementsAnyMethods$1(obj, methods) {
+function implementsAnyMethods(obj, methods) {
     if (typeof obj !== 'object' || obj === null) {
         return false;
     }
@@ -19158,6 +19493,7 @@ function implementsAnyMethods$1(obj, methods) {
 }
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -19182,9 +19518,11 @@ var FieldValueImpl = /** @class */ (function () {
         this._methodName = _methodName;
     }
     FieldValueImpl.delete = function () {
+        validateNoArgs('FieldValue.delete', arguments);
         return DeleteFieldValueImpl.instance;
     };
     FieldValueImpl.serverTimestamp = function () {
+        validateNoArgs('FieldValue.serverTimestamp', arguments);
         return ServerTimestampFieldValueImpl.instance;
     };
     FieldValueImpl.arrayUnion = function () {
@@ -19206,6 +19544,11 @@ var FieldValueImpl = /** @class */ (function () {
         // NOTE: We don't actually parse the data until it's used in set() or
         // update() since we need access to the Firestore instance.
         return new ArrayRemoveFieldValueImpl(elements);
+    };
+    FieldValueImpl.increment = function (n) {
+        validateArgType('FieldValue.increment', 'number', 1, n);
+        validateExactNumberOfArgs('FieldValue.increment', arguments, 1);
+        return new NumericIncrementFieldValueImpl(n);
     };
     FieldValueImpl.prototype.isEqual = function (other) {
         return this === other;
@@ -19248,6 +19591,15 @@ var ArrayRemoveFieldValueImpl = /** @class */ (function (_super) {
     }
     return ArrayRemoveFieldValueImpl;
 }(FieldValueImpl));
+var NumericIncrementFieldValueImpl = /** @class */ (function (_super) {
+    tslib_1.__extends(NumericIncrementFieldValueImpl, _super);
+    function NumericIncrementFieldValueImpl(_operand) {
+        var _this = _super.call(this, 'FieldValue.increment') || this;
+        _this._operand = _operand;
+        return _this;
+    }
+    return NumericIncrementFieldValueImpl;
+}(FieldValueImpl));
 // Public instance that disallows construction at runtime. This constructor is
 // used when exporting FieldValueImpl on firebase.firestore.FieldValue and will
 // be called FieldValue publicly. Internally we still use FieldValueImpl which
@@ -19259,6 +19611,7 @@ var ArrayRemoveFieldValueImpl = /** @class */ (function (_super) {
 var PublicFieldValue = makeConstructorPrivate(FieldValueImpl, 'Use FieldValue.<field>() instead.');
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -19473,7 +19826,7 @@ var UserDataConverter = /** @class */ (function () {
             fieldTransforms = context.fieldTransforms;
         }
         else {
-            var validatedFieldPaths = [];
+            var validatedFieldPaths = new SortedSet(FieldPath.comparator);
             for (var _i = 0, fieldPaths_1 = fieldPaths; _i < fieldPaths_1.length; _i++) {
                 var stringOrFieldPath = fieldPaths_1[_i];
                 var fieldPath = void 0;
@@ -19489,9 +19842,9 @@ var UserDataConverter = /** @class */ (function () {
                 if (!context.contains(fieldPath)) {
                     throw new FirestoreError(Code.INVALID_ARGUMENT, "Field '" + fieldPath + "' is specified in your field mask but missing from your input data.");
                 }
-                validatedFieldPaths.push(fieldPath);
+                validatedFieldPaths = validatedFieldPaths.add(fieldPath);
             }
-            fieldMask = FieldMask.fromArray(validatedFieldPaths);
+            fieldMask = FieldMask.fromSet(validatedFieldPaths);
             fieldTransforms = context.fieldTransforms.filter(function (transform) {
                 return fieldMask.covers(transform.field);
             });
@@ -19503,7 +19856,7 @@ var UserDataConverter = /** @class */ (function () {
         var _this = this;
         var context = new ParseContext(UserDataSource.Update, methodName, FieldPath.EMPTY_PATH);
         validatePlainObject('Data must be an object, but it was:', context, input);
-        var fieldMaskPaths = [];
+        var fieldMaskPaths = new SortedSet(FieldPath.comparator);
         var updateData = ObjectValue.EMPTY;
         forEach(input, function (key, value) {
             var path = fieldPathFromDotSeparatedString(methodName, key);
@@ -19511,51 +19864,51 @@ var UserDataConverter = /** @class */ (function () {
             value = _this.runPreConverter(value, childContext);
             if (value instanceof DeleteFieldValueImpl) {
                 // Add it to the field mask, but don't add anything to updateData.
-                fieldMaskPaths.push(path);
+                fieldMaskPaths = fieldMaskPaths.add(path);
             }
             else {
                 var parsedValue = _this.parseData(value, childContext);
                 if (parsedValue != null) {
-                    fieldMaskPaths.push(path);
+                    fieldMaskPaths = fieldMaskPaths.add(path);
                     updateData = updateData.set(path, parsedValue);
                 }
             }
         });
-        var mask = FieldMask.fromArray(fieldMaskPaths);
+        var mask = FieldMask.fromSet(fieldMaskPaths);
         return new ParsedUpdateData(updateData, mask, context.fieldTransforms);
     };
     /** Parse update data from a list of field/value arguments. */
     UserDataConverter.prototype.parseUpdateVarargs = function (methodName, field, value, moreFieldsAndValues) {
         var context = new ParseContext(UserDataSource.Update, methodName, FieldPath.EMPTY_PATH);
         var keys = [fieldPathFromArgument(methodName, field)];
-        var values$$1 = [value];
+        var values = [value];
         if (moreFieldsAndValues.length % 2 !== 0) {
             throw new FirestoreError(Code.INVALID_ARGUMENT, "Function " + methodName + "() needs to be called with an even number " +
                 'of arguments that alternate between field names and values.');
         }
         for (var i = 0; i < moreFieldsAndValues.length; i += 2) {
             keys.push(fieldPathFromArgument(methodName, moreFieldsAndValues[i]));
-            values$$1.push(moreFieldsAndValues[i + 1]);
+            values.push(moreFieldsAndValues[i + 1]);
         }
-        var fieldMaskPaths = [];
+        var fieldMaskPaths = new SortedSet(FieldPath.comparator);
         var updateData = ObjectValue.EMPTY;
         for (var i = 0; i < keys.length; ++i) {
             var path = keys[i];
             var childContext = context.childContextForFieldPath(path);
-            var value_1 = this.runPreConverter(values$$1[i], childContext);
+            var value_1 = this.runPreConverter(values[i], childContext);
             if (value_1 instanceof DeleteFieldValueImpl) {
                 // Add it to the field mask, but don't add anything to updateData.
-                fieldMaskPaths.push(path);
+                fieldMaskPaths = fieldMaskPaths.add(path);
             }
             else {
                 var parsedValue = this.parseData(value_1, childContext);
                 if (parsedValue != null) {
-                    fieldMaskPaths.push(path);
+                    fieldMaskPaths = fieldMaskPaths.add(path);
                     updateData = updateData.set(path, parsedValue);
                 }
             }
         }
-        var mask = FieldMask.fromArray(fieldMaskPaths);
+        var mask = FieldMask.fromSet(fieldMaskPaths);
         return new ParsedUpdateData(updateData, mask, context.fieldTransforms);
     };
     /**
@@ -19701,6 +20054,11 @@ var UserDataConverter = /** @class */ (function () {
             var arrayRemove = new ArrayRemoveTransformOperation(parsedElements);
             context.fieldTransforms.push(new FieldTransform(context.path, arrayRemove));
         }
+        else if (value instanceof NumericIncrementFieldValueImpl) {
+            var operand = this.parseQueryValue('FieldValue.increment', value._operand);
+            var numericIncrement = new NumericIncrementTransformOperation(operand);
+            context.fieldTransforms.push(new FieldTransform(context.path, numericIncrement));
+        }
         else {
             fail('Unknown FieldValue type: ' + value);
         }
@@ -19832,6 +20190,7 @@ function errorMessage(error) {
 }
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -19853,7 +20212,8 @@ function errorMessage(error) {
 // settings() defaults:
 var DEFAULT_HOST = 'firestore.googleapis.com';
 var DEFAULT_SSL = true;
-var DEFAULT_TIMESTAMPS_IN_SNAPSHOTS = false;
+var DEFAULT_TIMESTAMPS_IN_SNAPSHOTS = true;
+var DEFAULT_FORCE_LONG_POLLING = false;
 /**
  * Constant used to indicate the LRU garbage collection should be disabled.
  * Set this value as the `cacheSizeBytes` on the settings passed to the
@@ -19887,11 +20247,20 @@ var FirestoreSettings = /** @class */ (function () {
             'ssl',
             'credentials',
             'timestampsInSnapshots',
-            'cacheSizeBytes'
+            'cacheSizeBytes',
+            'experimentalForceLongPolling'
         ]);
         validateNamedOptionalType('settings', 'object', 'credentials', settings.credentials);
         this.credentials = settings.credentials;
         validateNamedOptionalType('settings', 'boolean', 'timestampsInSnapshots', settings.timestampsInSnapshots);
+        // Nobody should set timestampsInSnapshots anymore, but the error depends on
+        // whether they set it to true or false...
+        if (settings.timestampsInSnapshots === true) {
+            error("\n  The timestampsInSnapshots setting now defaults to true and you no\n  longer need to explicitly set it. In a future release, the setting\n  will be removed entirely and so it is recommended that you remove it\n  from your firestore.settings() call now.");
+        }
+        else if (settings.timestampsInSnapshots === false) {
+            error("\n  The timestampsInSnapshots setting will soon be removed. YOU MUST UPDATE\n  YOUR CODE.\n\n  To hide this warning, stop using the timestampsInSnapshots setting in your\n  firestore.settings({ ... }) call.\n\n  Once you remove the setting, Timestamps stored in Cloud Firestore will be\n  read back as Firebase Timestamp objects instead of as system Date objects.\n  So you will also need to update code expecting a Date to instead expect a\n  Timestamp. For example:\n\n  // Old:\n  const date = snapshot.get('created_at');\n  // New:\n  const timestamp = snapshot.get('created_at'); const date =\n  timestamp.toDate();\n\n  Please audit all existing usages of Date when you enable the new\n  behavior.");
+        }
         this.timestampsInSnapshots = defaulted(settings.timestampsInSnapshots, DEFAULT_TIMESTAMPS_IN_SNAPSHOTS);
         validateNamedOptionalType('settings', 'number', 'cacheSizeBytes', settings.cacheSizeBytes);
         if (settings.cacheSizeBytes === undefined) {
@@ -19906,13 +20275,19 @@ var FirestoreSettings = /** @class */ (function () {
                 this.cacheSizeBytes = settings.cacheSizeBytes;
             }
         }
+        validateNamedOptionalType('settings', 'boolean', 'experimentalForceLongPolling', settings.experimentalForceLongPolling);
+        this.forceLongPolling =
+            settings.experimentalForceLongPolling === undefined
+                ? DEFAULT_FORCE_LONG_POLLING
+                : settings.experimentalForceLongPolling;
     }
     FirestoreSettings.prototype.isEqual = function (other) {
         return (this.host === other.host &&
             this.ssl === other.ssl &&
             this.timestampsInSnapshots === other.timestampsInSnapshots &&
             this.credentials === other.credentials &&
-            this.cacheSizeBytes === other.cacheSizeBytes);
+            this.cacheSizeBytes === other.cacheSizeBytes &&
+            this.forceLongPolling === other.forceLongPolling);
     };
     return FirestoreSettings;
 }());
@@ -19931,15 +20306,23 @@ var Firestore = /** @class */ (function () {
         // TODO(mikelehen): Use modularized initialization instead.
         this._queue = new AsyncQueue();
         this.INTERNAL = {
-            delete: function (options) { return tslib_1.__awaiter(_this, void 0, void 0, function () {
+            delete: function () { return tslib_1.__awaiter(_this, void 0, void 0, function () {
                 return tslib_1.__generator(this, function (_a) {
-                    if (this._firestoreClient) {
-                        return [2 /*return*/, this._firestoreClient.shutdown(options)];
+                    switch (_a.label) {
+                        case 0:
+                            // The client must be initalized to ensure that all subsequent API usage
+                            // throws an exception.
+                            this.ensureClientConfigured();
+                            return [4 /*yield*/, this._firestoreClient.shutdown()];
+                        case 1:
+                            _a.sent();
+                            this.clientRunning = false;
+                            return [2 /*return*/];
                     }
-                    return [2 /*return*/];
                 });
             }); }
         };
+        this.clientRunning = false;
         var config = new FirestoreConfig();
         if (typeof databaseIdOrApp.options === 'object') {
             // This is very likely a Firebase app object
@@ -19999,6 +20382,13 @@ var Firestore = /** @class */ (function () {
         return this.configureClient(new IndexedDbPersistenceSettings(this._config.settings.cacheSizeBytes, settings !== undefined &&
             defaulted(settings.experimentalTabSynchronization, DEFAULT_SYNCHRONIZE_TABS)));
     };
+    Firestore.prototype._clearPersistence = function () {
+        if (this.clientRunning) {
+            throw new FirestoreError(Code.FAILED_PRECONDITION, 'Persistence cannot be cleared while the client is running');
+        }
+        var persistenceKey = IndexedDbPersistence.buildStoragePrefix(this.makeDatabaseInfo());
+        return IndexedDbPersistence.clearPersistence(persistenceKey);
+    };
     Firestore.prototype.ensureClientConfigured = function () {
         if (!this._firestoreClient) {
             // Kick off starting the client but don't actually wait for it.
@@ -20007,14 +20397,15 @@ var Firestore = /** @class */ (function () {
         }
         return this._firestoreClient;
     };
+    Firestore.prototype.makeDatabaseInfo = function () {
+        return new DatabaseInfo(this._config.databaseId, this._config.persistenceKey, this._config.settings.host, this._config.settings.ssl, this._config.settings.forceLongPolling);
+    };
     Firestore.prototype.configureClient = function (persistenceSettings) {
         var _this = this;
         assert(!!this._config.settings.host, 'FirestoreSettings.host cannot be falsey');
-        if (!this._config.settings.timestampsInSnapshots) {
-            error("\nThe behavior for Date objects stored in Firestore is going to change\nAND YOUR APP MAY BREAK.\nTo hide this warning and ensure your app does not break, you need to add the\nfollowing code to your app before calling any other Cloud Firestore methods:\n\n  const firestore = firebase.firestore();\n  const settings = {/* your settings... */ timestampsInSnapshots: true};\n  firestore.settings(settings);\n\nWith this change, timestamps stored in Cloud Firestore will be read back as\nFirebase Timestamp objects instead of as system Date objects. So you will also\nneed to update code expecting a Date to instead expect a Timestamp. For example:\n\n  // Old:\n  const date = snapshot.get('created_at');\n  // New:\n  const timestamp = snapshot.get('created_at');\n  const date = timestamp.toDate();\n\nPlease audit all existing usages of Date when you enable the new behavior. In a\nfuture release, the behavior will change to the new behavior, so if you do not\nfollow these steps, YOUR APP MAY BREAK.");
-        }
         assert(!this._firestoreClient, 'configureClient() called multiple times');
-        var databaseInfo = new DatabaseInfo(this._config.databaseId, this._config.persistenceKey, this._config.settings.host, this._config.settings.ssl);
+        this.clientRunning = true;
+        var databaseInfo = this.makeDatabaseInfo();
         var preConverter = function (value) {
             if (value instanceof DocumentReference) {
                 var thisDb = _this._config.databaseId;
@@ -20059,20 +20450,25 @@ var Firestore = /** @class */ (function () {
     Firestore.prototype.collection = function (pathString) {
         validateExactNumberOfArgs('Firestore.collection', arguments, 1);
         validateArgType('Firestore.collection', 'non-empty string', 1, pathString);
-        if (!pathString) {
-            throw new FirestoreError(Code.INVALID_ARGUMENT, 'Must provide a non-empty collection path to collection()');
-        }
         this.ensureClientConfigured();
         return new CollectionReference(ResourcePath.fromString(pathString), this);
     };
     Firestore.prototype.doc = function (pathString) {
         validateExactNumberOfArgs('Firestore.doc', arguments, 1);
         validateArgType('Firestore.doc', 'non-empty string', 1, pathString);
-        if (!pathString) {
-            throw new FirestoreError(Code.INVALID_ARGUMENT, 'Must provide a non-empty document path to doc()');
-        }
         this.ensureClientConfigured();
         return DocumentReference.forPath(ResourcePath.fromString(pathString), this);
+    };
+    // TODO(b/116617988): Fix name, uncomment d.ts definitions, and update CHANGELOG.md.
+    Firestore.prototype._collectionGroup = function (collectionId) {
+        validateExactNumberOfArgs('Firestore.collectionGroup', arguments, 1);
+        validateArgType('Firestore.collectionGroup', 'non-empty string', 1, collectionId);
+        if (collectionId.indexOf('/') >= 0) {
+            throw new FirestoreError(Code.INVALID_ARGUMENT, "Invalid collection ID '" + collectionId + "' passed to function " +
+                "Firestore.collectionGroup(). Collection IDs must not contain '/'.");
+        }
+        this.ensureClientConfigured();
+        return new Query$1(new Query(ResourcePath.EMPTY_PATH, collectionId), this);
     };
     Firestore.prototype.runTransaction = function (updateFunction) {
         var _this = this;
@@ -20597,14 +20993,16 @@ var QueryDocumentSnapshot = /** @class */ (function (_super) {
     return QueryDocumentSnapshot;
 }(DocumentSnapshot));
 var Query$1 = /** @class */ (function () {
-    function Query$$1(_query, firestore) {
+    function Query(_query, firestore) {
         this._query = _query;
         this.firestore = firestore;
     }
-    Query$$1.prototype.where = function (field, opStr, value) {
+    Query.prototype.where = function (field, opStr, value) {
         validateExactNumberOfArgs('Query.where', arguments, 3);
-        validateArgType('Query.where', 'non-empty string', 2, opStr);
         validateDefined('Query.where', 3, value);
+        // Enumerated from the WhereFilterOp type in index.d.ts.
+        var whereFilterOpEnums = ['<', '<=', '==', '>=', '>', 'array-contains'];
+        validateStringEnum('Query.where', whereFilterOpEnums, 2, opStr);
         var fieldValue;
         var fieldPath = fieldPathFromArgument('Query.where', field);
         var relationOp = RelationOp.fromString(opStr);
@@ -20614,19 +21012,23 @@ var Query$1 = /** @class */ (function () {
                     'FieldPath.documentId() since document IDs are not arrays.');
             }
             if (typeof value === 'string') {
-                if (value.indexOf('/') !== -1) {
-                    // TODO(dimond): Allow slashes once ancestor queries are supported
-                    throw new FirestoreError(Code.INVALID_ARGUMENT, 'Function Query.where() requires its third parameter to be a ' +
-                        'valid document ID if the first parameter is ' +
-                        'FieldPath.documentId(), but it contains a slash.');
-                }
                 if (value === '') {
                     throw new FirestoreError(Code.INVALID_ARGUMENT, 'Function Query.where() requires its third parameter to be a ' +
                         'valid document ID if the first parameter is ' +
                         'FieldPath.documentId(), but it was an empty string.');
                 }
-                var path = this._query.path.child(new ResourcePath([value]));
-                assert(path.length % 2 === 0, 'Path should be a document key');
+                if (!this._query.isCollectionGroupQuery() &&
+                    value.indexOf('/') !== -1) {
+                    throw new FirestoreError(Code.INVALID_ARGUMENT, "Invalid third parameter to Query.where(). When querying a collection by " +
+                        "FieldPath.documentId(), the value provided must be a plain document ID, but " +
+                        ("'" + value + "' contains a slash."));
+                }
+                var path = this._query.path.child(ResourcePath.fromString(value));
+                if (!DocumentKey.isDocumentKey(path)) {
+                    throw new FirestoreError(Code.INVALID_ARGUMENT, "Invalid third parameter to Query.where(). When querying a collection group by " +
+                        "FieldPath.documentId(), the value provided must result in a valid document path, " +
+                        ("but '" + path + "' is not because it has an odd number of segments (" + path.length + ")."));
+                }
                 fieldValue = new RefValue(this.firestore._databaseId, new DocumentKey(path));
             }
             else if (value instanceof DocumentReference) {
@@ -20645,9 +21047,9 @@ var Query$1 = /** @class */ (function () {
         }
         var filter = Filter.create(fieldPath, relationOp, fieldValue);
         this.validateNewFilter(filter);
-        return new Query$$1(this._query.addFilter(filter), this.firestore);
+        return new Query(this._query.addFilter(filter), this.firestore);
     };
-    Query$$1.prototype.orderBy = function (field, directionStr) {
+    Query.prototype.orderBy = function (field, directionStr) {
         validateBetweenNumberOfArgs('Query.orderBy', arguments, 1, 2);
         validateOptionalArgType('Query.orderBy', 'non-empty string', 2, directionStr);
         var direction;
@@ -20672,18 +21074,18 @@ var Query$1 = /** @class */ (function () {
         var fieldPath = fieldPathFromArgument('Query.orderBy', field);
         var orderBy = new OrderBy(fieldPath, direction);
         this.validateNewOrderBy(orderBy);
-        return new Query$$1(this._query.addOrderBy(orderBy), this.firestore);
+        return new Query(this._query.addOrderBy(orderBy), this.firestore);
     };
-    Query$$1.prototype.limit = function (n) {
+    Query.prototype.limit = function (n) {
         validateExactNumberOfArgs('Query.limit', arguments, 1);
         validateArgType('Query.limit', 'number', 1, n);
         if (n <= 0) {
             throw new FirestoreError(Code.INVALID_ARGUMENT, "Invalid Query. Query limit (" + n + ") is invalid. Limit must be " +
                 'positive.');
         }
-        return new Query$$1(this._query.withLimit(n), this.firestore);
+        return new Query(this._query.withLimit(n), this.firestore);
     };
-    Query$$1.prototype.startAt = function (docOrField) {
+    Query.prototype.startAt = function (docOrField) {
         var fields = [];
         for (var _i = 1; _i < arguments.length; _i++) {
             fields[_i - 1] = arguments[_i];
@@ -20691,9 +21093,9 @@ var Query$1 = /** @class */ (function () {
         validateAtLeastNumberOfArgs('Query.startAt', arguments, 1);
         var bound = this.boundFromDocOrFields('Query.startAt', docOrField, fields, 
         /*before=*/ true);
-        return new Query$$1(this._query.withStartAt(bound), this.firestore);
+        return new Query(this._query.withStartAt(bound), this.firestore);
     };
-    Query$$1.prototype.startAfter = function (docOrField) {
+    Query.prototype.startAfter = function (docOrField) {
         var fields = [];
         for (var _i = 1; _i < arguments.length; _i++) {
             fields[_i - 1] = arguments[_i];
@@ -20701,9 +21103,9 @@ var Query$1 = /** @class */ (function () {
         validateAtLeastNumberOfArgs('Query.startAfter', arguments, 1);
         var bound = this.boundFromDocOrFields('Query.startAfter', docOrField, fields, 
         /*before=*/ false);
-        return new Query$$1(this._query.withStartAt(bound), this.firestore);
+        return new Query(this._query.withStartAt(bound), this.firestore);
     };
-    Query$$1.prototype.endBefore = function (docOrField) {
+    Query.prototype.endBefore = function (docOrField) {
         var fields = [];
         for (var _i = 1; _i < arguments.length; _i++) {
             fields[_i - 1] = arguments[_i];
@@ -20711,9 +21113,9 @@ var Query$1 = /** @class */ (function () {
         validateAtLeastNumberOfArgs('Query.endBefore', arguments, 1);
         var bound = this.boundFromDocOrFields('Query.endBefore', docOrField, fields, 
         /*before=*/ true);
-        return new Query$$1(this._query.withEndAt(bound), this.firestore);
+        return new Query(this._query.withEndAt(bound), this.firestore);
     };
-    Query$$1.prototype.endAt = function (docOrField) {
+    Query.prototype.endAt = function (docOrField) {
         var fields = [];
         for (var _i = 1; _i < arguments.length; _i++) {
             fields[_i - 1] = arguments[_i];
@@ -20721,16 +21123,16 @@ var Query$1 = /** @class */ (function () {
         validateAtLeastNumberOfArgs('Query.endAt', arguments, 1);
         var bound = this.boundFromDocOrFields('Query.endAt', docOrField, fields, 
         /*before=*/ false);
-        return new Query$$1(this._query.withEndAt(bound), this.firestore);
+        return new Query(this._query.withEndAt(bound), this.firestore);
     };
-    Query$$1.prototype.isEqual = function (other) {
-        if (!(other instanceof Query$$1)) {
+    Query.prototype.isEqual = function (other) {
+        if (!(other instanceof Query)) {
             throw invalidClassError('isEqual', 'Query', 1, other);
         }
         return (this.firestore === other.firestore && this._query.isEqual(other._query));
     };
     /** Helper function to create a bound from a document or fields */
-    Query$$1.prototype.boundFromDocOrFields = function (methodName, docOrField, fields, before) {
+    Query.prototype.boundFromDocOrFields = function (methodName, docOrField, fields, before) {
         validateDefined(methodName, 1, docOrField);
         if (docOrField instanceof DocumentSnapshot) {
             if (fields.length > 0) {
@@ -20756,9 +21158,10 @@ var Query$1 = /** @class */ (function () {
      * position.
      *
      * Will throw if the document does not contain all fields of the order by
-     * of the query.
+     * of the query or if any of the fields in the order by are an uncommitted
+     * server timestamp.
      */
-    Query$$1.prototype.boundFromDocument = function (methodName, doc, before) {
+    Query.prototype.boundFromDocument = function (methodName, doc, before) {
         var components = [];
         // Because people expect to continue/end a query at the exact document
         // provided, we need to use the implicit sort order rather than the explicit
@@ -20774,7 +21177,14 @@ var Query$1 = /** @class */ (function () {
             }
             else {
                 var value = doc.field(orderBy.field);
-                if (value !== undefined) {
+                if (value instanceof ServerTimestampValue) {
+                    throw new FirestoreError(Code.INVALID_ARGUMENT, 'Invalid query. You are trying to start or end a query using a ' +
+                        'document for which the field "' +
+                        orderBy.field +
+                        '" is an uncommitted server timestamp. (Since the value of ' +
+                        'this field is unknown, you cannot start/end a query with it.)');
+                }
+                else if (value !== undefined) {
                     components.push(value);
                 }
                 else {
@@ -20790,28 +21200,37 @@ var Query$1 = /** @class */ (function () {
     /**
      * Converts a list of field values to a Bound for the given query.
      */
-    Query$$1.prototype.boundFromFields = function (methodName, values$$1, before) {
+    Query.prototype.boundFromFields = function (methodName, values, before) {
         // Use explicit order by's because it has to match the query the user made
         var orderBy = this._query.explicitOrderBy;
-        if (values$$1.length > orderBy.length) {
+        if (values.length > orderBy.length) {
             throw new FirestoreError(Code.INVALID_ARGUMENT, "Too many arguments provided to " + methodName + "(). " +
                 "The number of arguments must be less than or equal to the " +
                 "number of Query.orderBy() clauses");
         }
         var components = [];
-        for (var i = 0; i < values$$1.length; i++) {
-            var rawValue = values$$1[i];
+        for (var i = 0; i < values.length; i++) {
+            var rawValue = values[i];
             var orderByComponent = orderBy[i];
             if (orderByComponent.field.isKeyField()) {
                 if (typeof rawValue !== 'string') {
                     throw new FirestoreError(Code.INVALID_ARGUMENT, "Invalid query. Expected a string for document ID in " +
                         (methodName + "(), but got a " + typeof rawValue));
                 }
-                if (rawValue.indexOf('/') !== -1) {
-                    throw new FirestoreError(Code.INVALID_ARGUMENT, "Invalid query. Document ID '" + rawValue + "' contains a slash in " +
-                        (methodName + "()"));
+                if (!this._query.isCollectionGroupQuery() &&
+                    rawValue.indexOf('/') !== -1) {
+                    throw new FirestoreError(Code.INVALID_ARGUMENT, "Invalid query. When querying a collection and ordering by FieldPath.documentId(), " +
+                        ("the value passed to " + methodName + "() must be a plain document ID, but ") +
+                        ("'" + rawValue + "' contains a slash."));
                 }
-                var key = new DocumentKey(this._query.path.child(rawValue));
+                var path = this._query.path.child(ResourcePath.fromString(rawValue));
+                if (!DocumentKey.isDocumentKey(path)) {
+                    throw new FirestoreError(Code.INVALID_ARGUMENT, "Invalid query. When querying a collection group and ordering by " +
+                        ("FieldPath.documentId(), the value passed to " + methodName + "() must result in a ") +
+                        ("valid document path, but '" + path + "' is not because it contains an odd number ") +
+                        "of segments.");
+                }
+                var key = new DocumentKey(path);
                 components.push(new RefValue(this.firestore._databaseId, key));
             }
             else {
@@ -20821,7 +21240,7 @@ var Query$1 = /** @class */ (function () {
         }
         return new Bound(components, before);
     };
-    Query$$1.prototype.onSnapshot = function () {
+    Query.prototype.onSnapshot = function () {
         var args = [];
         for (var _i = 0; _i < arguments.length; _i++) {
             args[_i] = arguments[_i];
@@ -20854,7 +21273,7 @@ var Query$1 = /** @class */ (function () {
         }
         return this.onSnapshotInternal(options, observer);
     };
-    Query$$1.prototype.onSnapshotInternal = function (options, observer) {
+    Query.prototype.onSnapshotInternal = function (options, observer) {
         var _this = this;
         var errHandler = function (err) {
             console.error('Uncaught Error in onSnapshot:', err);
@@ -20877,7 +21296,7 @@ var Query$1 = /** @class */ (function () {
             firestoreClient.unlisten(internalListener);
         };
     };
-    Query$$1.prototype.get = function (options) {
+    Query.prototype.get = function (options) {
         var _this = this;
         validateBetweenNumberOfArgs('Query.get', arguments, 0, 1);
         validateGetOptions('Query.get', options);
@@ -20895,7 +21314,7 @@ var Query$1 = /** @class */ (function () {
             }
         });
     };
-    Query$$1.prototype.getViaSnapshotListener = function (resolve, reject, options) {
+    Query.prototype.getViaSnapshotListener = function (resolve, reject, options) {
         var unlisten = this.onSnapshotInternal({
             includeMetadataChanges: true,
             waitForSyncWhenOnline: true
@@ -20919,7 +21338,7 @@ var Query$1 = /** @class */ (function () {
             error: reject
         });
     };
-    Query$$1.prototype.validateNewFilter = function (filter) {
+    Query.prototype.validateNewFilter = function (filter) {
         if (filter instanceof RelationFilter) {
             if (filter.isInequality()) {
                 var existingField = this._query.getInequalityFilterField();
@@ -20942,7 +21361,7 @@ var Query$1 = /** @class */ (function () {
             }
         }
     };
-    Query$$1.prototype.validateNewOrderBy = function (orderBy) {
+    Query.prototype.validateNewOrderBy = function (orderBy) {
         if (this._query.getFirstOrderByField() === null) {
             // This is the first order by. It must match any inequality.
             var inequalityField = this._query.getInequalityFilterField();
@@ -20951,7 +21370,7 @@ var Query$1 = /** @class */ (function () {
             }
         }
     };
-    Query$$1.prototype.validateOrderByAndInequalityMatch = function (inequality, orderBy) {
+    Query.prototype.validateOrderByAndInequalityMatch = function (inequality, orderBy) {
         if (!orderBy.isEqual(inequality)) {
             throw new FirestoreError(Code.INVALID_ARGUMENT, "Invalid query. You have a where filter with an inequality " +
                 ("(<, <=, >, or >=) on field '" + inequality.toString() + "' ") +
@@ -20960,7 +21379,7 @@ var Query$1 = /** @class */ (function () {
                 ("is on field '" + orderBy.toString() + "' instead."));
         }
     };
-    return Query$$1;
+    return Query;
 }());
 var QuerySnapshot = /** @class */ (function () {
     function QuerySnapshot(_firestore, _originalQuery, _snapshot) {
@@ -21253,6 +21672,7 @@ var PublicCollectionReference = makeConstructorPrivate(CollectionReference, 'Use
 // tslint:enable:variable-name
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -21288,11 +21708,12 @@ var firestoreNamespace = {
 /**
  * Configures Firestore as part of the Firebase SDK by calling registerService.
  */
-function configureForFirebase(firebase$$1) {
-    firebase$$1.INTERNAL.registerService('firestore', function (app) { return new Firestore(app); }, shallowCopy(firestoreNamespace));
+function configureForFirebase(firebase) {
+    firebase.INTERNAL.registerService('firestore', function (app) { return new Firestore(app); }, shallowCopy(firestoreNamespace));
 }
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -21313,6 +21734,7 @@ function registerFirestore(instance) {
 registerFirestore(firebase);
 
 exports.registerFirestore = registerFirestore;
+//# sourceMappingURL=index.cjs.js.map
 
 
 /***/ }),
@@ -21361,9 +21783,12 @@ and limitations under the License.
 ***************************************************************************** */
 /* global Reflect, Promise */
 
-var extendStatics = Object.setPrototypeOf ||
-    ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-    function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+var extendStatics = function(d, b) {
+    extendStatics = Object.setPrototypeOf ||
+        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+    return extendStatics(d, b);
+};
 
 function __extends(d, b) {
     extendStatics(d, b);
@@ -21371,12 +21796,15 @@ function __extends(d, b) {
     d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 }
 
-var __assign = Object.assign || function __assign(t) {
-    for (var s, i = 1, n = arguments.length; i < n; i++) {
-        s = arguments[i];
-        for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p)) t[p] = s[p];
+var __assign = function() {
+    __assign = Object.assign || function __assign(t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+            s = arguments[i];
+            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p)) t[p] = s[p];
+        }
+        return t;
     }
-    return t;
+    return __assign.apply(this, arguments);
 }
 
 function __rest(s, e) {
@@ -21420,8 +21848,8 @@ function __generator(thisArg, body) {
     function step(op) {
         if (f) throw new TypeError("Generator is already executing.");
         while (_) try {
-            if (f = 1, y && (t = y[op[0] & 2 ? "return" : op[0] ? "throw" : "next"]) && !(t = t.call(y, op[1])).done) return t;
-            if (y = 0, t) op = [0, t.value];
+            if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
+            if (y = 0, t) op = [op[0] & 2, t.value];
             switch (op[0]) {
                 case 0: case 1: t = op; break;
                 case 4: _.label++; return { value: op[1], done: false };
@@ -21489,7 +21917,7 @@ function __asyncGenerator(thisArg, _arguments, generator) {
     return i = {}, verb("next"), verb("throw"), verb("return"), i[Symbol.asyncIterator] = function () { return this; }, i;
     function verb(n) { if (g[n]) i[n] = function (v) { return new Promise(function (a, b) { q.push([n, v, a, b]) > 1 || resume(n, v); }); }; }
     function resume(n, v) { try { step(g[n](v)); } catch (e) { settle(q[0][3], e); } }
-    function step(r) { r.value instanceof __await ? Promise.resolve(r.value.v).then(fulfill, reject) : settle(q[0][2], r);  }
+    function step(r) { r.value instanceof __await ? Promise.resolve(r.value.v).then(fulfill, reject) : settle(q[0][2], r); }
     function fulfill(value) { resume("next", value); }
     function reject(value) { resume("throw", value); }
     function settle(f, v) { if (f(v), q.shift(), q.length) resume(q[0][0], q[0][1]); }
@@ -21498,13 +21926,15 @@ function __asyncGenerator(thisArg, _arguments, generator) {
 function __asyncDelegator(o) {
     var i, p;
     return i = {}, verb("next"), verb("throw", function (e) { throw e; }), verb("return"), i[Symbol.iterator] = function () { return this; }, i;
-    function verb(n, f) { if (o[n]) i[n] = function (v) { return (p = !p) ? { value: __await(o[n](v)), done: n === "return" } : f ? f(v) : v; }; }
+    function verb(n, f) { i[n] = o[n] ? function (v) { return (p = !p) ? { value: __await(o[n](v)), done: n === "return" } : f ? f(v) : v; } : f; }
 }
 
 function __asyncValues(o) {
     if (!Symbol.asyncIterator) throw new TypeError("Symbol.asyncIterator is not defined.");
-    var m = o[Symbol.asyncIterator];
-    return m ? m.call(o) : typeof __values === "function" ? __values(o) : o[Symbol.iterator]();
+    var m = o[Symbol.asyncIterator], i;
+    return m ? m.call(o) : (o = typeof __values === "function" ? __values(o) : o[Symbol.iterator](), i = {}, verb("next"), verb("throw"), verb("return"), i[Symbol.asyncIterator] = function () { return this; }, i);
+    function verb(n) { i[n] = o[n] && function (v) { return new Promise(function (resolve, reject) { v = o[n](v), settle(resolve, reject, v.done, v.value); }); }; }
+    function settle(resolve, reject, d, v) { Promise.resolve(v).then(function(v) { resolve({ value: v, done: d }); }, reject); }
 }
 
 function __makeTemplateObject(cooked, raw) {
@@ -21541,10 +21971,11 @@ Object.defineProperty(exports, '__esModule', { value: true });
 
 function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'default' in ex) ? ex['default'] : ex; }
 
-var tslib_1 = __webpack_require__(/*! tslib */ "./node_modules/@firebase/functions/node_modules/tslib/tslib.es6.js");
 var firebase = _interopDefault(__webpack_require__(/*! @firebase/app */ "./node_modules/@firebase/app/dist/index.cjs.js"));
+var tslib_1 = __webpack_require__(/*! tslib */ "./node_modules/@firebase/functions/node_modules/tslib/tslib.es6.js");
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -21771,6 +22202,7 @@ var ContextProvider = /** @class */ (function () {
 }());
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -21868,6 +22300,7 @@ var Serializer = /** @class */ (function () {
 }());
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -21883,6 +22316,19 @@ var Serializer = /** @class */ (function () {
  * limitations under the License.
  */
 /**
+ * Returns a Promise that will be rejected after the given duration.
+ * The error will be of type HttpsErrorImpl.
+ *
+ * @param millis Number of milliseconds to wait before rejecting.
+ */
+function failAfter(millis) {
+    return new Promise(function (_, reject) {
+        setTimeout(function () {
+            reject(new HttpsErrorImpl('deadline-exceeded', 'deadline-exceeded'));
+        }, millis);
+    });
+}
+/**
  * The main class for the Firebase Functions SDK.
  */
 var Service = /** @class */ (function () {
@@ -21892,12 +22338,24 @@ var Service = /** @class */ (function () {
      * @param region_ The region to call functions in.
      */
     function Service(app_, region_) {
+        var _this = this;
         if (region_ === void 0) { region_ = 'us-central1'; }
         this.app_ = app_;
         this.region_ = region_;
         this.serializer = new Serializer();
         this.emulatorOrigin = null;
+        this.INTERNAL = {
+            delete: function () {
+                return _this.deleteService();
+            }
+        };
         this.contextProvider = new ContextProvider(app_);
+        // Cancels all ongoing requests when resolved.
+        this.cancelAllRequests = new Promise(function (resolve) {
+            _this.deleteService = function () {
+                return resolve();
+            };
+        });
     }
     Object.defineProperty(Service.prototype, "app", {
         get: function () {
@@ -21914,8 +22372,8 @@ var Service = /** @class */ (function () {
         var projectId = this.app_.options.projectId;
         var region = this.region_;
         if (this.emulatorOrigin !== null) {
-            var origin = this.emulatorOrigin;
-            return origin + "/" + projectId + "/" + region + "/" + name;
+            var origin_1 = this.emulatorOrigin;
+            return origin_1 + "/" + projectId + "/" + region + "/" + name;
         }
         return "https://" + region + "-" + projectId + ".cloudfunctions.net/" + name;
     };
@@ -21933,10 +22391,10 @@ var Service = /** @class */ (function () {
      * Returns a reference to the callable https trigger with the given name.
      * @param name The name of the trigger.
      */
-    Service.prototype.httpsCallable = function (name) {
+    Service.prototype.httpsCallable = function (name, options) {
         var _this = this;
         var callable = function (data) {
-            return _this.call(name, data);
+            return _this.call(name, data, options || {});
         };
         return callable;
     };
@@ -21968,7 +22426,7 @@ var Service = /** @class */ (function () {
                     case 3:
                         e_1 = _a.sent();
                         // This could be an unhandled error on the backend, or it could be a
-                        // network error. There's no way to no, since an unhandled error on the
+                        // network error. There's no way to know, since an unhandled error on the
                         // backend will fail to set the proper CORS header, and thus will be
                         // treated as a network error by fetch.
                         return [2 /*return*/, {
@@ -22000,9 +22458,9 @@ var Service = /** @class */ (function () {
      * @param name The name of the callable trigger.
      * @param data The data to pass as params to the function.s
      */
-    Service.prototype.call = function (name, data) {
+    Service.prototype.call = function (name, data, options) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
-            var url, body, headers, context, response, error, responseData, decodedData;
+            var url, body, headers, context, timeout, response, error, responseData, decodedData;
             return tslib_1.__generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -22020,9 +22478,18 @@ var Service = /** @class */ (function () {
                         if (context.instanceIdToken) {
                             headers.append('Firebase-Instance-ID-Token', context.instanceIdToken);
                         }
-                        return [4 /*yield*/, this.postJSON(url, body, headers)];
+                        timeout = options.timeout || 70000;
+                        return [4 /*yield*/, Promise.race([
+                                this.postJSON(url, body, headers),
+                                failAfter(timeout),
+                                this.cancelAllRequests
+                            ])];
                     case 2:
                         response = _a.sent();
+                        // If service was deleted, interrupted response throws an error.
+                        if (!response) {
+                            throw new HttpsErrorImpl('cancelled', 'Firebase Functions instance was deleted.');
+                        }
                         error = _errorForResponse(response.status, response.json, this.serializer);
                         if (error) {
                             throw error;
@@ -22050,6 +22517,7 @@ var Service = /** @class */ (function () {
 }());
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -22085,6 +22553,7 @@ function registerFunctions(instance) {
 registerFunctions(firebase);
 
 exports.registerFunctions = registerFunctions;
+//# sourceMappingURL=index.cjs.js.map
 
 
 /***/ }),
@@ -22133,9 +22602,12 @@ and limitations under the License.
 ***************************************************************************** */
 /* global Reflect, Promise */
 
-var extendStatics = Object.setPrototypeOf ||
-    ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-    function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+var extendStatics = function(d, b) {
+    extendStatics = Object.setPrototypeOf ||
+        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+    return extendStatics(d, b);
+};
 
 function __extends(d, b) {
     extendStatics(d, b);
@@ -22143,12 +22615,15 @@ function __extends(d, b) {
     d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 }
 
-var __assign = Object.assign || function __assign(t) {
-    for (var s, i = 1, n = arguments.length; i < n; i++) {
-        s = arguments[i];
-        for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p)) t[p] = s[p];
+var __assign = function() {
+    __assign = Object.assign || function __assign(t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+            s = arguments[i];
+            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p)) t[p] = s[p];
+        }
+        return t;
     }
-    return t;
+    return __assign.apply(this, arguments);
 }
 
 function __rest(s, e) {
@@ -22192,8 +22667,8 @@ function __generator(thisArg, body) {
     function step(op) {
         if (f) throw new TypeError("Generator is already executing.");
         while (_) try {
-            if (f = 1, y && (t = y[op[0] & 2 ? "return" : op[0] ? "throw" : "next"]) && !(t = t.call(y, op[1])).done) return t;
-            if (y = 0, t) op = [0, t.value];
+            if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
+            if (y = 0, t) op = [op[0] & 2, t.value];
             switch (op[0]) {
                 case 0: case 1: t = op; break;
                 case 4: _.label++; return { value: op[1], done: false };
@@ -22261,7 +22736,7 @@ function __asyncGenerator(thisArg, _arguments, generator) {
     return i = {}, verb("next"), verb("throw"), verb("return"), i[Symbol.asyncIterator] = function () { return this; }, i;
     function verb(n) { if (g[n]) i[n] = function (v) { return new Promise(function (a, b) { q.push([n, v, a, b]) > 1 || resume(n, v); }); }; }
     function resume(n, v) { try { step(g[n](v)); } catch (e) { settle(q[0][3], e); } }
-    function step(r) { r.value instanceof __await ? Promise.resolve(r.value.v).then(fulfill, reject) : settle(q[0][2], r);  }
+    function step(r) { r.value instanceof __await ? Promise.resolve(r.value.v).then(fulfill, reject) : settle(q[0][2], r); }
     function fulfill(value) { resume("next", value); }
     function reject(value) { resume("throw", value); }
     function settle(f, v) { if (f(v), q.shift(), q.length) resume(q[0][0], q[0][1]); }
@@ -22270,13 +22745,15 @@ function __asyncGenerator(thisArg, _arguments, generator) {
 function __asyncDelegator(o) {
     var i, p;
     return i = {}, verb("next"), verb("throw", function (e) { throw e; }), verb("return"), i[Symbol.iterator] = function () { return this; }, i;
-    function verb(n, f) { if (o[n]) i[n] = function (v) { return (p = !p) ? { value: __await(o[n](v)), done: n === "return" } : f ? f(v) : v; }; }
+    function verb(n, f) { i[n] = o[n] ? function (v) { return (p = !p) ? { value: __await(o[n](v)), done: n === "return" } : f ? f(v) : v; } : f; }
 }
 
 function __asyncValues(o) {
     if (!Symbol.asyncIterator) throw new TypeError("Symbol.asyncIterator is not defined.");
-    var m = o[Symbol.asyncIterator];
-    return m ? m.call(o) : typeof __values === "function" ? __values(o) : o[Symbol.iterator]();
+    var m = o[Symbol.asyncIterator], i;
+    return m ? m.call(o) : (o = typeof __values === "function" ? __values(o) : o[Symbol.iterator](), i = {}, verb("next"), verb("throw"), verb("return"), i[Symbol.asyncIterator] = function () { return this; }, i);
+    function verb(n) { i[n] = o[n] && function (v) { return new Promise(function (resolve, reject) { v = o[n](v), settle(resolve, reject, v.done, v.value); }); }; }
+    function settle(resolve, reject, d, v) { Promise.resolve(v).then(function(v) { resolve({ value: v, done: d }); }, reject); }
 }
 
 function __makeTemplateObject(cooked, raw) {
@@ -22299,27 +22776,1310 @@ function __importDefault(mod) {
 
 /***/ }),
 
-/***/ "./node_modules/@firebase/messaging/dist/index.esm.js":
-/*!************************************************************!*\
-  !*** ./node_modules/@firebase/messaging/dist/index.esm.js ***!
-  \************************************************************/
-/*! exports provided: registerMessaging, isSupported */
+/***/ "./node_modules/@firebase/installations/dist/index.esm.js":
+/*!****************************************************************!*\
+  !*** ./node_modules/@firebase/installations/dist/index.esm.js ***!
+  \****************************************************************/
+/*! exports provided: registerInstallations */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "registerMessaging", function() { return registerMessaging; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "registerInstallations", function() { return registerInstallations; });
+/* harmony import */ var _firebase_app__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @firebase/app */ "./node_modules/@firebase/app/dist/index.cjs.js");
+/* harmony import */ var _firebase_app__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_firebase_app__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _firebase_util__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @firebase/util */ "./node_modules/@firebase/util/dist/index.cjs.js");
+/* harmony import */ var _firebase_util__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_firebase_util__WEBPACK_IMPORTED_MODULE_1__);
+/* harmony import */ var idb__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! idb */ "./node_modules/idb/build/idb.js");
+/* harmony import */ var idb__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(idb__WEBPACK_IMPORTED_MODULE_2__);
+
+
+
+
+/*! *****************************************************************************
+Copyright (c) Microsoft Corporation. All rights reserved.
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+this file except in compliance with the License. You may obtain a copy of the
+License at http://www.apache.org/licenses/LICENSE-2.0
+
+THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED
+WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE,
+MERCHANTABLITY OR NON-INFRINGEMENT.
+
+See the Apache Version 2.0 License for specific language governing permissions
+and limitations under the License.
+***************************************************************************** */
+/* global Reflect, Promise */
+
+var extendStatics = function(d, b) {
+    extendStatics = Object.setPrototypeOf ||
+        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+    return extendStatics(d, b);
+};
+
+function __extends(d, b) {
+    extendStatics(d, b);
+    function __() { this.constructor = d; }
+    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+}
+
+var __assign = function() {
+    __assign = Object.assign || function __assign(t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+            s = arguments[i];
+            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p)) t[p] = s[p];
+        }
+        return t;
+    };
+    return __assign.apply(this, arguments);
+};
+
+function __rest(s, e) {
+    var t = {};
+    for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
+        t[p] = s[p];
+    if (s != null && typeof Object.getOwnPropertySymbols === "function")
+        for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) if (e.indexOf(p[i]) < 0)
+            t[p[i]] = s[p[i]];
+    return t;
+}
+
+function __decorate(decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+}
+
+function __param(paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+}
+
+function __metadata(metadataKey, metadataValue) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(metadataKey, metadataValue);
+}
+
+function __awaiter(thisArg, _arguments, P, generator) {
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+}
+
+function __generator(thisArg, body) {
+    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
+    return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
+    function verb(n) { return function (v) { return step([n, v]); }; }
+    function step(op) {
+        if (f) throw new TypeError("Generator is already executing.");
+        while (_) try {
+            if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
+            if (y = 0, t) op = [op[0] & 2, t.value];
+            switch (op[0]) {
+                case 0: case 1: t = op; break;
+                case 4: _.label++; return { value: op[1], done: false };
+                case 5: _.label++; y = op[1]; op = [0]; continue;
+                case 7: op = _.ops.pop(); _.trys.pop(); continue;
+                default:
+                    if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
+                    if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
+                    if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
+                    if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
+                    if (t[2]) _.ops.pop();
+                    _.trys.pop(); continue;
+            }
+            op = body.call(thisArg, _);
+        } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
+        if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
+    }
+}
+
+function __exportStar(m, exports) {
+    for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
+}
+
+function __values(o) {
+    var m = typeof Symbol === "function" && o[Symbol.iterator], i = 0;
+    if (m) return m.call(o);
+    return {
+        next: function () {
+            if (o && i >= o.length) o = void 0;
+            return { value: o && o[i++], done: !o };
+        }
+    };
+}
+
+function __read(o, n) {
+    var m = typeof Symbol === "function" && o[Symbol.iterator];
+    if (!m) return o;
+    var i = m.call(o), r, ar = [], e;
+    try {
+        while ((n === void 0 || n-- > 0) && !(r = i.next()).done) ar.push(r.value);
+    }
+    catch (error) { e = { error: error }; }
+    finally {
+        try {
+            if (r && !r.done && (m = i["return"])) m.call(i);
+        }
+        finally { if (e) throw e.error; }
+    }
+    return ar;
+}
+
+function __spread() {
+    for (var ar = [], i = 0; i < arguments.length; i++)
+        ar = ar.concat(__read(arguments[i]));
+    return ar;
+}
+
+function __await(v) {
+    return this instanceof __await ? (this.v = v, this) : new __await(v);
+}
+
+function __asyncGenerator(thisArg, _arguments, generator) {
+    if (!Symbol.asyncIterator) throw new TypeError("Symbol.asyncIterator is not defined.");
+    var g = generator.apply(thisArg, _arguments || []), i, q = [];
+    return i = {}, verb("next"), verb("throw"), verb("return"), i[Symbol.asyncIterator] = function () { return this; }, i;
+    function verb(n) { if (g[n]) i[n] = function (v) { return new Promise(function (a, b) { q.push([n, v, a, b]) > 1 || resume(n, v); }); }; }
+    function resume(n, v) { try { step(g[n](v)); } catch (e) { settle(q[0][3], e); } }
+    function step(r) { r.value instanceof __await ? Promise.resolve(r.value.v).then(fulfill, reject) : settle(q[0][2], r); }
+    function fulfill(value) { resume("next", value); }
+    function reject(value) { resume("throw", value); }
+    function settle(f, v) { if (f(v), q.shift(), q.length) resume(q[0][0], q[0][1]); }
+}
+
+function __asyncDelegator(o) {
+    var i, p;
+    return i = {}, verb("next"), verb("throw", function (e) { throw e; }), verb("return"), i[Symbol.iterator] = function () { return this; }, i;
+    function verb(n, f) { i[n] = o[n] ? function (v) { return (p = !p) ? { value: __await(o[n](v)), done: n === "return" } : f ? f(v) : v; } : f; }
+}
+
+function __asyncValues(o) {
+    if (!Symbol.asyncIterator) throw new TypeError("Symbol.asyncIterator is not defined.");
+    var m = o[Symbol.asyncIterator], i;
+    return m ? m.call(o) : (o = typeof __values === "function" ? __values(o) : o[Symbol.iterator](), i = {}, verb("next"), verb("throw"), verb("return"), i[Symbol.asyncIterator] = function () { return this; }, i);
+    function verb(n) { i[n] = o[n] && function (v) { return new Promise(function (resolve, reject) { v = o[n](v), settle(resolve, reject, v.done, v.value); }); }; }
+    function settle(resolve, reject, d, v) { Promise.resolve(v).then(function(v) { resolve({ value: v, done: d }); }, reject); }
+}
+
+function __makeTemplateObject(cooked, raw) {
+    if (Object.defineProperty) { Object.defineProperty(cooked, "raw", { value: raw }); } else { cooked.raw = raw; }
+    return cooked;
+}
+function __importStar(mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (Object.hasOwnProperty.call(mod, k)) result[k] = mod[k];
+    result.default = mod;
+    return result;
+}
+
+function __importDefault(mod) {
+    return (mod && mod.__esModule) ? mod : { default: mod };
+}
+
+var tslib_1 = /*#__PURE__*/Object.freeze({
+    __extends: __extends,
+    get __assign () { return __assign; },
+    __rest: __rest,
+    __decorate: __decorate,
+    __param: __param,
+    __metadata: __metadata,
+    __awaiter: __awaiter,
+    __generator: __generator,
+    __exportStar: __exportStar,
+    __values: __values,
+    __read: __read,
+    __spread: __spread,
+    __await: __await,
+    __asyncGenerator: __asyncGenerator,
+    __asyncDelegator: __asyncDelegator,
+    __asyncValues: __asyncValues,
+    __makeTemplateObject: __makeTemplateObject,
+    __importStar: __importStar,
+    __importDefault: __importDefault
+});
+
+/**
+ * @license
+ * Copyright 2019 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+var PENDING_TIMEOUT_MS = 10000;
+var PACKAGE_VERSION = 'w:0.1.0'; // Will be replaced by Rollup
+var INTERNAL_AUTH_VERSION = 'FIS_v2';
+var INSTALLATIONS_API_URL = 'https://firebaseinstallations.googleapis.com/v1';
+var TOKEN_EXPIRATION_BUFFER = 60 * 60 * 1000; // One hour
+var SERVICE = 'installations';
+var SERVICE_NAME = 'Installations';
+
+/**
+ * @license
+ * Copyright 2019 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+var _a;
+var ERROR_DESCRIPTION_MAP = (_a = {},
+    _a["missing-app-config-values" /* MISSING_APP_CONFIG_VALUES */] = 'Missing App configuration values.',
+    _a["create-installation-failed" /* CREATE_INSTALLATION_FAILED */] = 'Could not register Firebase Installation.',
+    _a["generate-token-failed" /* GENERATE_TOKEN_FAILED */] = 'Could not generate Auth Token.',
+    _a["not-registered" /* NOT_REGISTERED */] = 'Firebase Installation is not registered.',
+    _a["installation-not-found" /* INSTALLATION_NOT_FOUND */] = 'Firebase Installation not found.',
+    _a["request-failed" /* REQUEST_FAILED */] = '{$requestName} request failed with error "{$serverCode} {$serverStatus}: {$serverMessage}"',
+    _a["app-offline" /* APP_OFFLINE */] = 'Could not process request. Application offline.',
+    _a["delete-pending-registration" /* DELETE_PENDING_REGISTRATION */] = "Can't delete installation while there is a pending registration request.",
+    _a);
+var ERROR_FACTORY = new _firebase_util__WEBPACK_IMPORTED_MODULE_1__["ErrorFactory"](SERVICE, SERVICE_NAME, ERROR_DESCRIPTION_MAP);
+/** Returns true if error is a FirebaseError that is based on an error from the server. */
+function isServerError(error) {
+    return (error instanceof _firebase_util__WEBPACK_IMPORTED_MODULE_1__["FirebaseError"] &&
+        error.code.includes("request-failed" /* REQUEST_FAILED */));
+}
+
+/**
+ * @license
+ * Copyright 2019 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+function extractAppConfig(app) {
+    if (!app || !app.options) {
+        throw ERROR_FACTORY.create("missing-app-config-values" /* MISSING_APP_CONFIG_VALUES */);
+    }
+    var appName = app.name;
+    var _a = app.options, projectId = _a.projectId, apiKey = _a.apiKey, appId = _a.appId;
+    if (!appName || !projectId || !apiKey || !appId) {
+        throw ERROR_FACTORY.create("missing-app-config-values" /* MISSING_APP_CONFIG_VALUES */);
+    }
+    return { appName: appName, projectId: projectId, apiKey: apiKey, appId: appId };
+}
+
+/**
+ * @license
+ * Copyright 2019 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+function getInstallationsEndpoint(_a) {
+    var projectId = _a.projectId;
+    return INSTALLATIONS_API_URL + "/projects/" + projectId + "/installations";
+}
+function extractAuthTokenInfoFromResponse(response) {
+    return {
+        token: response.token,
+        requestStatus: 2 /* COMPLETED */,
+        expiresIn: getExpiresInFromResponseExpiresIn(response.expiresIn),
+        creationTime: Date.now()
+    };
+}
+function getErrorFromResponse(requestName, response) {
+    return __awaiter(this, void 0, void 0, function () {
+        var responseJson, errorData;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0: return [4 /*yield*/, response.json()];
+                case 1:
+                    responseJson = _a.sent();
+                    errorData = responseJson.error;
+                    return [2 /*return*/, ERROR_FACTORY.create("request-failed" /* REQUEST_FAILED */, {
+                            requestName: requestName,
+                            serverCode: errorData.code,
+                            serverMessage: errorData.message,
+                            serverStatus: errorData.status
+                        })];
+            }
+        });
+    });
+}
+function getHeaders(_a) {
+    var apiKey = _a.apiKey;
+    return new Headers({
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        'x-goog-api-key': apiKey
+    });
+}
+function getHeadersWithAuth(appConfig, _a) {
+    var refreshToken = _a.refreshToken;
+    var headers = getHeaders(appConfig);
+    headers.append('Authorization', getAuthorizationHeader(refreshToken));
+    return headers;
+}
+function getExpiresInFromResponseExpiresIn(responseExpiresIn) {
+    // This works because the server will never respond with fractions of a second.
+    return Number(responseExpiresIn.replace('s', '000'));
+}
+function getAuthorizationHeader(refreshToken) {
+    return INTERNAL_AUTH_VERSION + " " + refreshToken;
+}
+
+/**
+ * @license
+ * Copyright 2019 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+function createInstallation(appConfig, _a) {
+    var fid = _a.fid;
+    return __awaiter(this, void 0, void 0, function () {
+        var endpoint, headers, body, request, response, responseValue, registeredInstallationEntry;
+        return __generator(this, function (_b) {
+            switch (_b.label) {
+                case 0:
+                    endpoint = getInstallationsEndpoint(appConfig);
+                    headers = getHeaders(appConfig);
+                    body = {
+                        fid: fid,
+                        authVersion: INTERNAL_AUTH_VERSION,
+                        appId: appConfig.appId,
+                        sdkVersion: PACKAGE_VERSION
+                    };
+                    request = {
+                        method: 'POST',
+                        headers: headers,
+                        body: JSON.stringify(body)
+                    };
+                    return [4 /*yield*/, fetch(endpoint, request)];
+                case 1:
+                    response = _b.sent();
+                    if (!response.ok) return [3 /*break*/, 3];
+                    return [4 /*yield*/, response.json()];
+                case 2:
+                    responseValue = _b.sent();
+                    registeredInstallationEntry = {
+                        fid: fid,
+                        registrationStatus: 2 /* COMPLETED */,
+                        refreshToken: responseValue.refreshToken,
+                        authToken: extractAuthTokenInfoFromResponse(responseValue.authToken)
+                    };
+                    return [2 /*return*/, registeredInstallationEntry];
+                case 3: throw getErrorFromResponse('Create Installation', response);
+            }
+        });
+    });
+}
+
+/**
+ * @license
+ * Copyright 2019 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+/** Returns a promise that resolves after given time passes. */
+function sleep(ms) {
+    return new Promise(function (resolve) {
+        setTimeout(resolve, ms);
+    });
+}
+
+/**
+ * @license
+ * Copyright 2019 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+function bufferToBase64UrlSafe(buffer) {
+    var array = buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer);
+    var b64 = btoa(String.fromCharCode.apply(String, __spread(array)));
+    return b64.replace(/\+/g, '-').replace(/\//g, '_');
+}
+
+/**
+ * @license
+ * Copyright 2019 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+/** Generates a new FID using random values from Web Crypto API. */
+function generateFid() {
+    // A valid FID has exactly 22 base64 characters, which is 132 bits, or 16.5
+    // bytes. our implementation generates a 17 byte array instead.
+    var fidByteArray = new Uint8Array(17);
+    crypto.getRandomValues(fidByteArray);
+    // Replace the first 4 random bits with the constant FID header of 0b0111.
+    fidByteArray[0] = 112 + (fidByteArray[0] % 16);
+    return encode(fidByteArray);
+}
+/** Converts a FID Uint8Array to a base64 string representation. */
+function encode(fidByteArray) {
+    var b64String = bufferToBase64UrlSafe(fidByteArray);
+    // Remove the 23rd character that was added because of the extra 4 bits at the
+    // end of our 17 byte array, and the '=' padding.
+    return b64String.substr(0, 22);
+}
+
+/**
+ * @license
+ * Copyright 2019 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+var DATABASE_NAME = 'firebase-installations-database';
+var DATABASE_VERSION = 1;
+var OBJECT_STORE_NAME = 'firebase-installations-store';
+var dbPromise = Object(idb__WEBPACK_IMPORTED_MODULE_2__["openDb"])(DATABASE_NAME, DATABASE_VERSION, function (upgradeDB) {
+    // We don't use 'break' in this switch statement, the fall-through
+    // behavior is what we want, because if there are multiple versions between
+    // the old version and the current version, we want ALL the migrations
+    // that correspond to those versions to run, not only the last one.
+    switch (upgradeDB.oldVersion) {
+        case 0:
+            upgradeDB.createObjectStore(OBJECT_STORE_NAME);
+    }
+});
+/** Assigns or overwrites the record for the given key with the given value. */
+function set(appConfig, value) {
+    return __awaiter(this, void 0, void 0, function () {
+        var key, db, tx;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    key = getKey(appConfig);
+                    return [4 /*yield*/, dbPromise];
+                case 1:
+                    db = _a.sent();
+                    tx = db.transaction(OBJECT_STORE_NAME, 'readwrite');
+                    tx.objectStore(OBJECT_STORE_NAME).put(value, key);
+                    return [4 /*yield*/, tx.complete];
+                case 2:
+                    _a.sent();
+                    return [2 /*return*/, value];
+            }
+        });
+    });
+}
+/** Removes record(s) from the objectStore that match the given key. */
+function remove(appConfig) {
+    return __awaiter(this, void 0, void 0, function () {
+        var key, db, tx;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    key = getKey(appConfig);
+                    return [4 /*yield*/, dbPromise];
+                case 1:
+                    db = _a.sent();
+                    tx = db.transaction(OBJECT_STORE_NAME, 'readwrite');
+                    tx.objectStore(OBJECT_STORE_NAME).delete(key);
+                    return [2 /*return*/, tx.complete];
+            }
+        });
+    });
+}
+/**
+ * Atomically updates a record with the result of updateFn, which gets
+ * called with the current value. If newValue is undefined, the record is
+ * deleted instead.
+ * @return Updated value
+ */
+function update(appConfig, updateFn) {
+    return __awaiter(this, void 0, void 0, function () {
+        var key, db, tx, store, oldValue, newValue;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    key = getKey(appConfig);
+                    return [4 /*yield*/, dbPromise];
+                case 1:
+                    db = _a.sent();
+                    tx = db.transaction(OBJECT_STORE_NAME, 'readwrite');
+                    store = tx.objectStore(OBJECT_STORE_NAME);
+                    return [4 /*yield*/, store.get(key)];
+                case 2:
+                    oldValue = _a.sent();
+                    newValue = updateFn(oldValue);
+                    if (newValue === oldValue) {
+                        return [2 /*return*/, newValue];
+                    }
+                    if (newValue === undefined) {
+                        store.delete(key);
+                    }
+                    else {
+                        store.put(newValue, key);
+                    }
+                    return [4 /*yield*/, tx.complete];
+                case 3:
+                    _a.sent();
+                    return [2 /*return*/, newValue];
+            }
+        });
+    });
+}
+function getKey(appConfig) {
+    return appConfig.appName + "!" + appConfig.appId;
+}
+
+/**
+ * @license
+ * Copyright 2019 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+/**
+ * Updates and returns the InstallationEntry from the database.
+ * Also triggers a registration request if it is necessary and possible.
+ */
+function getInstallationEntry(appConfig) {
+    return __awaiter(this, void 0, void 0, function () {
+        var registrationPromise, _a;
+        return __generator(this, function (_b) {
+            switch (_b.label) {
+                case 0:
+                    _a = {};
+                    return [4 /*yield*/, update(appConfig, function (oldEntry) {
+                            var installationEntry = updateOrCreateFid(oldEntry);
+                            var entryWithPromise = triggerRegistrationIfNecessary(appConfig, installationEntry);
+                            registrationPromise = entryWithPromise.registrationPromise;
+                            return entryWithPromise.installationEntry;
+                        })];
+                case 1: return [2 /*return*/, (_a.installationEntry = _b.sent(),
+                        _a.registrationPromise = registrationPromise,
+                        _a)];
+            }
+        });
+    });
+}
+function updateOrCreateFid(oldEntry) {
+    var entry = oldEntry || {
+        fid: generateFid(),
+        registrationStatus: 0 /* NOT_STARTED */
+    };
+    if (hasInstallationRequestTimedOut(entry)) {
+        return {
+            fid: entry.fid,
+            registrationStatus: 0 /* NOT_STARTED */
+        };
+    }
+    return entry;
+}
+/**
+ * If the Firebase Installation is not registered yet, this will trigger the registration
+ * and return an InProgressInstallationEntry.
+ */
+function triggerRegistrationIfNecessary(appConfig, installationEntry) {
+    if (installationEntry.registrationStatus === 0 /* NOT_STARTED */) {
+        if (!navigator.onLine) {
+            // Registration required but app is offline.
+            var registrationPromiseWithError = Promise.reject(ERROR_FACTORY.create("app-offline" /* APP_OFFLINE */));
+            return {
+                installationEntry: installationEntry,
+                registrationPromise: registrationPromiseWithError
+            };
+        }
+        // Try registering. Change status to IN_PROGRESS.
+        var inProgressEntry = {
+            fid: installationEntry.fid,
+            registrationStatus: 1 /* IN_PROGRESS */,
+            registrationTime: Date.now()
+        };
+        var registrationPromise = registerInstallation(appConfig, inProgressEntry);
+        return { installationEntry: inProgressEntry, registrationPromise: registrationPromise };
+    }
+    else if (installationEntry.registrationStatus === 1 /* IN_PROGRESS */) {
+        return {
+            installationEntry: installationEntry,
+            registrationPromise: waitUntilFidRegistration(appConfig)
+        };
+    }
+    else {
+        return { installationEntry: installationEntry };
+    }
+}
+/** This will be executed only once for each new Firebase Installation. */
+function registerInstallation(appConfig, installationEntry) {
+    return __awaiter(this, void 0, void 0, function () {
+        var registeredInstallationEntry, e_1;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    _a.trys.push([0, 3, , 8]);
+                    return [4 /*yield*/, createInstallation(appConfig, installationEntry)];
+                case 1:
+                    registeredInstallationEntry = _a.sent();
+                    return [4 /*yield*/, set(appConfig, registeredInstallationEntry)];
+                case 2:
+                    _a.sent();
+                    return [3 /*break*/, 8];
+                case 3:
+                    e_1 = _a.sent();
+                    if (!(isServerError(e_1) && e_1.serverCode === 409)) return [3 /*break*/, 5];
+                    // Server returned a "FID can not be used" error.
+                    // Generate a new ID next time.
+                    return [4 /*yield*/, remove(appConfig)];
+                case 4:
+                    // Server returned a "FID can not be used" error.
+                    // Generate a new ID next time.
+                    _a.sent();
+                    return [3 /*break*/, 7];
+                case 5: 
+                // Registration failed. Set FID as not registered.
+                return [4 /*yield*/, set(appConfig, {
+                        fid: installationEntry.fid,
+                        registrationStatus: 0 /* NOT_STARTED */
+                    })];
+                case 6:
+                    // Registration failed. Set FID as not registered.
+                    _a.sent();
+                    _a.label = 7;
+                case 7: throw e_1;
+                case 8: return [2 /*return*/];
+            }
+        });
+    });
+}
+/** Call if FID registration is pending. */
+function waitUntilFidRegistration(appConfig) {
+    return __awaiter(this, void 0, void 0, function () {
+        var entry;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0: return [4 /*yield*/, updateInstallationRequest(appConfig)];
+                case 1:
+                    entry = _a.sent();
+                    _a.label = 2;
+                case 2:
+                    if (!(entry.registrationStatus === 1 /* IN_PROGRESS */)) return [3 /*break*/, 5];
+                    // createInstallation request still in progress.
+                    return [4 /*yield*/, sleep(100)];
+                case 3:
+                    // createInstallation request still in progress.
+                    _a.sent();
+                    return [4 /*yield*/, updateInstallationRequest(appConfig)];
+                case 4:
+                    entry = _a.sent();
+                    return [3 /*break*/, 2];
+                case 5:
+                    if (entry.registrationStatus === 0 /* NOT_STARTED */) {
+                        throw ERROR_FACTORY.create("create-installation-failed" /* CREATE_INSTALLATION_FAILED */);
+                    }
+                    return [2 /*return*/];
+            }
+        });
+    });
+}
+/**
+ * Called only if there is a CreateInstallation request in progress.
+ *
+ * Updates the InstallationEntry in the DB based on the status of the
+ * CreateInstallation request.
+ *
+ * Returns the updated InstallationEntry.
+ */
+function updateInstallationRequest(appConfig) {
+    return update(appConfig, function (oldEntry) {
+        if (!oldEntry) {
+            throw ERROR_FACTORY.create("installation-not-found" /* INSTALLATION_NOT_FOUND */);
+        }
+        if (hasInstallationRequestTimedOut(oldEntry)) {
+            return {
+                fid: oldEntry.fid,
+                registrationStatus: 0 /* NOT_STARTED */
+            };
+        }
+        return oldEntry;
+    });
+}
+function hasInstallationRequestTimedOut(installationEntry) {
+    return (installationEntry.registrationStatus === 1 /* IN_PROGRESS */ &&
+        installationEntry.registrationTime + PENDING_TIMEOUT_MS < Date.now());
+}
+
+/**
+ * @license
+ * Copyright 2019 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+function getId(app) {
+    return __awaiter(this, void 0, void 0, function () {
+        var appConfig, _a, installationEntry, registrationPromise;
+        return __generator(this, function (_b) {
+            switch (_b.label) {
+                case 0:
+                    appConfig = extractAppConfig(app);
+                    return [4 /*yield*/, getInstallationEntry(appConfig)];
+                case 1:
+                    _a = _b.sent(), installationEntry = _a.installationEntry, registrationPromise = _a.registrationPromise;
+                    if (registrationPromise) {
+                        // Suppress registration errors as they are not a problem for getId.
+                        registrationPromise.catch(function () { });
+                    }
+                    return [2 /*return*/, installationEntry.fid];
+            }
+        });
+    });
+}
+
+/**
+ * @license
+ * Copyright 2019 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+function generateAuthToken(appConfig, installationEntry) {
+    return __awaiter(this, void 0, void 0, function () {
+        var endpoint, headers, body, request, response, responseValue, completedAuthToken;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    endpoint = getGenerateAuthTokenEndpoint(appConfig, installationEntry);
+                    headers = getHeadersWithAuth(appConfig, installationEntry);
+                    body = {
+                        installation: {
+                            sdkVersion: PACKAGE_VERSION
+                        }
+                    };
+                    request = {
+                        method: 'POST',
+                        headers: headers,
+                        body: JSON.stringify(body)
+                    };
+                    return [4 /*yield*/, fetch(endpoint, request)];
+                case 1:
+                    response = _a.sent();
+                    if (!response.ok) return [3 /*break*/, 3];
+                    return [4 /*yield*/, response.json()];
+                case 2:
+                    responseValue = _a.sent();
+                    completedAuthToken = extractAuthTokenInfoFromResponse(responseValue);
+                    return [2 /*return*/, completedAuthToken];
+                case 3: throw getErrorFromResponse('Generate Auth Token', response);
+            }
+        });
+    });
+}
+function getGenerateAuthTokenEndpoint(appConfig, _a) {
+    var fid = _a.fid;
+    return getInstallationsEndpoint(appConfig) + "/" + fid + "/authTokens:generate";
+}
+
+/**
+ * @license
+ * Copyright 2019 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+function getToken(app) {
+    return __awaiter(this, void 0, void 0, function () {
+        var appConfig;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    appConfig = extractAppConfig(app);
+                    return [4 /*yield*/, completeInstallationRegistration(appConfig)];
+                case 1:
+                    _a.sent();
+                    // At this point we either have a Registered Installation in the DB, or we've
+                    // already thrown an error.
+                    return [2 /*return*/, fetchAuthToken(appConfig)];
+            }
+        });
+    });
+}
+function completeInstallationRegistration(appConfig) {
+    return __awaiter(this, void 0, void 0, function () {
+        var _a, installationEntry, registrationPromise;
+        return __generator(this, function (_b) {
+            switch (_b.label) {
+                case 0: return [4 /*yield*/, getInstallationEntry(appConfig)];
+                case 1:
+                    _a = _b.sent(), installationEntry = _a.installationEntry, registrationPromise = _a.registrationPromise;
+                    if (!registrationPromise) return [3 /*break*/, 3];
+                    // A createInstallation request is in progress. Wait until it finishes.
+                    return [4 /*yield*/, registrationPromise];
+                case 2:
+                    // A createInstallation request is in progress. Wait until it finishes.
+                    _b.sent();
+                    return [3 /*break*/, 4];
+                case 3:
+                    if (installationEntry.registrationStatus !== 2 /* COMPLETED */) {
+                        // Installation ID can't be registered.
+                        throw ERROR_FACTORY.create("create-installation-failed" /* CREATE_INSTALLATION_FAILED */);
+                    }
+                    _b.label = 4;
+                case 4: return [2 /*return*/];
+            }
+        });
+    });
+}
+function fetchAuthToken(appConfig) {
+    return __awaiter(this, void 0, void 0, function () {
+        var tokenPromise, entry, authToken, _a;
+        return __generator(this, function (_b) {
+            switch (_b.label) {
+                case 0: return [4 /*yield*/, update(appConfig, function (oldEntry) {
+                        if (!isEntryRegistered(oldEntry)) {
+                            throw ERROR_FACTORY.create("not-registered" /* NOT_REGISTERED */);
+                        }
+                        var oldAuthToken = oldEntry.authToken;
+                        if (isAuthTokenValid(oldAuthToken)) {
+                            // There is a valid token in the DB.
+                            return oldEntry;
+                        }
+                        else if (oldAuthToken.requestStatus === 1 /* IN_PROGRESS */) {
+                            // There already is a token request in progress.
+                            tokenPromise = waitUntilAuthTokenRequest(appConfig);
+                            return oldEntry;
+                        }
+                        else {
+                            // No token or token expired.
+                            if (!navigator.onLine) {
+                                throw ERROR_FACTORY.create("app-offline" /* APP_OFFLINE */);
+                            }
+                            var inProgressEntry = makeAuthTokenRequestInProgressEntry(oldEntry);
+                            tokenPromise = fetchAuthTokenFromServer(appConfig, inProgressEntry);
+                            return inProgressEntry;
+                        }
+                    })];
+                case 1:
+                    entry = _b.sent();
+                    if (!tokenPromise) return [3 /*break*/, 3];
+                    return [4 /*yield*/, tokenPromise];
+                case 2:
+                    _a = _b.sent();
+                    return [3 /*break*/, 4];
+                case 3:
+                    _a = entry.authToken;
+                    _b.label = 4;
+                case 4:
+                    authToken = _a;
+                    return [2 /*return*/, authToken.token];
+            }
+        });
+    });
+}
+/**
+ * Call only if FID is registered and Auth Token request is in progress.
+ */
+function waitUntilAuthTokenRequest(appConfig) {
+    return __awaiter(this, void 0, void 0, function () {
+        var entry, authToken;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0: return [4 /*yield*/, updateAuthTokenRequest(appConfig)];
+                case 1:
+                    entry = _a.sent();
+                    _a.label = 2;
+                case 2:
+                    if (!(entry.authToken.requestStatus === 1 /* IN_PROGRESS */)) return [3 /*break*/, 5];
+                    // generateAuthToken still in progress.
+                    return [4 /*yield*/, sleep(100)];
+                case 3:
+                    // generateAuthToken still in progress.
+                    _a.sent();
+                    return [4 /*yield*/, updateAuthTokenRequest(appConfig)];
+                case 4:
+                    entry = _a.sent();
+                    return [3 /*break*/, 2];
+                case 5:
+                    authToken = entry.authToken;
+                    if (authToken.requestStatus === 0 /* NOT_STARTED */) {
+                        throw ERROR_FACTORY.create("generate-token-failed" /* GENERATE_TOKEN_FAILED */);
+                    }
+                    else {
+                        return [2 /*return*/, authToken];
+                    }
+                    return [2 /*return*/];
+            }
+        });
+    });
+}
+/**
+ * Called only if there is a GenerateAuthToken request in progress.
+ *
+ * Updates the InstallationEntry in the DB based on the status of the
+ * GenerateAuthToken request.
+ *
+ * Returns the updated InstallationEntry.
+ */
+function updateAuthTokenRequest(appConfig) {
+    return update(appConfig, function (oldEntry) {
+        if (!isEntryRegistered(oldEntry)) {
+            throw ERROR_FACTORY.create("not-registered" /* NOT_REGISTERED */);
+        }
+        var oldAuthToken = oldEntry.authToken;
+        if (hasAuthTokenRequestTimedOut(oldAuthToken)) {
+            return __assign({}, oldEntry, { authToken: { requestStatus: 0 /* NOT_STARTED */ } });
+        }
+        return oldEntry;
+    });
+}
+function fetchAuthTokenFromServer(appConfig, installationEntry) {
+    return __awaiter(this, void 0, void 0, function () {
+        var authToken, updatedInstallationEntry, e_1, updatedInstallationEntry;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    _a.trys.push([0, 3, , 8]);
+                    return [4 /*yield*/, generateAuthToken(appConfig, installationEntry)];
+                case 1:
+                    authToken = _a.sent();
+                    updatedInstallationEntry = __assign({}, installationEntry, { authToken: authToken });
+                    return [4 /*yield*/, set(appConfig, updatedInstallationEntry)];
+                case 2:
+                    _a.sent();
+                    return [2 /*return*/, authToken];
+                case 3:
+                    e_1 = _a.sent();
+                    if (!(isServerError(e_1) && (e_1.serverCode === 401 || e_1.serverCode === 404))) return [3 /*break*/, 5];
+                    // Server returned a "FID not found" or a "Invalid authentication" error.
+                    // Generate a new ID next time.
+                    return [4 /*yield*/, remove(appConfig)];
+                case 4:
+                    // Server returned a "FID not found" or a "Invalid authentication" error.
+                    // Generate a new ID next time.
+                    _a.sent();
+                    return [3 /*break*/, 7];
+                case 5:
+                    updatedInstallationEntry = __assign({}, installationEntry, { authToken: { requestStatus: 0 /* NOT_STARTED */ } });
+                    return [4 /*yield*/, set(appConfig, updatedInstallationEntry)];
+                case 6:
+                    _a.sent();
+                    _a.label = 7;
+                case 7: throw e_1;
+                case 8: return [2 /*return*/];
+            }
+        });
+    });
+}
+function isEntryRegistered(installationEntry) {
+    return (installationEntry !== undefined &&
+        installationEntry.registrationStatus === 2 /* COMPLETED */);
+}
+function isAuthTokenValid(authToken) {
+    return (authToken.requestStatus === 2 /* COMPLETED */ &&
+        !isAuthTokenExpired(authToken));
+}
+function isAuthTokenExpired(authToken) {
+    var now = Date.now();
+    return (now < authToken.creationTime ||
+        authToken.creationTime + authToken.expiresIn < now + TOKEN_EXPIRATION_BUFFER);
+}
+/** Returns an updated InstallationEntry with an InProgressAuthToken. */
+function makeAuthTokenRequestInProgressEntry(oldEntry) {
+    var inProgressAuthToken = {
+        requestStatus: 1 /* IN_PROGRESS */,
+        requestTime: Date.now()
+    };
+    return __assign({}, oldEntry, { authToken: inProgressAuthToken });
+}
+function hasAuthTokenRequestTimedOut(authToken) {
+    return (authToken.requestStatus === 1 /* IN_PROGRESS */ &&
+        authToken.requestTime + PENDING_TIMEOUT_MS < Date.now());
+}
+
+/**
+ * @license
+ * Copyright 2019 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+function deleteInstallation(appConfig, installationEntry) {
+    return __awaiter(this, void 0, void 0, function () {
+        var endpoint, headers, request, response;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    endpoint = getDeleteEndpoint(appConfig, installationEntry);
+                    headers = getHeadersWithAuth(appConfig, installationEntry);
+                    request = {
+                        method: 'DELETE',
+                        headers: headers
+                    };
+                    return [4 /*yield*/, fetch(endpoint, request)];
+                case 1:
+                    response = _a.sent();
+                    if (!response.ok) {
+                        throw getErrorFromResponse('Delete Installation', response);
+                    }
+                    return [2 /*return*/];
+            }
+        });
+    });
+}
+function getDeleteEndpoint(appConfig, _a) {
+    var fid = _a.fid;
+    return getInstallationsEndpoint(appConfig) + "/" + fid;
+}
+
+/**
+ * @license
+ * Copyright 2019 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+function deleteInstallation$1(app) {
+    return __awaiter(this, void 0, void 0, function () {
+        var appConfig, entry;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    appConfig = extractAppConfig(app);
+                    return [4 /*yield*/, update(appConfig, function (oldEntry) {
+                            if (oldEntry &&
+                                oldEntry.registrationStatus === 0 /* NOT_STARTED */) {
+                                // Delete the unregistered entry without sending a deleteInstallation request.
+                                return undefined;
+                            }
+                            return oldEntry;
+                        })];
+                case 1:
+                    entry = _a.sent();
+                    if (!entry) return [3 /*break*/, 6];
+                    if (!(entry.registrationStatus === 1 /* IN_PROGRESS */)) return [3 /*break*/, 2];
+                    // Can't delete while trying to register.
+                    throw ERROR_FACTORY.create("delete-pending-registration" /* DELETE_PENDING_REGISTRATION */);
+                case 2:
+                    if (!(entry.registrationStatus === 2 /* COMPLETED */)) return [3 /*break*/, 6];
+                    if (!!navigator.onLine) return [3 /*break*/, 3];
+                    throw ERROR_FACTORY.create("app-offline" /* APP_OFFLINE */);
+                case 3: return [4 /*yield*/, deleteInstallation(appConfig, entry)];
+                case 4:
+                    _a.sent();
+                    return [4 /*yield*/, remove(appConfig)];
+                case 5:
+                    _a.sent();
+                    _a.label = 6;
+                case 6: return [2 /*return*/];
+            }
+        });
+    });
+}
+
+/**
+ * @license
+ * Copyright 2019 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/**
+ * @license
+ * Copyright 2019 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+function registerInstallations(instance) {
+    var installationsName = 'installations';
+    var factoryMethod = function (app) {
+        // Throws if app isn't configured properly.
+        extractAppConfig(app);
+        return {
+            app: app,
+            getId: function () { return getId(app); },
+            getToken: function () { return getToken(app); },
+            delete: function () { return deleteInstallation$1(app); }
+        };
+    };
+    instance.INTERNAL.registerService(installationsName, factoryMethod);
+}
+registerInstallations(_firebase_app__WEBPACK_IMPORTED_MODULE_0___default.a);
+
+
+//# sourceMappingURL=index.esm.js.map
+
+
+/***/ }),
+
+/***/ "./node_modules/@firebase/messaging/dist/index.esm.js":
+/*!************************************************************!*\
+  !*** ./node_modules/@firebase/messaging/dist/index.esm.js ***!
+  \************************************************************/
+/*! exports provided: isSupported, registerMessaging */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "isSupported", function() { return isSupported; });
-/* harmony import */ var _firebase_util__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @firebase/util */ "./node_modules/@firebase/util/dist/index.cjs.js");
-/* harmony import */ var _firebase_util__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_firebase_util__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "registerMessaging", function() { return registerMessaging; });
+/* harmony import */ var _firebase_app__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @firebase/app */ "./node_modules/@firebase/app/dist/index.cjs.js");
+/* harmony import */ var _firebase_app__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_firebase_app__WEBPACK_IMPORTED_MODULE_0__);
 /* harmony import */ var tslib__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! tslib */ "./node_modules/@firebase/messaging/node_modules/tslib/tslib.es6.js");
-/* harmony import */ var _firebase_app__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @firebase/app */ "./node_modules/@firebase/app/dist/index.cjs.js");
-/* harmony import */ var _firebase_app__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(_firebase_app__WEBPACK_IMPORTED_MODULE_2__);
+/* harmony import */ var _firebase_util__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @firebase/util */ "./node_modules/@firebase/util/dist/index.cjs.js");
+/* harmony import */ var _firebase_util__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(_firebase_util__WEBPACK_IMPORTED_MODULE_2__);
+
 
 
 
 
 /**
+ * @license
  * Copyright 2018 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -22336,6 +24096,7 @@ __webpack_require__.r(__webpack_exports__);
  */
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -22350,69 +24111,70 @@ __webpack_require__.r(__webpack_exports__);
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-var ERROR_CODES = {
-    AVAILABLE_IN_WINDOW: 'only-available-in-window',
-    AVAILABLE_IN_SW: 'only-available-in-sw',
-    SHOULD_BE_INHERITED: 'should-be-overriden',
-    BAD_SENDER_ID: 'bad-sender-id',
-    INCORRECT_GCM_SENDER_ID: 'incorrect-gcm-sender-id',
-    PERMISSION_DEFAULT: 'permission-default',
-    PERMISSION_BLOCKED: 'permission-blocked',
-    UNSUPPORTED_BROWSER: 'unsupported-browser',
-    NOTIFICATIONS_BLOCKED: 'notifications-blocked',
-    FAILED_DEFAULT_REGISTRATION: 'failed-serviceworker-registration',
-    SW_REGISTRATION_EXPECTED: 'sw-registration-expected',
-    GET_SUBSCRIPTION_FAILED: 'get-subscription-failed',
-    INVALID_SAVED_TOKEN: 'invalid-saved-token',
-    SW_REG_REDUNDANT: 'sw-reg-redundant',
-    TOKEN_SUBSCRIBE_FAILED: 'token-subscribe-failed',
-    TOKEN_SUBSCRIBE_NO_TOKEN: 'token-subscribe-no-token',
-    TOKEN_SUBSCRIBE_NO_PUSH_SET: 'token-subscribe-no-push-set',
-    TOKEN_UNSUBSCRIBE_FAILED: 'token-unsubscribe-failed',
-    TOKEN_UPDATE_FAILED: 'token-update-failed',
-    TOKEN_UPDATE_NO_TOKEN: 'token-update-no-token',
-    USE_SW_BEFORE_GET_TOKEN: 'use-sw-before-get-token',
-    INVALID_DELETE_TOKEN: 'invalid-delete-token',
-    DELETE_TOKEN_NOT_FOUND: 'delete-token-not-found',
-    DELETE_SCOPE_NOT_FOUND: 'delete-scope-not-found',
-    BG_HANDLER_FUNCTION_EXPECTED: 'bg-handler-function-expected',
-    NO_WINDOW_CLIENT_TO_MSG: 'no-window-client-to-msg',
-    UNABLE_TO_RESUBSCRIBE: 'unable-to-resubscribe',
-    NO_FCM_TOKEN_FOR_RESUBSCRIBE: 'no-fcm-token-for-resubscribe',
-    FAILED_TO_DELETE_TOKEN: 'failed-to-delete-token',
-    NO_SW_IN_REG: 'no-sw-in-reg',
-    BAD_SCOPE: 'bad-scope',
-    BAD_VAPID_KEY: 'bad-vapid-key',
-    BAD_SUBSCRIPTION: 'bad-subscription',
-    BAD_TOKEN: 'bad-token',
-    BAD_PUSH_SET: 'bad-push-set',
-    FAILED_DELETE_VAPID_KEY: 'failed-delete-vapid-key',
-    INVALID_PUBLIC_VAPID_KEY: 'invalid-public-vapid-key',
-    USE_PUBLIC_KEY_BEFORE_GET_TOKEN: 'use-public-key-before-get-token',
-    PUBLIC_KEY_DECRYPTION_FAILED: 'public-vapid-key-decryption-failed'
-};
-var ERROR_MAP = (_a = {}, _a[ERROR_CODES.AVAILABLE_IN_WINDOW] = 'This method is available in a Window context.', _a[ERROR_CODES.AVAILABLE_IN_SW] = 'This method is available in a service worker ' + 'context.', _a[ERROR_CODES.SHOULD_BE_INHERITED] = 'This method should be overriden by ' + 'extended classes.', _a[ERROR_CODES.BAD_SENDER_ID] = "Please ensure that 'messagingSenderId' is set " +
-        'correctly in the options passed into firebase.initializeApp().', _a[ERROR_CODES.PERMISSION_DEFAULT] = 'The required permissions were not granted and ' + 'dismissed instead.', _a[ERROR_CODES.PERMISSION_BLOCKED] = 'The required permissions were not granted and ' + 'blocked instead.', _a[ERROR_CODES.UNSUPPORTED_BROWSER] = "This browser doesn't support the API's " +
-        'required to use the firebase SDK.', _a[ERROR_CODES.NOTIFICATIONS_BLOCKED] = 'Notifications have been blocked.', _a[ERROR_CODES.FAILED_DEFAULT_REGISTRATION] = 'We are unable to register the ' +
-        'default service worker. {$browserErrorMessage}', _a[ERROR_CODES.SW_REGISTRATION_EXPECTED] = 'A service worker registration was the ' + 'expected input.', _a[ERROR_CODES.GET_SUBSCRIPTION_FAILED] = 'There was an error when trying to get ' +
-        'any existing Push Subscriptions.', _a[ERROR_CODES.INVALID_SAVED_TOKEN] = 'Unable to access details of the saved token.', _a[ERROR_CODES.SW_REG_REDUNDANT] = 'The service worker being used for push was made ' + 'redundant.', _a[ERROR_CODES.TOKEN_SUBSCRIBE_FAILED] = 'A problem occured while subscribing the ' + 'user to FCM: {$message}', _a[ERROR_CODES.TOKEN_SUBSCRIBE_NO_TOKEN] = 'FCM returned no token when subscribing ' + 'the user to push.', _a[ERROR_CODES.TOKEN_SUBSCRIBE_NO_PUSH_SET] = 'FCM returned an invalid response ' + 'when getting an FCM token.', _a[ERROR_CODES.TOKEN_UNSUBSCRIBE_FAILED] = 'A problem occured while unsubscribing the ' + 'user from FCM: {$message}', _a[ERROR_CODES.TOKEN_UPDATE_FAILED] = 'A problem occured while updating the ' + 'user from FCM: {$message}', _a[ERROR_CODES.TOKEN_UPDATE_NO_TOKEN] = 'FCM returned no token when updating ' + 'the user to push.', _a[ERROR_CODES.USE_SW_BEFORE_GET_TOKEN] = 'The useServiceWorker() method may only be called once and must be ' +
-        'called before calling getToken() to ensure your service worker is used.', _a[ERROR_CODES.INVALID_DELETE_TOKEN] = 'You must pass a valid token into ' +
-        'deleteToken(), i.e. the token from getToken().', _a[ERROR_CODES.DELETE_TOKEN_NOT_FOUND] = 'The deletion attempt for token could not ' +
-        'be performed as the token was not found.', _a[ERROR_CODES.DELETE_SCOPE_NOT_FOUND] = 'The deletion attempt for service worker ' +
-        'scope could not be performed as the scope was not found.', _a[ERROR_CODES.BG_HANDLER_FUNCTION_EXPECTED] = 'The input to ' + 'setBackgroundMessageHandler() must be a function.', _a[ERROR_CODES.NO_WINDOW_CLIENT_TO_MSG] = 'An attempt was made to message a ' + 'non-existant window client.', _a[ERROR_CODES.UNABLE_TO_RESUBSCRIBE] = 'There was an error while re-subscribing ' +
-        'the FCM token for push messaging. Will have to resubscribe the ' +
-        'user on next visit. {$message}', _a[ERROR_CODES.NO_FCM_TOKEN_FOR_RESUBSCRIBE] = 'Could not find an FCM token ' +
-        'and as a result, unable to resubscribe. Will have to resubscribe the ' +
-        'user on next visit.', _a[ERROR_CODES.FAILED_TO_DELETE_TOKEN] = 'Unable to delete the currently saved token.', _a[ERROR_CODES.NO_SW_IN_REG] = 'Even though the service worker registration was ' +
-        'successful, there was a problem accessing the service worker itself.', _a[ERROR_CODES.INCORRECT_GCM_SENDER_ID] = "Please change your web app manifest's " +
-        "'gcm_sender_id' value to '103953800507' to use Firebase messaging.", _a[ERROR_CODES.BAD_SCOPE] = 'The service worker scope must be a string with at ' +
-        'least one character.', _a[ERROR_CODES.BAD_VAPID_KEY] = 'The public VAPID key is not a Uint8Array with 65 bytes.', _a[ERROR_CODES.BAD_SUBSCRIPTION] = 'The subscription must be a valid ' + 'PushSubscription.', _a[ERROR_CODES.BAD_TOKEN] = 'The FCM Token used for storage / lookup was not ' +
-        'a valid token string.', _a[ERROR_CODES.BAD_PUSH_SET] = 'The FCM push set used for storage / lookup was not ' +
-        'not a valid push set string.', _a[ERROR_CODES.FAILED_DELETE_VAPID_KEY] = 'The VAPID key could not be deleted.', _a[ERROR_CODES.INVALID_PUBLIC_VAPID_KEY] = 'The public VAPID key must be a string.', _a[ERROR_CODES.PUBLIC_KEY_DECRYPTION_FAILED] = 'The public VAPID key did not equal ' + '65 bytes when decrypted.', _a);
-var errorFactory = new _firebase_util__WEBPACK_IMPORTED_MODULE_0__["ErrorFactory"]('messaging', 'Messaging', ERROR_MAP);
 var _a;
+var ERROR_MAP = (_a = {},
+    _a["only-available-in-window" /* AVAILABLE_IN_WINDOW */] = 'This method is available in a Window context.',
+    _a["only-available-in-sw" /* AVAILABLE_IN_SW */] = 'This method is available in a service worker ' + 'context.',
+    _a["should-be-overriden" /* SHOULD_BE_INHERITED */] = 'This method should be overriden by ' + 'extended classes.',
+    _a["bad-sender-id" /* BAD_SENDER_ID */] = "Please ensure that 'messagingSenderId' is set " +
+        'correctly in the options passed into firebase.initializeApp().',
+    _a["permission-default" /* PERMISSION_DEFAULT */] = 'The required permissions were not granted and ' + 'dismissed instead.',
+    _a["permission-blocked" /* PERMISSION_BLOCKED */] = 'The required permissions were not granted and ' + 'blocked instead.',
+    _a["unsupported-browser" /* UNSUPPORTED_BROWSER */] = "This browser doesn't support the API's " +
+        'required to use the firebase SDK.',
+    _a["notifications-blocked" /* NOTIFICATIONS_BLOCKED */] = 'Notifications have been blocked.',
+    _a["failed-serviceworker-registration" /* FAILED_DEFAULT_REGISTRATION */] = 'We are unable to register the ' +
+        'default service worker. {$browserErrorMessage}',
+    _a["sw-registration-expected" /* SW_REGISTRATION_EXPECTED */] = 'A service worker registration was the ' + 'expected input.',
+    _a["get-subscription-failed" /* GET_SUBSCRIPTION_FAILED */] = 'There was an error when trying to get ' +
+        'any existing Push Subscriptions.',
+    _a["invalid-saved-token" /* INVALID_SAVED_TOKEN */] = 'Unable to access details of the saved token.',
+    _a["sw-reg-redundant" /* SW_REG_REDUNDANT */] = 'The service worker being used for push was made ' + 'redundant.',
+    _a["token-subscribe-failed" /* TOKEN_SUBSCRIBE_FAILED */] = 'A problem occured while subscribing the ' + 'user to FCM: {$message}',
+    _a["token-subscribe-no-token" /* TOKEN_SUBSCRIBE_NO_TOKEN */] = 'FCM returned no token when subscribing ' + 'the user to push.',
+    _a["token-subscribe-no-push-set" /* TOKEN_SUBSCRIBE_NO_PUSH_SET */] = 'FCM returned an invalid response ' + 'when getting an FCM token.',
+    _a["token-unsubscribe-failed" /* TOKEN_UNSUBSCRIBE_FAILED */] = 'A problem occured while unsubscribing the ' + 'user from FCM: {$message}',
+    _a["token-update-failed" /* TOKEN_UPDATE_FAILED */] = 'A problem occured while updating the ' + 'user from FCM: {$message}',
+    _a["token-update-no-token" /* TOKEN_UPDATE_NO_TOKEN */] = 'FCM returned no token when updating ' + 'the user to push.',
+    _a["use-sw-before-get-token" /* USE_SW_BEFORE_GET_TOKEN */] = 'The useServiceWorker() method may only be called once and must be ' +
+        'called before calling getToken() to ensure your service worker is used.',
+    _a["invalid-delete-token" /* INVALID_DELETE_TOKEN */] = 'You must pass a valid token into ' +
+        'deleteToken(), i.e. the token from getToken().',
+    _a["delete-token-not-found" /* DELETE_TOKEN_NOT_FOUND */] = 'The deletion attempt for token could not ' +
+        'be performed as the token was not found.',
+    _a["delete-scope-not-found" /* DELETE_SCOPE_NOT_FOUND */] = 'The deletion attempt for service worker ' +
+        'scope could not be performed as the scope was not found.',
+    _a["bg-handler-function-expected" /* BG_HANDLER_FUNCTION_EXPECTED */] = 'The input to ' + 'setBackgroundMessageHandler() must be a function.',
+    _a["no-window-client-to-msg" /* NO_WINDOW_CLIENT_TO_MSG */] = 'An attempt was made to message a ' + 'non-existant window client.',
+    _a["unable-to-resubscribe" /* UNABLE_TO_RESUBSCRIBE */] = 'There was an error while re-subscribing ' +
+        'the FCM token for push messaging. Will have to resubscribe the ' +
+        'user on next visit. {$message}',
+    _a["no-fcm-token-for-resubscribe" /* NO_FCM_TOKEN_FOR_RESUBSCRIBE */] = 'Could not find an FCM token ' +
+        'and as a result, unable to resubscribe. Will have to resubscribe the ' +
+        'user on next visit.',
+    _a["failed-to-delete-token" /* FAILED_TO_DELETE_TOKEN */] = 'Unable to delete the currently saved token.',
+    _a["no-sw-in-reg" /* NO_SW_IN_REG */] = 'Even though the service worker registration was ' +
+        'successful, there was a problem accessing the service worker itself.',
+    _a["incorrect-gcm-sender-id" /* INCORRECT_GCM_SENDER_ID */] = "Please change your web app manifest's " +
+        "'gcm_sender_id' value to '103953800507' to use Firebase messaging.",
+    _a["bad-scope" /* BAD_SCOPE */] = 'The service worker scope must be a string with at ' +
+        'least one character.',
+    _a["bad-vapid-key" /* BAD_VAPID_KEY */] = 'The public VAPID key is not a Uint8Array with 65 bytes.',
+    _a["bad-subscription" /* BAD_SUBSCRIPTION */] = 'The subscription must be a valid ' + 'PushSubscription.',
+    _a["bad-token" /* BAD_TOKEN */] = 'The FCM Token used for storage / lookup was not ' +
+        'a valid token string.',
+    _a["bad-push-set" /* BAD_PUSH_SET */] = 'The FCM push set used for storage / lookup was not ' +
+        'not a valid push set string.',
+    _a["failed-delete-vapid-key" /* FAILED_DELETE_VAPID_KEY */] = 'The VAPID key could not be deleted.',
+    _a["invalid-public-vapid-key" /* INVALID_PUBLIC_VAPID_KEY */] = 'The public VAPID key must be a string.',
+    _a["use-public-key-before-get-token" /* USE_PUBLIC_KEY_BEFORE_GET_TOKEN */] = 'The usePublicVapidKey() method may only be called once and must be ' +
+        'called before calling getToken() to ensure your VAPID key is used.',
+    _a["public-vapid-key-decryption-failed" /* PUBLIC_KEY_DECRYPTION_FAILED */] = 'The public VAPID key did not equal ' + '65 bytes when decrypted.',
+    _a);
+var errorFactory = new _firebase_util__WEBPACK_IMPORTED_MODULE_2__["ErrorFactory"]('messaging', 'Messaging', ERROR_MAP);
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -22497,6 +24259,7 @@ var DEFAULT_PUBLIC_VAPID_KEY = new Uint8Array([
 var ENDPOINT = 'https://fcm.googleapis.com';
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -22523,6 +24286,7 @@ var MessageType;
 })(MessageType || (MessageType = {}));
 
 /**
+ * @license
  * Copyright 2018 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -22558,6 +24322,7 @@ function isArrayBufferEqual(a, b) {
 }
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -22574,7 +24339,7 @@ function isArrayBufferEqual(a, b) {
  */
 function toBase64(arrayBuffer) {
     var uint8Version = new Uint8Array(arrayBuffer);
-    return btoa(String.fromCharCode.apply(null, uint8Version));
+    return btoa(String.fromCharCode.apply(String, Object(tslib__WEBPACK_IMPORTED_MODULE_1__["__spread"])(uint8Version)));
 }
 function arrayBufferToBase64(arrayBuffer) {
     var base64String = toBase64(arrayBuffer);
@@ -22585,6 +24350,7 @@ function arrayBufferToBase64(arrayBuffer) {
 }
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -22637,19 +24403,19 @@ var IidModel = /** @class */ (function () {
                         return [3 /*break*/, 5];
                     case 4:
                         err_1 = _a.sent();
-                        throw errorFactory.create(ERROR_CODES.TOKEN_SUBSCRIBE_FAILED);
+                        throw errorFactory.create("token-subscribe-failed" /* TOKEN_SUBSCRIBE_FAILED */);
                     case 5:
                         if (responseData.error) {
                             message = responseData.error.message;
-                            throw errorFactory.create(ERROR_CODES.TOKEN_SUBSCRIBE_FAILED, {
+                            throw errorFactory.create("token-subscribe-failed" /* TOKEN_SUBSCRIBE_FAILED */, {
                                 message: message
                             });
                         }
                         if (!responseData.token) {
-                            throw errorFactory.create(ERROR_CODES.TOKEN_SUBSCRIBE_NO_TOKEN);
+                            throw errorFactory.create("token-subscribe-no-token" /* TOKEN_SUBSCRIBE_NO_TOKEN */);
                         }
                         if (!responseData.pushSet) {
-                            throw errorFactory.create(ERROR_CODES.TOKEN_SUBSCRIBE_NO_PUSH_SET);
+                            throw errorFactory.create("token-subscribe-no-push-set" /* TOKEN_SUBSCRIBE_NO_PUSH_SET */);
                         }
                         return [2 /*return*/, {
                                 token: responseData.token,
@@ -22699,16 +24465,16 @@ var IidModel = /** @class */ (function () {
                         return [3 /*break*/, 5];
                     case 4:
                         err_2 = _a.sent();
-                        throw errorFactory.create(ERROR_CODES.TOKEN_UPDATE_FAILED);
+                        throw errorFactory.create("token-update-failed" /* TOKEN_UPDATE_FAILED */);
                     case 5:
                         if (responseData.error) {
                             message = responseData.error.message;
-                            throw errorFactory.create(ERROR_CODES.TOKEN_UPDATE_FAILED, {
+                            throw errorFactory.create("token-update-failed" /* TOKEN_UPDATE_FAILED */, {
                                 message: message
                             });
                         }
                         if (!responseData.token) {
-                            throw errorFactory.create(ERROR_CODES.TOKEN_UPDATE_NO_TOKEN);
+                            throw errorFactory.create("token-update-no-token" /* TOKEN_UPDATE_NO_TOKEN */);
                         }
                         return [2 /*return*/, responseData.token];
                 }
@@ -22745,14 +24511,14 @@ var IidModel = /** @class */ (function () {
                         responseData = _a.sent();
                         if (responseData.error) {
                             message = responseData.error.message;
-                            throw errorFactory.create(ERROR_CODES.TOKEN_UNSUBSCRIBE_FAILED, {
+                            throw errorFactory.create("token-unsubscribe-failed" /* TOKEN_UNSUBSCRIBE_FAILED */, {
                                 message: message
                             });
                         }
                         return [3 /*break*/, 5];
                     case 4:
                         err_3 = _a.sent();
-                        throw errorFactory.create(ERROR_CODES.TOKEN_UNSUBSCRIBE_FAILED);
+                        throw errorFactory.create("token-unsubscribe-failed" /* TOKEN_UNSUBSCRIBE_FAILED */);
                     case 5: return [2 /*return*/];
                 }
             });
@@ -22762,6 +24528,7 @@ var IidModel = /** @class */ (function () {
 }());
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -22777,7 +24544,7 @@ var IidModel = /** @class */ (function () {
  * limitations under the License.
  */
 function base64ToArrayBuffer(base64String) {
-    var padding = '='.repeat((4 - base64String.length % 4) % 4);
+    var padding = '='.repeat((4 - (base64String.length % 4)) % 4);
     var base64 = (base64String + padding)
         .replace(/\-/g, '+')
         .replace(/_/g, '/');
@@ -22790,6 +24557,7 @@ function base64ToArrayBuffer(base64String) {
 }
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -22847,6 +24615,7 @@ function cleanV1() {
 }
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -22972,6 +24741,7 @@ function promisify(request) {
 }
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -23050,7 +24820,7 @@ var TokenDetailsModel = /** @class */ (function (_super) {
         return Object(tslib__WEBPACK_IMPORTED_MODULE_1__["__awaiter"])(this, void 0, void 0, function () {
             return Object(tslib__WEBPACK_IMPORTED_MODULE_1__["__generator"])(this, function (_a) {
                 if (!fcmToken) {
-                    throw errorFactory.create(ERROR_CODES.BAD_TOKEN);
+                    throw errorFactory.create("bad-token" /* BAD_TOKEN */);
                 }
                 validateInputs({ fcmToken: fcmToken });
                 return [2 /*return*/, this.getIndex('fcmToken', fcmToken)];
@@ -23066,7 +24836,7 @@ var TokenDetailsModel = /** @class */ (function (_super) {
         return Object(tslib__WEBPACK_IMPORTED_MODULE_1__["__awaiter"])(this, void 0, void 0, function () {
             return Object(tslib__WEBPACK_IMPORTED_MODULE_1__["__generator"])(this, function (_a) {
                 if (!swScope) {
-                    throw errorFactory.create(ERROR_CODES.BAD_SCOPE);
+                    throw errorFactory.create("bad-scope" /* BAD_SCOPE */);
                 }
                 validateInputs({ swScope: swScope });
                 return [2 /*return*/, this.get(swScope)];
@@ -23081,22 +24851,22 @@ var TokenDetailsModel = /** @class */ (function (_super) {
         return Object(tslib__WEBPACK_IMPORTED_MODULE_1__["__awaiter"])(this, void 0, void 0, function () {
             return Object(tslib__WEBPACK_IMPORTED_MODULE_1__["__generator"])(this, function (_a) {
                 if (!tokenDetails.swScope) {
-                    throw errorFactory.create(ERROR_CODES.BAD_SCOPE);
+                    throw errorFactory.create("bad-scope" /* BAD_SCOPE */);
                 }
                 if (!tokenDetails.vapidKey) {
-                    throw errorFactory.create(ERROR_CODES.BAD_VAPID_KEY);
+                    throw errorFactory.create("bad-vapid-key" /* BAD_VAPID_KEY */);
                 }
                 if (!tokenDetails.endpoint || !tokenDetails.auth || !tokenDetails.p256dh) {
-                    throw errorFactory.create(ERROR_CODES.BAD_SUBSCRIPTION);
+                    throw errorFactory.create("bad-subscription" /* BAD_SUBSCRIPTION */);
                 }
                 if (!tokenDetails.fcmSenderId) {
-                    throw errorFactory.create(ERROR_CODES.BAD_SENDER_ID);
+                    throw errorFactory.create("bad-sender-id" /* BAD_SENDER_ID */);
                 }
                 if (!tokenDetails.fcmToken) {
-                    throw errorFactory.create(ERROR_CODES.BAD_TOKEN);
+                    throw errorFactory.create("bad-token" /* BAD_TOKEN */);
                 }
                 if (!tokenDetails.fcmPushSet) {
-                    throw errorFactory.create(ERROR_CODES.BAD_PUSH_SET);
+                    throw errorFactory.create("bad-push-set" /* BAD_PUSH_SET */);
                 }
                 validateInputs(tokenDetails);
                 return [2 /*return*/, this.put(tokenDetails)];
@@ -23118,13 +24888,13 @@ var TokenDetailsModel = /** @class */ (function (_super) {
                 switch (_a.label) {
                     case 0:
                         if (typeof token !== 'string' || token.length === 0) {
-                            return [2 /*return*/, Promise.reject(errorFactory.create(ERROR_CODES.INVALID_DELETE_TOKEN))];
+                            return [2 /*return*/, Promise.reject(errorFactory.create("invalid-delete-token" /* INVALID_DELETE_TOKEN */))];
                         }
                         return [4 /*yield*/, this.getTokenDetailsFromToken(token)];
                     case 1:
                         details = _a.sent();
                         if (!details) {
-                            throw errorFactory.create(ERROR_CODES.DELETE_TOKEN_NOT_FOUND);
+                            throw errorFactory.create("delete-token-not-found" /* DELETE_TOKEN_NOT_FOUND */);
                         }
                         return [4 /*yield*/, this.delete(details.swScope)];
                     case 2:
@@ -23144,49 +24914,50 @@ var TokenDetailsModel = /** @class */ (function (_super) {
 function validateInputs(input) {
     if (input.fcmToken) {
         if (typeof input.fcmToken !== 'string' || input.fcmToken.length === 0) {
-            throw errorFactory.create(ERROR_CODES.BAD_TOKEN);
+            throw errorFactory.create("bad-token" /* BAD_TOKEN */);
         }
     }
     if (input.swScope) {
         if (typeof input.swScope !== 'string' || input.swScope.length === 0) {
-            throw errorFactory.create(ERROR_CODES.BAD_SCOPE);
+            throw errorFactory.create("bad-scope" /* BAD_SCOPE */);
         }
     }
     if (input.vapidKey) {
         if (!(input.vapidKey instanceof Uint8Array) ||
             input.vapidKey.length !== 65) {
-            throw errorFactory.create(ERROR_CODES.BAD_VAPID_KEY);
+            throw errorFactory.create("bad-vapid-key" /* BAD_VAPID_KEY */);
         }
     }
     if (input.endpoint) {
         if (typeof input.endpoint !== 'string' || input.endpoint.length === 0) {
-            throw errorFactory.create(ERROR_CODES.BAD_SUBSCRIPTION);
+            throw errorFactory.create("bad-subscription" /* BAD_SUBSCRIPTION */);
         }
     }
     if (input.auth) {
         if (!(input.auth instanceof ArrayBuffer)) {
-            throw errorFactory.create(ERROR_CODES.BAD_SUBSCRIPTION);
+            throw errorFactory.create("bad-subscription" /* BAD_SUBSCRIPTION */);
         }
     }
     if (input.p256dh) {
         if (!(input.p256dh instanceof ArrayBuffer)) {
-            throw errorFactory.create(ERROR_CODES.BAD_SUBSCRIPTION);
+            throw errorFactory.create("bad-subscription" /* BAD_SUBSCRIPTION */);
         }
     }
     if (input.fcmSenderId) {
         if (typeof input.fcmSenderId !== 'string' ||
             input.fcmSenderId.length === 0) {
-            throw errorFactory.create(ERROR_CODES.BAD_SENDER_ID);
+            throw errorFactory.create("bad-sender-id" /* BAD_SENDER_ID */);
         }
     }
     if (input.fcmPushSet) {
         if (typeof input.fcmPushSet !== 'string' || input.fcmPushSet.length === 0) {
-            throw errorFactory.create(ERROR_CODES.BAD_PUSH_SET);
+            throw errorFactory.create("bad-push-set" /* BAD_PUSH_SET */);
         }
     }
 }
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -23226,7 +24997,7 @@ var VapidDetailsModel = /** @class */ (function (_super) {
                 switch (_a.label) {
                     case 0:
                         if (typeof swScope !== 'string' || swScope.length === 0) {
-                            throw errorFactory.create(ERROR_CODES.BAD_SCOPE);
+                            throw errorFactory.create("bad-scope" /* BAD_SCOPE */);
                         }
                         return [4 /*yield*/, this.get(swScope)];
                     case 1:
@@ -23244,10 +25015,10 @@ var VapidDetailsModel = /** @class */ (function (_super) {
             var details;
             return Object(tslib__WEBPACK_IMPORTED_MODULE_1__["__generator"])(this, function (_a) {
                 if (typeof swScope !== 'string' || swScope.length === 0) {
-                    throw errorFactory.create(ERROR_CODES.BAD_SCOPE);
+                    throw errorFactory.create("bad-scope" /* BAD_SCOPE */);
                 }
                 if (vapidKey === null || vapidKey.length !== UNCOMPRESSED_PUBLIC_KEY_SIZE) {
-                    throw errorFactory.create(ERROR_CODES.BAD_VAPID_KEY);
+                    throw errorFactory.create("bad-vapid-key" /* BAD_VAPID_KEY */);
                 }
                 details = {
                     swScope: swScope,
@@ -23271,7 +25042,7 @@ var VapidDetailsModel = /** @class */ (function (_super) {
                     case 1:
                         vapidKey = _a.sent();
                         if (!vapidKey) {
-                            throw errorFactory.create(ERROR_CODES.DELETE_SCOPE_NOT_FOUND);
+                            throw errorFactory.create("delete-scope-not-found" /* DELETE_SCOPE_NOT_FOUND */);
                         }
                         return [4 /*yield*/, this.delete(swScope)];
                     case 2:
@@ -23285,6 +25056,7 @@ var VapidDetailsModel = /** @class */ (function (_super) {
 }(DbInterface));
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -23310,7 +25082,7 @@ var BaseController = /** @class */ (function () {
         var _this = this;
         if (!app.options[SENDER_ID_OPTION_NAME] ||
             typeof app.options[SENDER_ID_OPTION_NAME] !== 'string') {
-            throw errorFactory.create(ERROR_CODES.BAD_SENDER_ID);
+            throw errorFactory.create("bad-sender-id" /* BAD_SENDER_ID */);
         }
         this.messagingSenderId = app.options[SENDER_ID_OPTION_NAME];
         this.tokenDetailsModel = new TokenDetailsModel();
@@ -23332,7 +25104,7 @@ var BaseController = /** @class */ (function () {
                     case 0:
                         currentPermission = this.getNotificationPermission_();
                         if (currentPermission === 'denied') {
-                            throw errorFactory.create(ERROR_CODES.NOTIFICATIONS_BLOCKED);
+                            throw errorFactory.create("notifications-blocked" /* NOTIFICATIONS_BLOCKED */);
                         }
                         else if (currentPermission !== 'granted') {
                             // We must wait for permission to be granted
@@ -23542,25 +25314,25 @@ var BaseController = /** @class */ (function () {
     // The following methods should only be available in the window.
     //
     BaseController.prototype.requestPermission = function () {
-        throw errorFactory.create(ERROR_CODES.AVAILABLE_IN_WINDOW);
+        throw errorFactory.create("only-available-in-window" /* AVAILABLE_IN_WINDOW */);
     };
     BaseController.prototype.useServiceWorker = function (registration) {
-        throw errorFactory.create(ERROR_CODES.AVAILABLE_IN_WINDOW);
+        throw errorFactory.create("only-available-in-window" /* AVAILABLE_IN_WINDOW */);
     };
     BaseController.prototype.usePublicVapidKey = function (b64PublicKey) {
-        throw errorFactory.create(ERROR_CODES.AVAILABLE_IN_WINDOW);
+        throw errorFactory.create("only-available-in-window" /* AVAILABLE_IN_WINDOW */);
     };
     BaseController.prototype.onMessage = function (nextOrObserver, error, completed) {
-        throw errorFactory.create(ERROR_CODES.AVAILABLE_IN_WINDOW);
+        throw errorFactory.create("only-available-in-window" /* AVAILABLE_IN_WINDOW */);
     };
     BaseController.prototype.onTokenRefresh = function (nextOrObserver, error, completed) {
-        throw errorFactory.create(ERROR_CODES.AVAILABLE_IN_WINDOW);
+        throw errorFactory.create("only-available-in-window" /* AVAILABLE_IN_WINDOW */);
     };
     //
     // The following methods are used by the service worker only.
     //
     BaseController.prototype.setBackgroundMessageHandler = function (callback) {
-        throw errorFactory.create(ERROR_CODES.AVAILABLE_IN_SW);
+        throw errorFactory.create("only-available-in-sw" /* AVAILABLE_IN_SW */);
     };
     //
     // The following methods are used by the service themselves and not exposed
@@ -23622,6 +25394,7 @@ function isTokenStillValid(pushSubscription, publicVapidKey, tokenDetails) {
 }
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -23741,7 +25514,7 @@ var SwController = /** @class */ (function (_super) {
                         return [3 /*break*/, 3];
                     case 2:
                         err_1 = _a.sent();
-                        throw errorFactory.create(ERROR_CODES.UNABLE_TO_RESUBSCRIBE, {
+                        throw errorFactory.create("unable-to-resubscribe" /* UNABLE_TO_RESUBSCRIBE */, {
                             message: err_1
                         });
                     case 3:
@@ -23837,6 +25610,7 @@ var SwController = /** @class */ (function (_super) {
     // Visible for testing
     // TODO: Make private
     SwController.prototype.getNotificationData_ = function (msgPayload) {
+        var _a;
         if (!msgPayload) {
             return;
         }
@@ -23850,7 +25624,6 @@ var SwController = /** @class */ (function (_super) {
         // notification).
         notificationInformation.data = Object(tslib__WEBPACK_IMPORTED_MODULE_1__["__assign"])({}, msgPayload.notification.data, (_a = {}, _a[FCM_MSG] = msgPayload, _a));
         return notificationInformation;
-        var _a;
     };
     /**
      * Calling setBackgroundMessageHandler will opt in to some specific
@@ -23869,7 +25642,7 @@ var SwController = /** @class */ (function (_super) {
      */
     SwController.prototype.setBackgroundMessageHandler = function (callback) {
         if (!callback || typeof callback !== 'function') {
-            throw errorFactory.create(ERROR_CODES.BG_HANDLER_FUNCTION_EXPECTED);
+            throw errorFactory.create("bg-handler-function-expected" /* BG_HANDLER_FUNCTION_EXPECTED */);
         }
         this.bgMessageHandler = callback;
     };
@@ -23918,7 +25691,7 @@ var SwController = /** @class */ (function (_super) {
                 // NOTE: This returns a promise in case this API is abstracted later on to
                 // do additional work
                 if (!client) {
-                    throw errorFactory.create(ERROR_CODES.NO_WINDOW_CLIENT_TO_MSG);
+                    throw errorFactory.create("no-window-client-to-msg" /* NO_WINDOW_CLIENT_TO_MSG */);
                 }
                 client.postMessage(message);
                 return [2 /*return*/];
@@ -23939,7 +25712,12 @@ var SwController = /** @class */ (function (_super) {
                     case 0: return [4 /*yield*/, getClientList()];
                     case 1:
                         clientList = _a.sent();
-                        return [2 /*return*/, clientList.some(function (client) { return client.visibilityState === 'visible'; })];
+                        return [2 /*return*/, clientList.some(function (client) {
+                                return client.visibilityState === 'visible' &&
+                                    // Ignore chrome-extension clients as that matches the background pages
+                                    // of extensions, which are always considered visible.
+                                    !client.url.startsWith('chrome-extension://');
+                            })];
                 }
             });
         });
@@ -23954,8 +25732,8 @@ var SwController = /** @class */ (function (_super) {
     // TODO: Make private
     SwController.prototype.sendMessageToWindowClients_ = function (msgPayload) {
         return Object(tslib__WEBPACK_IMPORTED_MODULE_1__["__awaiter"])(this, void 0, void 0, function () {
-            var _this = this;
             var clientList, internalMsg;
+            var _this = this;
             return Object(tslib__WEBPACK_IMPORTED_MODULE_1__["__generator"])(this, function (_a) {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, getClientList()];
@@ -23996,7 +25774,7 @@ var SwController = /** @class */ (function (_super) {
                     case 1:
                         swReg = _a.sent();
                         if (!swReg) {
-                            throw errorFactory.create(ERROR_CODES.SW_REGISTRATION_EXPECTED);
+                            throw errorFactory.create("sw-registration-expected" /* SW_REGISTRATION_EXPECTED */);
                         }
                         return [4 /*yield*/, this.getVapidDetailsModel().getVapidFromSWScope(swReg.scope)];
                     case 2:
@@ -24019,11 +25797,15 @@ function getClientList() {
     });
 }
 function createNewMsg(msgType, msgData) {
-    return _a = {}, _a[MessageParameter.TYPE_OF_MSG] = msgType, _a[MessageParameter.DATA] = msgData, _a;
     var _a;
+    return _a = {},
+        _a[MessageParameter.TYPE_OF_MSG] = msgType,
+        _a[MessageParameter.DATA] = msgData,
+        _a;
 }
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -24042,6 +25824,7 @@ var DEFAULT_SW_PATH = '/firebase-messaging-sw.js';
 var DEFAULT_SW_SCOPE = '/firebase-cloud-messaging-push-scope';
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -24069,10 +25852,10 @@ var WindowController = /** @class */ (function (_super) {
         _this.messageObserver = null;
         // @ts-ignore: Unused variable error, this is not implemented yet.
         _this.tokenRefreshObserver = null;
-        _this.onMessageInternal = Object(_firebase_util__WEBPACK_IMPORTED_MODULE_0__["createSubscribe"])(function (observer) {
+        _this.onMessageInternal = Object(_firebase_util__WEBPACK_IMPORTED_MODULE_2__["createSubscribe"])(function (observer) {
             _this.messageObserver = observer;
         });
-        _this.onTokenRefreshInternal = Object(_firebase_util__WEBPACK_IMPORTED_MODULE_0__["createSubscribe"])(function (observer) {
+        _this.onTokenRefreshInternal = Object(_firebase_util__WEBPACK_IMPORTED_MODULE_2__["createSubscribe"])(function (observer) {
             _this.tokenRefreshObserver = observer;
         });
         _this.setupSWMessageListener_();
@@ -24124,10 +25907,10 @@ var WindowController = /** @class */ (function (_super) {
                             return [2 /*return*/];
                         }
                         else if (permissionResult === 'denied') {
-                            throw errorFactory.create(ERROR_CODES.PERMISSION_BLOCKED);
+                            throw errorFactory.create("permission-blocked" /* PERMISSION_BLOCKED */);
                         }
                         else {
-                            throw errorFactory.create(ERROR_CODES.PERMISSION_DEFAULT);
+                            throw errorFactory.create("permission-default" /* PERMISSION_DEFAULT */);
                         }
                         return [2 /*return*/];
                 }
@@ -24143,10 +25926,10 @@ var WindowController = /** @class */ (function (_super) {
      */
     WindowController.prototype.useServiceWorker = function (registration) {
         if (!(registration instanceof ServiceWorkerRegistration)) {
-            throw errorFactory.create(ERROR_CODES.SW_REGISTRATION_EXPECTED);
+            throw errorFactory.create("sw-registration-expected" /* SW_REGISTRATION_EXPECTED */);
         }
         if (this.registrationToUse != null) {
-            throw errorFactory.create(ERROR_CODES.USE_SW_BEFORE_GET_TOKEN);
+            throw errorFactory.create("use-sw-before-get-token" /* USE_SW_BEFORE_GET_TOKEN */);
         }
         this.registrationToUse = registration;
     };
@@ -24158,14 +25941,14 @@ var WindowController = /** @class */ (function (_super) {
      */
     WindowController.prototype.usePublicVapidKey = function (publicKey) {
         if (typeof publicKey !== 'string') {
-            throw errorFactory.create(ERROR_CODES.INVALID_PUBLIC_VAPID_KEY);
+            throw errorFactory.create("invalid-public-vapid-key" /* INVALID_PUBLIC_VAPID_KEY */);
         }
         if (this.publicVapidKeyToUse != null) {
-            throw errorFactory.create(ERROR_CODES.USE_PUBLIC_KEY_BEFORE_GET_TOKEN);
+            throw errorFactory.create("use-public-key-before-get-token" /* USE_PUBLIC_KEY_BEFORE_GET_TOKEN */);
         }
         var parsedKey = base64ToArrayBuffer(publicKey);
         if (parsedKey.length !== 65) {
-            throw errorFactory.create(ERROR_CODES.PUBLIC_KEY_DECRYPTION_FAILED);
+            throw errorFactory.create("public-vapid-key-decryption-failed" /* PUBLIC_KEY_DECRYPTION_FAILED */);
         }
         this.publicVapidKeyToUse = parsedKey;
     };
@@ -24213,7 +25996,7 @@ var WindowController = /** @class */ (function (_super) {
         return new Promise(function (resolve, reject) {
             if (!serviceWorker) {
                 // This is a rare scenario but has occured in firefox
-                reject(errorFactory.create(ERROR_CODES.NO_SW_IN_REG));
+                reject(errorFactory.create("no-sw-in-reg" /* NO_SW_IN_REG */));
                 return;
             }
             // Because the Promise function is called on next tick there is a
@@ -24223,7 +26006,7 @@ var WindowController = /** @class */ (function (_super) {
                 return;
             }
             if (serviceWorker.state === 'redundant') {
-                reject(errorFactory.create(ERROR_CODES.SW_REG_REDUNDANT));
+                reject(errorFactory.create("sw-reg-redundant" /* SW_REG_REDUNDANT */));
                 return;
             }
             var stateChangeListener = function () {
@@ -24231,7 +26014,7 @@ var WindowController = /** @class */ (function (_super) {
                     resolve(registration);
                 }
                 else if (serviceWorker.state === 'redundant') {
-                    reject(errorFactory.create(ERROR_CODES.SW_REG_REDUNDANT));
+                    reject(errorFactory.create("sw-reg-redundant" /* SW_REG_REDUNDANT */));
                 }
                 else {
                     // Return early and wait to next state change
@@ -24259,7 +26042,7 @@ var WindowController = /** @class */ (function (_super) {
             scope: DEFAULT_SW_SCOPE
         })
             .catch(function (err) {
-            throw errorFactory.create(ERROR_CODES.FAILED_DEFAULT_REGISTRATION, {
+            throw errorFactory.create("failed-serviceworker-registration" /* FAILED_DEFAULT_REGISTRATION */, {
                 browserErrorMessage: err.message
             });
         })
@@ -24356,7 +26139,7 @@ function manifestCheck() {
                         return [2 /*return*/];
                     }
                     if (manifestContent.gcm_sender_id !== '103953800507') {
-                        throw errorFactory.create(ERROR_CODES.INCORRECT_GCM_SENDER_ID);
+                        throw errorFactory.create("incorrect-gcm-sender-id" /* INCORRECT_GCM_SENDER_ID */);
                     }
                     return [2 /*return*/];
             }
@@ -24365,6 +26148,7 @@ function manifestCheck() {
 }
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -24383,7 +26167,7 @@ function registerMessaging(instance) {
     var messagingName = 'messaging';
     var factoryMethod = function (app) {
         if (!isSupported()) {
-            throw errorFactory.create(ERROR_CODES.UNSUPPORTED_BROWSER);
+            throw errorFactory.create("unsupported-browser" /* UNSUPPORTED_BROWSER */);
         }
         if (self && 'ServiceWorkerGlobalScope' in self) {
             // Running in ServiceWorker context
@@ -24399,7 +26183,7 @@ function registerMessaging(instance) {
     };
     instance.INTERNAL.registerService(messagingName, factoryMethod, namespaceExports);
 }
-registerMessaging(_firebase_app__WEBPACK_IMPORTED_MODULE_2___default.a);
+registerMessaging(_firebase_app__WEBPACK_IMPORTED_MODULE_0___default.a);
 function isSupported() {
     if (self && 'ServiceWorkerGlobalScope' in self) {
         // Running in ServiceWorker context
@@ -24433,6 +26217,7 @@ function isSWControllerSupported() {
 }
 
 
+//# sourceMappingURL=index.esm.js.map
 
 
 /***/ }),
@@ -24481,9 +26266,12 @@ and limitations under the License.
 ***************************************************************************** */
 /* global Reflect, Promise */
 
-var extendStatics = Object.setPrototypeOf ||
-    ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-    function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+var extendStatics = function(d, b) {
+    extendStatics = Object.setPrototypeOf ||
+        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+    return extendStatics(d, b);
+};
 
 function __extends(d, b) {
     extendStatics(d, b);
@@ -24491,12 +26279,15 @@ function __extends(d, b) {
     d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 }
 
-var __assign = Object.assign || function __assign(t) {
-    for (var s, i = 1, n = arguments.length; i < n; i++) {
-        s = arguments[i];
-        for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p)) t[p] = s[p];
+var __assign = function() {
+    __assign = Object.assign || function __assign(t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+            s = arguments[i];
+            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p)) t[p] = s[p];
+        }
+        return t;
     }
-    return t;
+    return __assign.apply(this, arguments);
 }
 
 function __rest(s, e) {
@@ -24540,8 +26331,8 @@ function __generator(thisArg, body) {
     function step(op) {
         if (f) throw new TypeError("Generator is already executing.");
         while (_) try {
-            if (f = 1, y && (t = y[op[0] & 2 ? "return" : op[0] ? "throw" : "next"]) && !(t = t.call(y, op[1])).done) return t;
-            if (y = 0, t) op = [0, t.value];
+            if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
+            if (y = 0, t) op = [op[0] & 2, t.value];
             switch (op[0]) {
                 case 0: case 1: t = op; break;
                 case 4: _.label++; return { value: op[1], done: false };
@@ -24609,7 +26400,7 @@ function __asyncGenerator(thisArg, _arguments, generator) {
     return i = {}, verb("next"), verb("throw"), verb("return"), i[Symbol.asyncIterator] = function () { return this; }, i;
     function verb(n) { if (g[n]) i[n] = function (v) { return new Promise(function (a, b) { q.push([n, v, a, b]) > 1 || resume(n, v); }); }; }
     function resume(n, v) { try { step(g[n](v)); } catch (e) { settle(q[0][3], e); } }
-    function step(r) { r.value instanceof __await ? Promise.resolve(r.value.v).then(fulfill, reject) : settle(q[0][2], r);  }
+    function step(r) { r.value instanceof __await ? Promise.resolve(r.value.v).then(fulfill, reject) : settle(q[0][2], r); }
     function fulfill(value) { resume("next", value); }
     function reject(value) { resume("throw", value); }
     function settle(f, v) { if (f(v), q.shift(), q.length) resume(q[0][0], q[0][1]); }
@@ -24618,13 +26409,1446 @@ function __asyncGenerator(thisArg, _arguments, generator) {
 function __asyncDelegator(o) {
     var i, p;
     return i = {}, verb("next"), verb("throw", function (e) { throw e; }), verb("return"), i[Symbol.iterator] = function () { return this; }, i;
-    function verb(n, f) { if (o[n]) i[n] = function (v) { return (p = !p) ? { value: __await(o[n](v)), done: n === "return" } : f ? f(v) : v; }; }
+    function verb(n, f) { i[n] = o[n] ? function (v) { return (p = !p) ? { value: __await(o[n](v)), done: n === "return" } : f ? f(v) : v; } : f; }
 }
 
 function __asyncValues(o) {
     if (!Symbol.asyncIterator) throw new TypeError("Symbol.asyncIterator is not defined.");
-    var m = o[Symbol.asyncIterator];
-    return m ? m.call(o) : typeof __values === "function" ? __values(o) : o[Symbol.iterator]();
+    var m = o[Symbol.asyncIterator], i;
+    return m ? m.call(o) : (o = typeof __values === "function" ? __values(o) : o[Symbol.iterator](), i = {}, verb("next"), verb("throw"), verb("return"), i[Symbol.asyncIterator] = function () { return this; }, i);
+    function verb(n) { i[n] = o[n] && function (v) { return new Promise(function (resolve, reject) { v = o[n](v), settle(resolve, reject, v.done, v.value); }); }; }
+    function settle(resolve, reject, d, v) { Promise.resolve(v).then(function(v) { resolve({ value: v, done: d }); }, reject); }
+}
+
+function __makeTemplateObject(cooked, raw) {
+    if (Object.defineProperty) { Object.defineProperty(cooked, "raw", { value: raw }); } else { cooked.raw = raw; }
+    return cooked;
+};
+
+function __importStar(mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (Object.hasOwnProperty.call(mod, k)) result[k] = mod[k];
+    result.default = mod;
+    return result;
+}
+
+function __importDefault(mod) {
+    return (mod && mod.__esModule) ? mod : { default: mod };
+}
+
+
+/***/ }),
+
+/***/ "./node_modules/@firebase/performance/dist/index.cjs.js":
+/*!**************************************************************!*\
+  !*** ./node_modules/@firebase/performance/dist/index.cjs.js ***!
+  \**************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, '__esModule', { value: true });
+
+function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'default' in ex) ? ex['default'] : ex; }
+
+var firebase = _interopDefault(__webpack_require__(/*! @firebase/app */ "./node_modules/@firebase/app/dist/index.cjs.js"));
+var tslib_1 = __webpack_require__(/*! tslib */ "./node_modules/@firebase/performance/node_modules/tslib/tslib.es6.js");
+var util = __webpack_require__(/*! @firebase/util */ "./node_modules/@firebase/util/dist/index.cjs.js");
+__webpack_require__(/*! @firebase/installations */ "./node_modules/@firebase/installations/dist/index.esm.js");
+var logger$1 = __webpack_require__(/*! @firebase/logger */ "./node_modules/@firebase/logger/dist/index.esm.js");
+
+/**
+ * Copyright 2017 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+var SDK_VERSION = '0.2.1';
+/** The prefix for start User Timing marks used for creating Traces. */
+var TRACE_START_MARK_PREFIX = 'FB-PERF-TRACE-START';
+/** The prefix for stop User Timing marks used for creating Traces. */
+var TRACE_STOP_MARK_PREFIX = 'FB-PERF-TRACE-STOP';
+/** The prefix for User Timing measure used for creating Traces. */
+var TRACE_MEASURE_PREFIX = 'FB-PERF-TRACE-MEASURE';
+/** The prefix for out of the box page load Trace name. */
+var OOB_TRACE_PAGE_LOAD_PREFIX = '_wt_';
+var FIRST_PAINT_COUNTER_NAME = '_fp';
+var FIRST_CONTENTFUL_PAINT_COUNTER_NAME = '_fcp';
+var FIRST_INPUT_DELAY_COUNTER_NAME = '_fid';
+var CONFIG_LOCAL_STORAGE_KEY = '@firebase/performance/config';
+var CONFIG_EXPIRY_LOCAL_STORAGE_KEY = '@firebase/performance/configexpire';
+var SERVICE = 'performance';
+var SERVICE_NAME = 'Performance';
+
+/**
+ * @license
+ * Copyright 2019 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+var _a;
+var ERROR_DESCRIPTION_MAP = (_a = {},
+    _a["trace started" /* TRACE_STARTED_BEFORE */] = 'Trace {$traceName} was started before.',
+    _a["trace stopped" /* TRACE_STOPPED_BEFORE */] = 'Trace {$traceName} is not running.',
+    _a["no window" /* NO_WINDOW */] = 'Window is not available.',
+    _a["no app id" /* NO_APP_ID */] = 'App id is not available.',
+    _a["no project id" /* NO_PROJECT_ID */] = 'Project id is not available.',
+    _a["no api key" /* NO_API_KEY */] = 'Api key is not available.',
+    _a["invalid cc log" /* INVALID_CC_LOG */] = 'Attempted to queue invalid cc event',
+    _a["FB not default" /* FB_NOT_DEFAULT */] = 'Performance can only start when Firebase app instance is the default one.',
+    _a["RC response not ok" /* RC_NOT_OK */] = 'RC response is not ok',
+    _a);
+var ERROR_FACTORY = new util.ErrorFactory(SERVICE, SERVICE_NAME, ERROR_DESCRIPTION_MAP);
+
+/**
+ * @license
+ * Copyright 2019 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+var apiInstance;
+var windowInstance;
+/**
+ * This class holds a reference to various browser related objects injected by set methods.
+ */
+var Api = /** @class */ (function () {
+    function Api(window) {
+        if (!window) {
+            throw ERROR_FACTORY.create("no window" /* NO_WINDOW */);
+        }
+        this.performance = window.performance;
+        this.PerformanceObserver = window.PerformanceObserver;
+        this.windowLocation = window.location;
+        this.navigator = window.navigator;
+        this.document = window.document;
+        this.localStorage = window.localStorage;
+        if (window.perfMetrics && window.perfMetrics.onFirstInputDelay) {
+            this.onFirstInputDelay = window.perfMetrics.onFirstInputDelay;
+        }
+    }
+    Api.prototype.getUrl = function () {
+        // Do not capture the string query part of url.
+        return this.windowLocation.href.split('?')[0];
+    };
+    Api.prototype.mark = function (name) {
+        if (!this.performance || !this.performance.mark)
+            return;
+        this.performance.mark(name);
+    };
+    Api.prototype.measure = function (measureName, mark1, mark2) {
+        if (!this.performance || !this.performance.measure)
+            return;
+        this.performance.measure(measureName, mark1, mark2);
+    };
+    Api.prototype.getEntriesByType = function (type) {
+        if (!this.performance || !this.performance.getEntriesByType)
+            return [];
+        return this.performance.getEntriesByType(type);
+    };
+    Api.prototype.getEntriesByName = function (name) {
+        if (!this.performance || !this.performance.getEntriesByName)
+            return [];
+        return this.performance.getEntriesByName(name);
+    };
+    Api.prototype.getTimeOrigin = function () {
+        // Polyfill the time origin with performance.timing.navigationStart.
+        return (this.performance &&
+            (this.performance.timeOrigin || this.performance.timing.navigationStart));
+    };
+    Api.prototype.setupObserver = function (entryType, callback) {
+        if (!this.PerformanceObserver)
+            return;
+        var observer = new this.PerformanceObserver(function (list) {
+            for (var _i = 0, _a = list.getEntries(); _i < _a.length; _i++) {
+                var entry = _a[_i];
+                // `entry` is a PerformanceEntry instance.
+                callback(entry);
+            }
+        });
+        // Start observing the entry types you care about.
+        observer.observe({ entryTypes: [entryType] });
+    };
+    Api.getInstance = function () {
+        if (apiInstance === undefined) {
+            apiInstance = new Api(windowInstance);
+        }
+        return apiInstance;
+    };
+    return Api;
+}());
+function setupApi(window) {
+    windowInstance = window;
+}
+
+/**
+ * @license
+ * Copyright 2019 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+var settingsServiceInstance;
+var SettingsService = /** @class */ (function () {
+    function SettingsService() {
+        // The variable which controls logging of automatic traces and HTTP/S network monitoring.
+        this.instrumentationEnabled = true;
+        // The variable which controls logging of custom traces.
+        this.dataCollectionEnabled = true;
+        // Configuration flags set through remote config.
+        this.loggingEnabled = false;
+        // Sampling rate between 0 and 1.
+        this.tracesSamplingRate = 1;
+        this.networkRequestsSamplingRate = 1;
+        // Address of logging service.
+        this.logEndPointUrl = 'https://firebaselogging.googleapis.com/v0cc/log?format=json_proto';
+        this.logSource = 462;
+        // Flags which control per session logging of traces and network requests.
+        this.logTraceAfterSampling = false;
+        this.logNetworkAfterSampling = false;
+        // TTL of config retrieved from remote config in hours.
+        this.configTimeToLive = 12;
+    }
+    SettingsService.prototype.getAppId = function () {
+        var appId = this.firebaseAppInstance &&
+            this.firebaseAppInstance.options &&
+            this.firebaseAppInstance.options.appId;
+        if (!appId) {
+            throw ERROR_FACTORY.create("no app id" /* NO_APP_ID */);
+        }
+        return appId;
+    };
+    SettingsService.prototype.getProjectId = function () {
+        var projectId = this.firebaseAppInstance &&
+            this.firebaseAppInstance.options &&
+            this.firebaseAppInstance.options.projectId;
+        if (!projectId) {
+            throw ERROR_FACTORY.create("no project id" /* NO_PROJECT_ID */);
+        }
+        return projectId;
+    };
+    SettingsService.prototype.getApiKey = function () {
+        var apiKey = this.firebaseAppInstance &&
+            this.firebaseAppInstance.options &&
+            this.firebaseAppInstance.options.apiKey;
+        if (!apiKey) {
+            throw ERROR_FACTORY.create("no api key" /* NO_API_KEY */);
+        }
+        return apiKey;
+    };
+    SettingsService.getInstance = function () {
+        if (settingsServiceInstance === undefined) {
+            settingsServiceInstance = new SettingsService();
+        }
+        return settingsServiceInstance;
+    };
+    return SettingsService;
+}());
+
+/**
+ * @license
+ * Copyright 2019 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+var iid;
+function getIidPromise() {
+    var iidPromise = SettingsService.getInstance()
+        .firebaseAppInstance.installations()
+        .getId();
+    iidPromise.then(function (iidVal) {
+        iid = iidVal;
+    });
+    return iidPromise;
+}
+// This method should be used after the iid is retrieved by getIidPromise method.
+function getIid() {
+    return iid;
+}
+function getAuthTokenPromise() {
+    var authTokenPromise = SettingsService.getInstance()
+        .firebaseAppInstance.installations()
+        .getToken();
+    authTokenPromise.then(function (authTokenVal) {
+    });
+    return authTokenPromise;
+}
+
+/**
+ * @license
+ * Copyright 2019 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+var VisibilityState;
+(function (VisibilityState) {
+    VisibilityState[VisibilityState["UNKNOWN"] = 0] = "UNKNOWN";
+    VisibilityState[VisibilityState["VISIBLE"] = 1] = "VISIBLE";
+    VisibilityState[VisibilityState["HIDDEN"] = 2] = "HIDDEN";
+    VisibilityState[VisibilityState["PRERENDER"] = 3] = "PRERENDER";
+    VisibilityState[VisibilityState["UNLOADED"] = 4] = "UNLOADED";
+})(VisibilityState || (VisibilityState = {}));
+function getServiceWorkerStatus() {
+    var navigator = Api.getInstance().navigator;
+    if ('serviceWorker' in navigator) {
+        if (navigator.serviceWorker.controller) {
+            return 2 /* CONTROLLED */;
+        }
+        else {
+            return 3 /* UNCONTROLLED */;
+        }
+    }
+    else {
+        return 1 /* UNSUPPORTED */;
+    }
+}
+function getVisibilityState() {
+    var document = Api.getInstance().document;
+    var visibilityState = document.visibilityState;
+    switch (visibilityState) {
+        case 'visible':
+            return VisibilityState.VISIBLE;
+        case 'hidden':
+            return VisibilityState.HIDDEN;
+        case 'prerender':
+            return VisibilityState.PRERENDER;
+        default:
+            return VisibilityState.UNKNOWN;
+    }
+}
+function getEffectiveConnectionType() {
+    var navigator = Api.getInstance().navigator;
+    var navigatorConnection = navigator.connection;
+    var effectiveType = navigatorConnection && navigatorConnection.effectiveType;
+    switch (effectiveType) {
+        case 'slow-2g':
+            return 1 /* CONNECTION_SLOW_2G */;
+        case '2g':
+            return 2 /* CONNECTION_2G */;
+        case '3g':
+            return 3 /* CONNECTION_3G */;
+        case '4g':
+            return 4 /* CONNECTION_4G */;
+        default:
+            return 0 /* UNKNOWN */;
+    }
+}
+
+/**
+ * @license
+ * Copyright 2019 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+var consoleLogger = new logger$1.Logger(SERVICE_NAME);
+consoleLogger.logLevel = logger$1.LogLevel.INFO;
+
+/**
+ * @license
+ * Copyright 2019 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+var REMOTE_CONFIG_SDK_VERSION = '0.0.1';
+// These values will be used if the remote config object is successfully
+// retrieved, but the template does not have these fields.
+var SECONDARY_CONFIGS = {
+    loggingEnabled: true
+};
+var FIS_AUTH_PREFIX = 'FIREBASE_INSTALLATIONS_AUTH';
+function getConfig(iid) {
+    var config = getStoredConfig();
+    if (config) {
+        processConfig(config);
+        return Promise.resolve();
+    }
+    return getRemoteConfig(iid)
+        .then(function (config) { return processConfig(config); })
+        .then(function (config) { return storeConfig(config); }, 
+    /** Do nothing for error, use defaults set in settings service. */ function () { });
+}
+function getStoredConfig() {
+    var localStorage = Api.getInstance().localStorage;
+    var expiryString = localStorage.getItem(CONFIG_EXPIRY_LOCAL_STORAGE_KEY);
+    if (!expiryString || !configValid(expiryString))
+        return;
+    var configStringified = localStorage.getItem(CONFIG_LOCAL_STORAGE_KEY);
+    if (!configStringified)
+        return;
+    try {
+        var configResponse = JSON.parse(configStringified);
+        return configResponse;
+    }
+    catch (_a) {
+        return;
+    }
+}
+function storeConfig(config) {
+    if (!config)
+        return;
+    var localStorage = Api.getInstance().localStorage;
+    localStorage.setItem(CONFIG_LOCAL_STORAGE_KEY, JSON.stringify(config));
+    localStorage.setItem(CONFIG_EXPIRY_LOCAL_STORAGE_KEY, String(Date.now() +
+        SettingsService.getInstance().configTimeToLive * 60 * 60 * 1000));
+}
+var COULD_NOT_GET_CONFIG_MSG = 'Could not fetch config, will use default configs';
+function getRemoteConfig(iid) {
+    // Perf needs auth token only to retrieve remote config.
+    return getAuthTokenPromise()
+        .then(function (authToken) {
+        var projectId = SettingsService.getInstance().getProjectId();
+        var configEndPoint = "https://firebaseremoteconfig.googleapis.com/v1/projects/" + projectId + "/namespaces/fireperf:fetch?key=" + SettingsService.getInstance().getApiKey();
+        var request = new Request(configEndPoint, {
+            method: 'POST',
+            headers: {
+                Authorization: FIS_AUTH_PREFIX + " " + authToken
+            },
+            body: JSON.stringify({
+                app_instance_id: iid,
+                app_instance_id_token: authToken,
+                app_id: SettingsService.getInstance().getAppId(),
+                app_version: SDK_VERSION,
+                sdk_version: REMOTE_CONFIG_SDK_VERSION
+            })
+        });
+        return fetch(request).then(function (response) {
+            if (response.ok) {
+                return response.json();
+            }
+            // In case response is not ok. This will be caught by catch.
+            throw ERROR_FACTORY.create("RC response not ok" /* RC_NOT_OK */);
+        });
+    })
+        .catch(function () {
+        consoleLogger.info(COULD_NOT_GET_CONFIG_MSG);
+        return undefined;
+    });
+}
+/**
+ * Processes config coming either from calling RC or from local storage.
+ * This method only runs if call is successful or config in storage
+ * is valie.
+ */
+function processConfig(config) {
+    if (!config)
+        return config;
+    var settingsServiceInstance = SettingsService.getInstance();
+    var entries = config.entries || {};
+    if (entries.fpr_enabled !== undefined) {
+        // TODO: Change the assignment of loggingEnabled once the received type is known.
+        settingsServiceInstance.loggingEnabled =
+            String(entries.fpr_enabled) === 'true';
+    }
+    else {
+        // Config retrieved successfully, but there is no fpr_enabled in template.
+        // Use secondary configs value.
+        settingsServiceInstance.loggingEnabled = SECONDARY_CONFIGS.loggingEnabled;
+    }
+    if (entries.fpr_log_source) {
+        settingsServiceInstance.logSource = Number(entries.fpr_log_source);
+    }
+    if (entries.fpr_log_endpoint_url) {
+        settingsServiceInstance.logEndPointUrl = entries.fpr_log_endpoint_url;
+    }
+    if (entries.fpr_vc_network_request_sampling_rate !== undefined) {
+        settingsServiceInstance.networkRequestsSamplingRate = Number(entries.fpr_vc_network_request_sampling_rate);
+    }
+    if (entries.fpr_vc_trace_sampling_rate !== undefined) {
+        settingsServiceInstance.tracesSamplingRate = Number(entries.fpr_vc_trace_sampling_rate);
+    }
+    // Set the per session trace and network logging flags.
+    settingsServiceInstance.logTraceAfterSampling = shouldLogAfterSampling(settingsServiceInstance.tracesSamplingRate);
+    settingsServiceInstance.logNetworkAfterSampling = shouldLogAfterSampling(settingsServiceInstance.networkRequestsSamplingRate);
+    return config;
+}
+function configValid(expiry) {
+    return Number(expiry) > Date.now();
+}
+function shouldLogAfterSampling(samplingRate) {
+    return Math.random() <= samplingRate;
+}
+
+/**
+ * @license
+ * Copyright 2019 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+var initializationStatus = 1 /* notInitialized */;
+var initializationPromise;
+function getInitializationPromise() {
+    initializationStatus = 2 /* initializationPending */;
+    initializationPromise = initializationPromise || initializePerf();
+    return initializationPromise;
+}
+function isPerfInitialized() {
+    return initializationStatus === 3 /* initialized */;
+}
+function initializePerf() {
+    return getDocumentReadyComplete()
+        .then(function () { return getIidPromise(); })
+        .then(function (iid) { return getConfig(iid); })
+        .then(function () { return changeInitializationStatus(); }, function () { return changeInitializationStatus(); });
+}
+/**
+ * Returns a promise which resolves whenever the document readystate is complete or
+ * immediately if it is called after page load complete.
+ */
+function getDocumentReadyComplete() {
+    var document = Api.getInstance().document;
+    return new Promise(function (resolve) {
+        if (document && document.readyState !== 'complete') {
+            var handler_1 = function () {
+                if (document.readyState === 'complete') {
+                    document.removeEventListener('readystatechange', handler_1);
+                    resolve();
+                }
+            };
+            document.addEventListener('readystatechange', handler_1);
+        }
+        else {
+            resolve();
+        }
+    });
+}
+function changeInitializationStatus() {
+    initializationStatus = 3 /* initialized */;
+}
+
+/**
+ * @license
+ * Copyright 2019 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+var DEFAULT_SEND_INTERVAL_MS = 10 * 1000;
+var INITIAL_SEND_TIME_DELAY_MS = 5.5 * 1000;
+// If end point does not work, the call will be tried for these many times.
+var DEFAULT_REMAINING_TRIES = 3;
+var remainingTries = DEFAULT_REMAINING_TRIES;
+var queue = [];
+function processQueue(timeOffset) {
+    setTimeout(function () {
+        // If there is no remainingTries left, stop retrying.
+        if (remainingTries === 0) {
+            return;
+        }
+        // If there are no events to process, wait for DEFAULT_SEND_INTERVAL_MS and try again.
+        if (!queue.length) {
+            return processQueue(DEFAULT_SEND_INTERVAL_MS);
+        }
+        // Capture a snapshot of the queue and empty the "official queue".
+        var staged = queue.slice();
+        queue = [];
+        // We will pass the JSON serialized event to the backend.
+        var log_event = staged.map(function (evt) { return ({
+            source_extension_json: evt.message,
+            event_time_ms: String(evt.eventTime)
+        }); });
+        var data = {
+            request_time_ms: String(Date.now()),
+            client_info: {
+                client_type: 1,
+                js_client_info: {}
+            },
+            log_source: SettingsService.getInstance().logSource,
+            log_event: log_event
+        };
+        fetch(SettingsService.getInstance().logEndPointUrl, {
+            method: 'POST',
+            body: JSON.stringify(data)
+        })
+            .then(function (res) {
+            if (!res.ok) {
+                consoleLogger.info('Call to Firebase backend failed.');
+            }
+            return res.json();
+        })
+            .then(function (res) {
+            // Find the next call wait time from the response.
+            var requestOffset = Math.max(DEFAULT_SEND_INTERVAL_MS, parseInt(res.next_request_wait_millis, 10));
+            remainingTries = DEFAULT_REMAINING_TRIES;
+            // Schedule the next process.
+            processQueue(requestOffset);
+        })
+            .catch(function () {
+            /**
+             * If the request fails for some reason, add the events that were attempted
+             * back to the primary queue to retry later.
+             */
+            queue = staged.concat(queue);
+            remainingTries--;
+            consoleLogger.info("Tries left: " + remainingTries + ".");
+            processQueue(DEFAULT_SEND_INTERVAL_MS);
+        });
+    }, timeOffset);
+}
+processQueue(INITIAL_SEND_TIME_DELAY_MS);
+function addToQueue(evt) {
+    if (!evt.eventTime || !evt.message) {
+        throw ERROR_FACTORY.create("invalid cc log" /* INVALID_CC_LOG */);
+    }
+    // Add the new event to the queue.
+    queue = queue.concat([evt]);
+}
+/** Log handler for cc service to send the performance logs to the server. */
+function ccHandler(serializer) {
+    // The underscores for loggerInstance and level parameters are added to avoid the
+    // noUnusedParameters related error.
+    return function (_loggerInstance, _level) {
+        var args = [];
+        for (var _i = 2; _i < arguments.length; _i++) {
+            args[_i - 2] = arguments[_i];
+        }
+        var message = serializer.apply(void 0, args);
+        addToQueue({
+            message: message,
+            eventTime: Date.now()
+        });
+    };
+}
+
+/**
+ * @license
+ * Copyright 2019 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+var logger;
+// This method is not called before initialization.
+function getLogger() {
+    if (logger)
+        return logger;
+    var ccLogger = ccHandler(serializer);
+    logger = new logger$1.Logger('@firebase/performance/cc');
+    logger.logHandler = ccLogger;
+    return logger;
+}
+function logTrace(trace) {
+    var settingsService = SettingsService.getInstance();
+    // Do not log if trace is auto generated and instrumentation is disabled.
+    if (!settingsService.instrumentationEnabled && trace.isAuto)
+        return;
+    // Do not log if trace is custom and data collection is disabled.
+    if (!settingsService.dataCollectionEnabled && !trace.isAuto)
+        return;
+    // Only log the page load auto traces if page is visible.
+    if (trace.isAuto && getVisibilityState() !== VisibilityState.VISIBLE)
+        return;
+    if (!settingsService.loggingEnabled || !settingsService.logTraceAfterSampling)
+        return;
+    if (isPerfInitialized()) {
+        sendTraceLog(trace);
+    }
+    else {
+        // Custom traces can be used before the initialization but logging
+        // should wait until after.
+        getInitializationPromise().then(function () { return sendTraceLog(trace); }, function () { return sendTraceLog(trace); });
+    }
+}
+function sendTraceLog(trace) {
+    if (getIid()) {
+        setTimeout(function () { return getLogger().log(trace, 1 /* Trace */); }, 0);
+    }
+}
+function logNetworkRequest(networkRequest) {
+    var settingsService = SettingsService.getInstance();
+    // Do not log network requests if instrumentation is disabled.
+    if (!settingsService.instrumentationEnabled)
+        return;
+    // Do not log the js sdk's call to cc service to avoid unnecessary cycle.
+    if (networkRequest.url === settingsService.logEndPointUrl.split('?')[0])
+        return;
+    if (!settingsService.loggingEnabled ||
+        !settingsService.logNetworkAfterSampling)
+        return;
+    setTimeout(function () { return getLogger().log(networkRequest, 0 /* NetworkRequest */); }, 0);
+}
+function serializer(resource, resourceType) {
+    if (resourceType === 0 /* NetworkRequest */) {
+        return serializeNetworkRequest(resource);
+    }
+    return serializeTrace(resource);
+}
+function serializeNetworkRequest(networkRequest) {
+    var networkRequestMetric = {
+        url: networkRequest.url,
+        http_method: 1,
+        http_response_code: 200,
+        response_payload_bytes: networkRequest.responsePayloadBytes,
+        client_start_time_us: networkRequest.startTimeUs,
+        time_to_response_initiated_us: networkRequest.timeToResponseInitiatedUs,
+        time_to_response_completed_us: networkRequest.timeToResponseCompletedUs
+    };
+    var perfMetric = {
+        application_info: getApplicationInfo(),
+        network_request_metric: networkRequestMetric
+    };
+    return JSON.stringify(perfMetric);
+}
+function serializeTrace(trace) {
+    var traceMetric = {
+        name: trace.name,
+        is_auto: trace.isAuto,
+        client_start_time_us: trace.startTimeUs,
+        duration_us: trace.durationUs
+    };
+    if (Object.keys(trace.counters).length !== 0) {
+        traceMetric.counters = convertToKeyValueArray(trace.counters);
+    }
+    var customAttributes = trace.getAttributes();
+    if (Object.keys(customAttributes).length !== 0) {
+        traceMetric.custom_attributes = convertToKeyValueArray(customAttributes);
+    }
+    var perfMetric = {
+        application_info: getApplicationInfo(),
+        trace_metric: traceMetric
+    };
+    return JSON.stringify(perfMetric);
+}
+function getApplicationInfo() {
+    return {
+        google_app_id: SettingsService.getInstance().getAppId(),
+        app_instance_id: getIid(),
+        web_app_info: {
+            sdk_version: SDK_VERSION,
+            page_url: Api.getInstance().getUrl(),
+            service_worker_status: getServiceWorkerStatus(),
+            visibility_state: getVisibilityState(),
+            effective_connection_type: getEffectiveConnectionType()
+        },
+        application_process_state: 0
+    };
+}
+function convertToKeyValueArray(obj) {
+    var keys = Object.keys(obj);
+    return keys.map(function (key) { return ({ key: key, value: obj[key] }); });
+}
+
+/**
+ * @license
+ * Copyright 2019 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+var Trace = /** @class */ (function () {
+    /**
+     * @param name The name of the trace.
+     * @param isAuto If the trace is auto-instrumented.
+     * @param traceMeasureName The name of the measure marker in user timing specification. This field
+     * is only set when the trace is built for logging when the user directly uses the user timing
+     * api (performance.mark and performance.measure).
+     */
+    function Trace(name, isAuto, traceMeasureName) {
+        if (isAuto === void 0) { isAuto = false; }
+        this.name = name;
+        this.isAuto = isAuto;
+        this.state = 1 /* UNINITIALIZED */;
+        this.customAttributes = {};
+        this.counters = {};
+        this.api = Api.getInstance();
+        this.randomId = Math.floor(Math.random() * 1000000);
+        if (!this.isAuto) {
+            this.traceStartMark = TRACE_START_MARK_PREFIX + "-" + this.randomId + "-" + this.name;
+            this.traceStopMark = TRACE_STOP_MARK_PREFIX + "-" + this.randomId + "-" + this.name;
+            this.traceMeasure =
+                traceMeasureName ||
+                    TRACE_MEASURE_PREFIX + "-" + this.randomId + "-" + this.name;
+            if (traceMeasureName) {
+                // For the case of direct user timing traces, no start stop will happen. The measure object
+                // is already available.
+                this.calculateTraceMetrics();
+            }
+        }
+    }
+    /**
+     * Starts a trace. The measurement of the duration starts at this point.
+     */
+    Trace.prototype.start = function () {
+        if (this.state !== 1 /* UNINITIALIZED */) {
+            throw ERROR_FACTORY.create("trace started" /* TRACE_STARTED_BEFORE */, {
+                traceName: this.name
+            });
+        }
+        this.api.mark(this.traceStartMark);
+        this.state = 2 /* RUNNING */;
+    };
+    /**
+     * Stops the trace. The measurement of the duration of the trace stops at this point and trace
+     * is logged.
+     */
+    Trace.prototype.stop = function () {
+        if (this.state !== 2 /* RUNNING */) {
+            throw ERROR_FACTORY.create("trace stopped" /* TRACE_STOPPED_BEFORE */, {
+                traceName: this.name
+            });
+        }
+        this.state = 3 /* TERMINATED */;
+        this.api.mark(this.traceStopMark);
+        this.api.measure(this.traceMeasure, this.traceStartMark, this.traceStopMark);
+        this.calculateTraceMetrics();
+        logTrace(this);
+    };
+    /**
+     * Records a trace with predetermined values. If this method is used a trace is created and logged
+     * directly. No need to use start and stop methods.
+     * @param startTime Trace start time since epoch in millisec
+     * @param duration The duraction of the trace in millisec
+     * @param options An object which can optionally hold maps of custom metrics and custom attributes
+     */
+    Trace.prototype.record = function (startTime, duration, options) {
+        this.durationUs = Math.floor(duration * 1000);
+        this.startTimeUs = Math.floor(startTime * 1000);
+        if (options && options.attributes) {
+            this.customAttributes = tslib_1.__assign({}, options.attributes);
+        }
+        if (options && options.metrics) {
+            for (var _i = 0, _a = Object.keys(options.metrics); _i < _a.length; _i++) {
+                var metric = _a[_i];
+                if (!isNaN(Number(options.metrics[metric]))) {
+                    this.counters[metric] = Number(Math.floor(options.metrics[metric]));
+                }
+            }
+        }
+        logTrace(this);
+    };
+    /**
+     * Increments a custom metric by a certain number or 1 if number not specified. Will create a new
+     * custom metric if one with the given name does not exist.
+     * @param counter Name of the custom metric
+     * @param num Increment by value
+     */
+    Trace.prototype.incrementMetric = function (counter, num) {
+        if (num === void 0) { num = 1; }
+        if (this.counters[counter] === undefined) {
+            this.counters[counter] = 0;
+        }
+        this.counters[counter] += num;
+    };
+    /**
+     * Sets a custom metric to a specified value. Will create a new custom metric if one with the
+     * given name does not exist.
+     * @param counter Name of the custom metric
+     * @param num Set custom metric to this value
+     */
+    Trace.prototype.putMetric = function (counter, num) {
+        this.counters[counter] = num;
+    };
+    /**
+     * Returns the value of the custom metric by that name. If a custom metric with that name does
+     * not exist will return zero.
+     * @param counter
+     */
+    Trace.prototype.getMetric = function (counter) {
+        return this.counters[counter] || 0;
+    };
+    /**
+     * Sets a custom attribute of a trace to a certain value.
+     * @param attr
+     * @param value
+     */
+    Trace.prototype.putAttribute = function (attr, value) {
+        this.customAttributes[attr] = value;
+    };
+    /**
+     * Retrieves the value a custom attribute of a trace is set to.
+     * @param attr
+     */
+    Trace.prototype.getAttribute = function (attr) {
+        return this.customAttributes[attr];
+    };
+    Trace.prototype.removeAttribute = function (attr) {
+        if (this.customAttributes[attr] === undefined)
+            return;
+        delete this.customAttributes[attr];
+    };
+    Trace.prototype.getAttributes = function () {
+        return tslib_1.__assign({}, this.customAttributes);
+    };
+    Trace.prototype.setStartTime = function (startTime) {
+        this.startTimeUs = startTime;
+    };
+    Trace.prototype.setDuration = function (duration) {
+        this.durationUs = duration;
+    };
+    /**
+     * Calculates and assigns the duration and start time of the trace using the measure performance
+     * entry.
+     */
+    Trace.prototype.calculateTraceMetrics = function () {
+        var perfMeasureEntries = this.api.getEntriesByName(this.traceMeasure);
+        var perfMeasureEntry = perfMeasureEntries && perfMeasureEntries[0];
+        if (perfMeasureEntry) {
+            this.durationUs = Math.floor(perfMeasureEntry.duration * 1000);
+            this.startTimeUs = Math.floor((perfMeasureEntry.startTime + this.api.getTimeOrigin()) * 1000);
+        }
+    };
+    /**
+     * @param navigationTimings A single element array which contains the navigationTIming object of
+     * the page load
+     * @param paintTimings A array which contains paintTiming object of the page load
+     * @param firstInputDelay First input delay in millisec
+     */
+    Trace.createOobTrace = function (navigationTimings, paintTimings, firstInputDelay) {
+        var route = Api.getInstance().getUrl();
+        if (!route)
+            return;
+        var trace = new Trace(OOB_TRACE_PAGE_LOAD_PREFIX + route, true);
+        var timeOriginUs = Math.floor(Api.getInstance().getTimeOrigin() * 1000);
+        trace.setStartTime(timeOriginUs);
+        // navigationTimings includes only one element.
+        if (navigationTimings && navigationTimings[0]) {
+            trace.setDuration(Math.floor(navigationTimings[0].duration * 1000));
+            trace.incrementMetric('domInteractive', Math.floor(navigationTimings[0].domInteractive * 1000));
+            trace.incrementMetric('domContentLoadedEventEnd', Math.floor(navigationTimings[0].domContentLoadedEventEnd * 1000));
+            trace.incrementMetric('loadEventEnd', Math.floor(navigationTimings[0].loadEventEnd * 1000));
+        }
+        var FIRST_PAINT = 'first-paint';
+        var FIRST_CONTENTFUL_PAINT = 'first-contentful-paint';
+        if (paintTimings) {
+            var firstPaint = paintTimings.find(function (paintObject) { return paintObject.name === FIRST_PAINT; });
+            if (firstPaint && firstPaint.startTime) {
+                trace.incrementMetric(FIRST_PAINT_COUNTER_NAME, Math.floor(firstPaint.startTime * 1000));
+            }
+            var firstContentfulPaint = paintTimings.find(function (paintObject) { return paintObject.name === FIRST_CONTENTFUL_PAINT; });
+            if (firstContentfulPaint && firstContentfulPaint.startTime) {
+                trace.incrementMetric(FIRST_CONTENTFUL_PAINT_COUNTER_NAME, Math.floor(firstContentfulPaint.startTime * 1000));
+            }
+            if (firstInputDelay) {
+                trace.incrementMetric(FIRST_INPUT_DELAY_COUNTER_NAME, Math.floor(firstInputDelay * 1000));
+            }
+        }
+        logTrace(trace);
+    };
+    Trace.createUserTimingTrace = function (measureName) {
+        var trace = new Trace(measureName, false, measureName);
+        logTrace(trace);
+    };
+    return Trace;
+}());
+
+/**
+ * @license
+ * Copyright 2019 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+function createNetworkRequestEntry(entry) {
+    var performanceEntry = entry;
+    if (!performanceEntry || performanceEntry.responseStart === undefined)
+        return;
+    var timeOrigin = Api.getInstance().getTimeOrigin();
+    var startTimeUs = Math.floor((performanceEntry.startTime + timeOrigin) * 1000);
+    var timeToResponseInitiatedUs = performanceEntry.responseStart
+        ? Math.floor((performanceEntry.responseStart - performanceEntry.startTime) * 1000)
+        : undefined;
+    var timeToResponseCompletedUs = Math.floor((performanceEntry.responseEnd - performanceEntry.startTime) * 1000);
+    // Remove the query params from logged network request url.
+    var url = performanceEntry.name && performanceEntry.name.split('?')[0];
+    var networkRequest = {
+        url: url,
+        responsePayloadBytes: performanceEntry.transferSize,
+        startTimeUs: startTimeUs,
+        timeToResponseInitiatedUs: timeToResponseInitiatedUs,
+        timeToResponseCompletedUs: timeToResponseCompletedUs
+    };
+    logNetworkRequest(networkRequest);
+}
+
+/**
+ * @license
+ * Copyright 2019 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+var FID_WAIT_TIME_MS = 5000;
+function setupOobResources() {
+    // Do not initialize unless iid is available.
+    if (!getIid())
+        return;
+    // The load event might not have fired yet, and that means performance navigation timing
+    // object has a duration of 0. The setup should run after all current tasks in js queue.
+    setTimeout(function () { return setupOobTraces(); }, 0);
+    setTimeout(function () { return setupNetworkRequests(); }, 0);
+    setTimeout(function () { return setupUserTimingTraces(); }, 0);
+}
+function setupNetworkRequests() {
+    var api = Api.getInstance();
+    var resources = api.getEntriesByType('resource');
+    for (var _i = 0, resources_1 = resources; _i < resources_1.length; _i++) {
+        var resource = resources_1[_i];
+        createNetworkRequestEntry(resource);
+    }
+    api.setupObserver('resource', createNetworkRequestEntry);
+}
+function setupOobTraces() {
+    var api = Api.getInstance();
+    var navigationTimings = api.getEntriesByType('navigation');
+    var paintTimings = api.getEntriesByType('paint');
+    // If First Input Desly polyfill is added to the page, report the fid value.
+    // https://github.com/GoogleChromeLabs/first-input-delay
+    if (api.onFirstInputDelay) {
+        // If the fid call back is not called for certain time, continue without it.
+        var timeoutId_1 = setTimeout(function () {
+            Trace.createOobTrace(navigationTimings, paintTimings);
+            timeoutId_1 = undefined;
+        }, FID_WAIT_TIME_MS);
+        api.onFirstInputDelay(function (fid) {
+            if (timeoutId_1) {
+                clearTimeout(timeoutId_1);
+                Trace.createOobTrace(navigationTimings, paintTimings, fid);
+            }
+        });
+    }
+    else {
+        Trace.createOobTrace(navigationTimings, paintTimings);
+    }
+}
+function setupUserTimingTraces() {
+    var api = Api.getInstance();
+    // Run through the measure performance entries collected up to this point.
+    var measures = api.getEntriesByType('measure');
+    for (var _i = 0, measures_1 = measures; _i < measures_1.length; _i++) {
+        var measure = measures_1[_i];
+        createUserTimingTrace(measure);
+    }
+    // Setup an observer to capture the measures from this point on.
+    api.setupObserver('measure', createUserTimingTrace);
+}
+function createUserTimingTrace(measure) {
+    var measureName = measure.name;
+    // Do not create a trace, if the user timing marks and measures are created by the sdk itself.
+    if (measureName.substring(0, TRACE_MEASURE_PREFIX.length) ===
+        TRACE_MEASURE_PREFIX)
+        return;
+    Trace.createUserTimingTrace(measureName);
+}
+
+/**
+ * Copyright 2019 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+var PerformanceController = /** @class */ (function () {
+    function PerformanceController(app) {
+        this.app = app;
+        getInitializationPromise().then(setupOobResources, setupOobResources);
+    }
+    PerformanceController.prototype.trace = function (name) {
+        return new Trace(name);
+    };
+    Object.defineProperty(PerformanceController.prototype, "instrumentationEnabled", {
+        get: function () {
+            return SettingsService.getInstance().instrumentationEnabled;
+        },
+        set: function (val) {
+            SettingsService.getInstance().instrumentationEnabled = val;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(PerformanceController.prototype, "dataCollectionEnabled", {
+        get: function () {
+            return SettingsService.getInstance().dataCollectionEnabled;
+        },
+        set: function (val) {
+            SettingsService.getInstance().dataCollectionEnabled = val;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    return PerformanceController;
+}());
+
+/**
+ * @license
+ * Copyright 2019 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+var DEFAULT_ENTRY_NAME = '[DEFAULT]';
+function registerPerformance(instance) {
+    var factoryMethod = function (app) {
+        if (app.name !== DEFAULT_ENTRY_NAME) {
+            throw ERROR_FACTORY.create("FB not default" /* FB_NOT_DEFAULT */);
+        }
+        SettingsService.getInstance().firebaseAppInstance = app;
+        return new PerformanceController(app);
+    };
+    // Register performance with firebase-app.
+    var namespaceExports = {};
+    instance.INTERNAL.registerService('performance', factoryMethod, namespaceExports);
+}
+if (window && fetch && Promise) {
+    setupApi(window);
+    registerPerformance(firebase);
+}
+else {
+    consoleLogger.info('Firebase Performance cannot start if browser does not support fetch and Promise.');
+}
+
+exports.registerPerformance = registerPerformance;
+//# sourceMappingURL=index.cjs.js.map
+
+
+/***/ }),
+
+/***/ "./node_modules/@firebase/performance/node_modules/tslib/tslib.es6.js":
+/*!****************************************************************************!*\
+  !*** ./node_modules/@firebase/performance/node_modules/tslib/tslib.es6.js ***!
+  \****************************************************************************/
+/*! exports provided: __extends, __assign, __rest, __decorate, __param, __metadata, __awaiter, __generator, __exportStar, __values, __read, __spread, __await, __asyncGenerator, __asyncDelegator, __asyncValues, __makeTemplateObject, __importStar, __importDefault */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "__extends", function() { return __extends; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "__assign", function() { return __assign; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "__rest", function() { return __rest; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "__decorate", function() { return __decorate; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "__param", function() { return __param; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "__metadata", function() { return __metadata; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "__awaiter", function() { return __awaiter; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "__generator", function() { return __generator; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "__exportStar", function() { return __exportStar; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "__values", function() { return __values; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "__read", function() { return __read; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "__spread", function() { return __spread; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "__await", function() { return __await; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "__asyncGenerator", function() { return __asyncGenerator; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "__asyncDelegator", function() { return __asyncDelegator; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "__asyncValues", function() { return __asyncValues; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "__makeTemplateObject", function() { return __makeTemplateObject; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "__importStar", function() { return __importStar; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "__importDefault", function() { return __importDefault; });
+/*! *****************************************************************************
+Copyright (c) Microsoft Corporation. All rights reserved.
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+this file except in compliance with the License. You may obtain a copy of the
+License at http://www.apache.org/licenses/LICENSE-2.0
+
+THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED
+WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE,
+MERCHANTABLITY OR NON-INFRINGEMENT.
+
+See the Apache Version 2.0 License for specific language governing permissions
+and limitations under the License.
+***************************************************************************** */
+/* global Reflect, Promise */
+
+var extendStatics = function(d, b) {
+    extendStatics = Object.setPrototypeOf ||
+        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+    return extendStatics(d, b);
+};
+
+function __extends(d, b) {
+    extendStatics(d, b);
+    function __() { this.constructor = d; }
+    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+}
+
+var __assign = function() {
+    __assign = Object.assign || function __assign(t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+            s = arguments[i];
+            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p)) t[p] = s[p];
+        }
+        return t;
+    }
+    return __assign.apply(this, arguments);
+}
+
+function __rest(s, e) {
+    var t = {};
+    for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
+        t[p] = s[p];
+    if (s != null && typeof Object.getOwnPropertySymbols === "function")
+        for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) if (e.indexOf(p[i]) < 0)
+            t[p[i]] = s[p[i]];
+    return t;
+}
+
+function __decorate(decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+}
+
+function __param(paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+}
+
+function __metadata(metadataKey, metadataValue) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(metadataKey, metadataValue);
+}
+
+function __awaiter(thisArg, _arguments, P, generator) {
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+}
+
+function __generator(thisArg, body) {
+    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
+    return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
+    function verb(n) { return function (v) { return step([n, v]); }; }
+    function step(op) {
+        if (f) throw new TypeError("Generator is already executing.");
+        while (_) try {
+            if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
+            if (y = 0, t) op = [op[0] & 2, t.value];
+            switch (op[0]) {
+                case 0: case 1: t = op; break;
+                case 4: _.label++; return { value: op[1], done: false };
+                case 5: _.label++; y = op[1]; op = [0]; continue;
+                case 7: op = _.ops.pop(); _.trys.pop(); continue;
+                default:
+                    if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
+                    if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
+                    if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
+                    if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
+                    if (t[2]) _.ops.pop();
+                    _.trys.pop(); continue;
+            }
+            op = body.call(thisArg, _);
+        } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
+        if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
+    }
+}
+
+function __exportStar(m, exports) {
+    for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
+}
+
+function __values(o) {
+    var m = typeof Symbol === "function" && o[Symbol.iterator], i = 0;
+    if (m) return m.call(o);
+    return {
+        next: function () {
+            if (o && i >= o.length) o = void 0;
+            return { value: o && o[i++], done: !o };
+        }
+    };
+}
+
+function __read(o, n) {
+    var m = typeof Symbol === "function" && o[Symbol.iterator];
+    if (!m) return o;
+    var i = m.call(o), r, ar = [], e;
+    try {
+        while ((n === void 0 || n-- > 0) && !(r = i.next()).done) ar.push(r.value);
+    }
+    catch (error) { e = { error: error }; }
+    finally {
+        try {
+            if (r && !r.done && (m = i["return"])) m.call(i);
+        }
+        finally { if (e) throw e.error; }
+    }
+    return ar;
+}
+
+function __spread() {
+    for (var ar = [], i = 0; i < arguments.length; i++)
+        ar = ar.concat(__read(arguments[i]));
+    return ar;
+}
+
+function __await(v) {
+    return this instanceof __await ? (this.v = v, this) : new __await(v);
+}
+
+function __asyncGenerator(thisArg, _arguments, generator) {
+    if (!Symbol.asyncIterator) throw new TypeError("Symbol.asyncIterator is not defined.");
+    var g = generator.apply(thisArg, _arguments || []), i, q = [];
+    return i = {}, verb("next"), verb("throw"), verb("return"), i[Symbol.asyncIterator] = function () { return this; }, i;
+    function verb(n) { if (g[n]) i[n] = function (v) { return new Promise(function (a, b) { q.push([n, v, a, b]) > 1 || resume(n, v); }); }; }
+    function resume(n, v) { try { step(g[n](v)); } catch (e) { settle(q[0][3], e); } }
+    function step(r) { r.value instanceof __await ? Promise.resolve(r.value.v).then(fulfill, reject) : settle(q[0][2], r); }
+    function fulfill(value) { resume("next", value); }
+    function reject(value) { resume("throw", value); }
+    function settle(f, v) { if (f(v), q.shift(), q.length) resume(q[0][0], q[0][1]); }
+}
+
+function __asyncDelegator(o) {
+    var i, p;
+    return i = {}, verb("next"), verb("throw", function (e) { throw e; }), verb("return"), i[Symbol.iterator] = function () { return this; }, i;
+    function verb(n, f) { i[n] = o[n] ? function (v) { return (p = !p) ? { value: __await(o[n](v)), done: n === "return" } : f ? f(v) : v; } : f; }
+}
+
+function __asyncValues(o) {
+    if (!Symbol.asyncIterator) throw new TypeError("Symbol.asyncIterator is not defined.");
+    var m = o[Symbol.asyncIterator], i;
+    return m ? m.call(o) : (o = typeof __values === "function" ? __values(o) : o[Symbol.iterator](), i = {}, verb("next"), verb("throw"), verb("return"), i[Symbol.asyncIterator] = function () { return this; }, i);
+    function verb(n) { i[n] = o[n] && function (v) { return new Promise(function (resolve, reject) { v = o[n](v), settle(resolve, reject, v.done, v.value); }); }; }
+    function settle(resolve, reject, d, v) { Promise.resolve(v).then(function(v) { resolve({ value: v, done: d }); }, reject); }
 }
 
 function __makeTemplateObject(cooked, raw) {
@@ -24662,6 +27886,7 @@ __webpack_require__.r(__webpack_exports__);
 
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -24680,37 +27905,33 @@ __webpack_require__.r(__webpack_exports__);
  * @fileoverview Constants used in the Firebase Storage library.
  */
 /**
- * Domain and scheme for API calls.
+ * Domain name for firebase storage.
  */
-var domainBase = 'https://firebasestorage.googleapis.com';
+var DEFAULT_HOST = 'firebasestorage.googleapis.com';
 /**
- * Domain and scheme for object downloads.
+ * The key in Firebase config json for the storage bucket.
  */
-var downloadBase = 'https://firebasestorage.googleapis.com';
-/**
- * Base URL for non-upload calls to the API.
- */
-var apiBaseUrl = '/v0';
-/**
- * Base URL for upload calls to the API.
- */
-var apiUploadBaseUrl = '/v0';
-var configOption = 'storageBucket';
+var CONFIG_STORAGE_BUCKET_KEY = 'storageBucket';
 /**
  * 2 minutes
+ *
+ * The timeout for all operations except upload.
  */
-var defaultMaxOperationRetryTime = 2 * 60 * 1000;
+var DEFAULT_MAX_OPERATION_RETRY_TIME = 2 * 60 * 1000;
 /**
  * 10 minutes
+ *
+ * The timeout for upload.
  */
-var defaultMaxUploadRetryTime = 10 * 60 * 100;
+var DEFAULT_MAX_UPLOAD_RETRY_TIME = 10 * 60 * 100;
 /**
  * This is the value of Number.MIN_SAFE_INTEGER, which is not well supported
  * enough for us to use it directly.
  */
-var minSafeInteger = -9007199254740991;
+var MIN_SAFE_INTEGER = -9007199254740991;
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -24898,6 +28119,7 @@ function internalError(message) {
 }
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -25092,6 +28314,7 @@ function endsWith(s, end) {
 }
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -25152,6 +28375,7 @@ function taskStateFromInternalTaskState(state) {
 }
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -25191,6 +28415,7 @@ function clone(obj) {
 }
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -25228,6 +28453,7 @@ function reject(error) {
 }
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -25277,6 +28503,7 @@ function isNativeBlobDefined() {
 }
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -25302,6 +28529,7 @@ var ErrorCode;
 })(ErrorCode || (ErrorCode = {}));
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -25326,17 +28554,17 @@ var NetworkXhrIo = /** @class */ (function () {
         this.sent_ = false;
         this.xhr_ = new XMLHttpRequest();
         this.errorCode_ = ErrorCode.NO_ERROR;
-        this.sendPromise_ = make(function (resolve$$1, reject$$1) {
+        this.sendPromise_ = make(function (resolve, reject) {
             _this.xhr_.addEventListener('abort', function (event) {
                 _this.errorCode_ = ErrorCode.ABORT;
-                resolve$$1(_this);
+                resolve(_this);
             });
             _this.xhr_.addEventListener('error', function (event) {
                 _this.errorCode_ = ErrorCode.NETWORK_ERROR;
-                resolve$$1(_this);
+                resolve(_this);
             });
             _this.xhr_.addEventListener('load', function (event) {
-                resolve$$1(_this);
+                resolve(_this);
             });
         });
     }
@@ -25429,6 +28657,7 @@ var NetworkXhrIo = /** @class */ (function () {
 }());
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -25456,6 +28685,7 @@ var XhrIoPool = /** @class */ (function () {
 }());
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -25491,6 +28721,7 @@ function jsonObjectOrNull(s) {
 }
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -25561,12 +28792,8 @@ var Location = /** @class */ (function () {
             loc.path_ = decodeURIComponent(loc.path);
         }
         var version = 'v[A-Za-z0-9_]+';
-        var httpRegex = new RegExp('^https?://firebasestorage\\.googleapis\\.com/' +
-            version +
-            '/b/' +
-            bucketDomain +
-            '/o' +
-            path, 'i');
+        var hostRegex = DEFAULT_HOST.replace(/[.]/g, '\\.');
+        var httpRegex = new RegExp("^https?://" + hostRegex + "/" + version + "/b/" + bucketDomain + "/o" + path, 'i');
         var httpIndices = { bucket: 1, path: 3 };
         var groups = [
             { regex: gsRegex, indices: gsIndices, postModify: gsModify },
@@ -25595,6 +28822,7 @@ var Location = /** @class */ (function () {
 }());
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -25657,6 +28885,7 @@ function lastComponent(path) {
 }
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -25671,14 +28900,8 @@ function lastComponent(path) {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-function makeNormalUrl(urlPart) {
-    return domainBase + apiBaseUrl + urlPart;
-}
-function makeDownloadUrl(urlPart) {
-    return downloadBase + apiBaseUrl + urlPart;
-}
-function makeUploadUrl(urlPart) {
-    return domainBase + apiUploadBaseUrl + urlPart;
+function makeUrl(urlPart) {
+    return "https://" + DEFAULT_HOST + "/v0" + urlPart;
 }
 function makeQueryString(params) {
     var encode = encodeURIComponent;
@@ -25693,6 +28916,7 @@ function makeQueryString(params) {
 }
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -25822,7 +29046,7 @@ function downloadUrlFromResourceString(metadata, resourceString) {
         var bucket = metadata['bucket'];
         var path = metadata['fullPath'];
         var urlPart = '/b/' + encode(bucket) + '/o/' + encode(path);
-        var base = makeDownloadUrl(urlPart);
+        var base = makeUrl(urlPart);
         var queryString = makeQueryString({
             alt: 'media',
             token: token
@@ -25863,6 +29087,7 @@ function metadataValidator(p) {
 }
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -25992,6 +29217,22 @@ function nullFunctionSpec(opt_optional) {
     return new ArgSpec(validator, opt_optional);
 }
 
+/**
+ * @license
+ * Copyright 2017 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 function getBlobBuilder() {
     if (typeof BlobBuilder !== 'undefined') {
         return BlobBuilder;
@@ -26054,6 +29295,7 @@ function sliceBlob(blob, start, end) {
 }
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -26172,6 +29414,7 @@ var FbsBlob = /** @class */ (function () {
 }());
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -26242,6 +29485,7 @@ var RequestInfo = /** @class */ (function () {
 }());
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -26318,7 +29562,7 @@ function objectErrorHandler(location) {
 }
 function getMetadata(authWrapper, location, mappings) {
     var urlPart = location.fullServerUrl();
-    var url = makeNormalUrl(urlPart);
+    var url = makeUrl(urlPart);
     var method = 'GET';
     var timeout = authWrapper.maxOperationRetryTime();
     var requestInfo = new RequestInfo(url, method, metadataHandler(authWrapper, mappings), timeout);
@@ -26327,7 +29571,7 @@ function getMetadata(authWrapper, location, mappings) {
 }
 function getDownloadUrl(authWrapper, location, mappings) {
     var urlPart = location.fullServerUrl();
-    var url = makeNormalUrl(urlPart);
+    var url = makeUrl(urlPart);
     var method = 'GET';
     var timeout = authWrapper.maxOperationRetryTime();
     var requestInfo = new RequestInfo(url, method, downloadUrlHandler(authWrapper, mappings), timeout);
@@ -26336,7 +29580,7 @@ function getDownloadUrl(authWrapper, location, mappings) {
 }
 function updateMetadata(authWrapper, location, metadata, mappings) {
     var urlPart = location.fullServerUrl();
-    var url = makeNormalUrl(urlPart);
+    var url = makeUrl(urlPart);
     var method = 'PATCH';
     var body = toResourceString(metadata, mappings);
     var headers = { 'Content-Type': 'application/json; charset=utf-8' };
@@ -26349,7 +29593,7 @@ function updateMetadata(authWrapper, location, metadata, mappings) {
 }
 function deleteObject(authWrapper, location) {
     var urlPart = location.fullServerUrl();
-    var url = makeNormalUrl(urlPart);
+    var url = makeUrl(urlPart);
     var method = 'DELETE';
     var timeout = authWrapper.maxOperationRetryTime();
     function handler(xhr, text) { }
@@ -26409,7 +29653,7 @@ function multipartUpload(authWrapper, location, mappings, blob, opt_metadata) {
         throw cannotSliceBlob();
     }
     var urlParams = { name: metadata['fullPath'] };
-    var url = makeUploadUrl(urlPart);
+    var url = makeUrl(urlPart);
     var method = 'POST';
     var timeout = authWrapper.maxUploadRetryTime();
     var requestInfo = new RequestInfo(url, method, metadataHandler(authWrapper, mappings), timeout);
@@ -26452,7 +29696,7 @@ function createResumableUpload(authWrapper, location, mappings, blob, opt_metada
     var urlPart = location.bucketOnlyServerUrl();
     var metadata = metadataForUpload_(location, blob, opt_metadata);
     var urlParams = { name: metadata['fullPath'] };
-    var url = makeUploadUrl(urlPart);
+    var url = makeUrl(urlPart);
     var method = 'POST';
     var headers = {
         'X-Goog-Upload-Protocol': 'resumable',
@@ -26580,6 +29824,7 @@ function continueResumableUpload(location, authWrapper, url, blob, chunkSize, ma
 }
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -26630,6 +29875,7 @@ var UploadTaskSnapshot = /** @class */ (function () {
 }());
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -26662,6 +29908,7 @@ function async(f) {
 }
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -26687,8 +29934,8 @@ var UploadTask = /** @class */ (function () {
      * @param blob The blob to upload.
      */
     function UploadTask(ref, authWrapper, location, mappings, blob, metadata) {
-        if (metadata === void 0) { metadata = null; }
         var _this = this;
+        if (metadata === void 0) { metadata = null; }
         this.transferred_ = 0;
         this.needToFetchStatus_ = false;
         this.needToFetchMetadata_ = false;
@@ -26729,9 +29976,9 @@ var UploadTask = /** @class */ (function () {
                 _this.transition_(InternalTaskState.ERROR);
             }
         };
-        this.promise_ = make(function (resolve$$1, reject$$1) {
-            _this.resolve_ = resolve$$1;
-            _this.reject_ = reject$$1;
+        this.promise_ = make(function (resolve, reject) {
+            _this.resolve_ = resolve;
+            _this.reject_ = reject;
             _this.start_();
         });
         // Prevent uncaught rejections on the internal promise from bubbling out
@@ -27207,6 +30454,7 @@ var UploadTask = /** @class */ (function () {
 }());
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -27453,6 +30701,7 @@ var FailRequest = /** @class */ (function () {
 }());
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -27473,7 +30722,7 @@ var FailRequest = /** @class */ (function () {
 var RequestMap = /** @class */ (function () {
     function RequestMap() {
         this.map_ = {};
-        this.id_ = minSafeInteger;
+        this.id_ = MIN_SAFE_INTEGER;
     }
     /**
      * Registers the given request with this map.
@@ -27525,12 +30774,12 @@ var AuthWrapper = /** @class */ (function () {
         this.requestMaker_ = requestMaker;
         this.pool_ = pool;
         this.service_ = service;
-        this.maxOperationRetryTime_ = defaultMaxOperationRetryTime;
-        this.maxUploadRetryTime_ = defaultMaxUploadRetryTime;
+        this.maxOperationRetryTime_ = DEFAULT_MAX_OPERATION_RETRY_TIME;
+        this.maxUploadRetryTime_ = DEFAULT_MAX_UPLOAD_RETRY_TIME;
         this.requestMap_ = new RequestMap();
     }
     AuthWrapper.extractBucket_ = function (config) {
-        var bucketString = config[configOption] || null;
+        var bucketString = config[CONFIG_STORAGE_BUCKET_KEY] || null;
         if (bucketString == null) {
             return null;
         }
@@ -27617,6 +30866,7 @@ var AuthWrapper = /** @class */ (function () {
 }());
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -27733,6 +30983,7 @@ function stop(id) {
 }
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -27771,9 +31022,9 @@ var NetworkRequest = /** @class */ (function () {
         this.timeout_ = timeout;
         this.pool_ = pool;
         var self = this;
-        this.promise_ = make(function (resolve$$1, reject$$1) {
-            self.resolve_ = resolve$$1;
-            self.reject_ = reject$$1;
+        this.promise_ = make(function (resolve, reject) {
+            self.resolve_ = resolve;
+            self.reject_ = reject;
             self.start_();
         });
     }
@@ -27782,8 +31033,8 @@ var NetworkRequest = /** @class */ (function () {
      */
     NetworkRequest.prototype.start_ = function () {
         var self = this;
-        function doTheRequest(backoffCallback, canceled$$1) {
-            if (canceled$$1) {
+        function doTheRequest(backoffCallback, canceled) {
+            if (canceled) {
                 backoffCallback(false, new RequestEndStatus(false, null, true));
                 return;
             }
@@ -27823,21 +31074,21 @@ var NetworkRequest = /** @class */ (function () {
          *     through, false if it hit the retry limit or was canceled.
          */
         function backoffDone(requestWentThrough, status) {
-            var resolve$$1 = self.resolve_;
-            var reject$$1 = self.reject_;
+            var resolve = self.resolve_;
+            var reject = self.reject_;
             var xhr = status.xhr;
             if (status.wasSuccessCode) {
                 try {
                     var result = self.callback_(xhr, xhr.getResponseText());
                     if (isJustDef(result)) {
-                        resolve$$1(result);
+                        resolve(result);
                     }
                     else {
-                        resolve$$1();
+                        resolve();
                     }
                 }
                 catch (e) {
-                    reject$$1(e);
+                    reject(e);
                 }
             }
             else {
@@ -27845,10 +31096,10 @@ var NetworkRequest = /** @class */ (function () {
                     var err = unknown();
                     err.setServerResponseProp(xhr.getResponseText());
                     if (self.errorCallback_) {
-                        reject$$1(self.errorCallback_(xhr, err));
+                        reject(self.errorCallback_(xhr, err));
                     }
                     else {
-                        reject$$1(err);
+                        reject(err);
                     }
                 }
                 else {
@@ -27856,11 +31107,11 @@ var NetworkRequest = /** @class */ (function () {
                         var err = self.appDelete_
                             ? appDeleted()
                             : canceled();
-                        reject$$1(err);
+                        reject(err);
                     }
                     else {
                         var err = retryLimitExceeded();
-                        reject$$1(err);
+                        reject(err);
                     }
                 }
             }
@@ -27938,6 +31189,7 @@ function makeRequest(requestInfo, authToken, pool) {
 }
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -28029,13 +31281,6 @@ var Service = /** @class */ (function () {
         validate('setMaxUploadRetryTime', [nonNegativeNumberSpec()], arguments);
         this.authWrapper_.setMaxUploadRetryTime(time);
     };
-    Object.defineProperty(Service.prototype, "maxOperationRetryTime", {
-        get: function () {
-            return this.authWrapper_.maxOperationRetryTime();
-        },
-        enumerable: true,
-        configurable: true
-    });
     Service.prototype.setMaxOperationRetryTime = function (time) {
         validate('setMaxOperationRetryTime', [nonNegativeNumberSpec()], arguments);
         this.authWrapper_.setMaxOperationRetryTime(time);
@@ -28075,6 +31320,7 @@ var ServiceInternals = /** @class */ (function () {
 }());
 
 /**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -28112,6 +31358,7 @@ function registerStorage(instance) {
 registerStorage(_firebase_app__WEBPACK_IMPORTED_MODULE_0___default.a);
 
 
+//# sourceMappingURL=index.esm.js.map
 
 
 /***/ }),
@@ -28120,144 +31367,114 @@ registerStorage(_firebase_app__WEBPACK_IMPORTED_MODULE_0___default.a);
 /*!*********************************************************************!*\
   !*** ./node_modules/@firebase/webchannel-wrapper/dist/index.esm.js ***!
   \*********************************************************************/
-/*! exports provided: default, createWebChannelTransport, ErrorCode, EventType, WebChannel, XhrIoPool */
+/*! exports provided: default, ErrorCode, EventType, WebChannel, XhrIo, createWebChannelTransport */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "createWebChannelTransport", function() { return src_1; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "ErrorCode", function() { return src_2; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "EventType", function() { return src_3; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "WebChannel", function() { return src_4; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "XhrIoPool", function() { return src_5; });
-var commonjsGlobal = typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "ErrorCode", function() { return tmp_2; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "EventType", function() { return tmp_3; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "WebChannel", function() { return tmp_4; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "XhrIo", function() { return tmp_5; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "createWebChannelTransport", function() { return tmp_1; });
+var commonjsGlobal = typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
 
-var e,goog=goog||{},h=commonjsGlobal;function l(a){return"string"==typeof a}function m(a,b){a=a.split(".");b=b||h;for(var c=0;c<a.length;c++)if(b=b[a[c]], null==b)return null;return b}function aa(){}
-function ba(a){var b=typeof a;if("object"==b)if(a){if(a instanceof Array)return"array";if(a instanceof Object)return b;var c=Object.prototype.toString.call(a);if("[object Window]"==c)return"object";if("[object Array]"==c||"number"==typeof a.length&&"undefined"!=typeof a.splice&&"undefined"!=typeof a.propertyIsEnumerable&&!a.propertyIsEnumerable("splice"))return"array";if("[object Function]"==c||"undefined"!=typeof a.call&&"undefined"!=typeof a.propertyIsEnumerable&&!a.propertyIsEnumerable("call"))return"function"}else return"null";
-else if("function"==b&&"undefined"==typeof a.call)return"object";return b}function n(a){return"array"==ba(a)}function ca(a){var b=ba(a);return"array"==b||"object"==b&&"number"==typeof a.length}function q(a){return"function"==ba(a)}function r(a){var b=typeof a;return"object"==b&&null!=a||"function"==b}var t="closure_uid_"+(1E9*Math.random()>>>0),da=0;function ea(a,b,c){return a.call.apply(a.bind,arguments)}
-function fa(a,b,c){if(!a)throw Error();if(2<arguments.length){var d=Array.prototype.slice.call(arguments,2);return function(){var c=Array.prototype.slice.call(arguments);Array.prototype.unshift.apply(c,d);return a.apply(b,c)}}return function(){return a.apply(b,arguments)}}function u(a,b,c){u=Function.prototype.bind&&-1!=Function.prototype.bind.toString().indexOf("native code")?ea:fa;return u.apply(null,arguments)}
-function v(a,b){var c=Array.prototype.slice.call(arguments,1);return function(){var b=c.slice();b.push.apply(b,arguments);return a.apply(this,b)}}var w=Date.now||function(){return+new Date};function x(a,b){function c(){}c.prototype=b.prototype;a.L=b.prototype;a.prototype=new c;a.prototype.constructor=a;a.mh=function(a,c,g){for(var d=Array(arguments.length-2),f=2;f<arguments.length;f++)d[f-2]=arguments[f];return b.prototype[c].apply(a,d)};}function y(a){if(Error.captureStackTrace)Error.captureStackTrace(this,y);else{var b=Error().stack;b&&(this.stack=b);}a&&(this.message=String(a));}x(y,Error);y.prototype.name="CustomError";function ha(a,b){a=a.split("%s");for(var c="",d=a.length-1,f=0;f<d;f++)c+=a[f]+(f<b.length?b[f]:"%s");y.call(this,c+a[d]);}x(ha,y);ha.prototype.name="AssertionError";function ia(a,b){throw new ha("Failure"+(a?": "+a:""),Array.prototype.slice.call(arguments,1));}function z(){0!=ja&&(ka[this[t]||(this[t]=++da)]=this);this.Ka=this.Ka;this.Qa=this.Qa;}var ja=0,ka={};z.prototype.Ka=!1;z.prototype.bb=function(){if(!this.Ka&&(this.Ka=!0, this.F(), 0!=ja)){var a=this[t]||(this[t]=++da);if(0!=ja&&this.Qa&&0<this.Qa.length)throw Error(this+" did not empty its onDisposeCallbacks queue. This probably means it overrode dispose() or disposeInternal() without calling the superclass' method.");delete ka[a];}};z.prototype.F=function(){if(this.Qa)for(;this.Qa.length;)this.Qa.shift()();};var la=Array.prototype.indexOf?function(a,b){return Array.prototype.indexOf.call(a,b,void 0)}:function(a,b){if(l(a))return l(b)&&1==b.length?a.indexOf(b,0):-1;for(var c=0;c<a.length;c++)if(c in a&&a[c]===b)return c;return-1},ma=Array.prototype.lastIndexOf?function(a,b){return Array.prototype.lastIndexOf.call(a,b,a.length-1)}:function(a,b){var c=a.length-1;0>c&&(c=Math.max(0,a.length+c));if(l(a))return l(b)&&1==b.length?a.lastIndexOf(b,c):-1;for(;0<=c;c--)if(c in a&&a[c]===b)return c;return-1},na=
-Array.prototype.forEach?function(a,b,c){Array.prototype.forEach.call(a,b,c);}:function(a,b,c){for(var d=a.length,f=l(a)?a.split(""):a,g=0;g<d;g++)g in f&&b.call(c,f[g],g,a);},oa=Array.prototype.some?function(a,b){return Array.prototype.some.call(a,b,void 0)}:function(a,b){for(var c=a.length,d=l(a)?a.split(""):a,f=0;f<c;f++)if(f in d&&b.call(void 0,d[f],f,a))return!0;return!1};
-function pa(a){a:{var b=qa;for(var c=a.length,d=l(a)?a.split(""):a,f=0;f<c;f++)if(f in d&&b.call(void 0,d[f],f,a)){b=f;break a}b=-1;}return 0>b?null:l(a)?a.charAt(b):a[b]}function ra(a){if(!n(a))for(var b=a.length-1;0<=b;b--)delete a[b];a.length=0;}function sa(a,b){b=la(a,b);var c;(c=0<=b)&&Array.prototype.splice.call(a,b,1);return c}function ta(a){return Array.prototype.concat.apply([],arguments)}function ua(a){var b=a.length;if(0<b){for(var c=Array(b),d=0;d<b;d++)c[d]=a[d];return c}return[]}function va(a){return/^[\s\xa0]*$/.test(a)}var wa=String.prototype.trim?function(a){return a.trim()}:function(a){return/^[\s\xa0]*([\s\S]*?)[\s\xa0]*$/.exec(a)[1]};function xa(a,b){return a<b?-1:a>b?1:0}var A;a:{var ya=h.navigator;if(ya){var za=ya.userAgent;if(za){A=za;break a}}A="";}function B(a){return-1!=A.indexOf(a)}function Aa(a,b,c){for(var d in a)b.call(c,a[d],d,a);}function Ba(a){var b=[],c=0,d;for(d in a)b[c++]=a[d];return b}function Ca(a){var b=[],c=0,d;for(d in a)b[c++]=d;return b}function Da(a){var b={},c;for(c in a)b[c]=a[c];return b}var Ea="constructor hasOwnProperty isPrototypeOf propertyIsEnumerable toLocaleString toString valueOf".split(" ");
-function Fa(a,b){for(var c,d,f=1;f<arguments.length;f++){d=arguments[f];for(c in d)a[c]=d[c];for(var g=0;g<Ea.length;g++)c=Ea[g], Object.prototype.hasOwnProperty.call(d,c)&&(a[c]=d[c]);}}function Ga(a){Ga[" "](a);return a}Ga[" "]=aa;function Ha(a,b){var c=Ia;return Object.prototype.hasOwnProperty.call(c,a)?c[a]:c[a]=b(a)}var Ja=B("Opera"),C=B("Trident")||B("MSIE"),Ka=B("Edge"),La=Ka||C,Ma=B("Gecko")&&!(-1!=A.toLowerCase().indexOf("webkit")&&!B("Edge"))&&!(B("Trident")||B("MSIE"))&&!B("Edge"),Na=-1!=A.toLowerCase().indexOf("webkit")&&!B("Edge");function Oa(){var a=h.document;return a?a.documentMode:void 0}var Pa;
-a:{var Qa="",Ra=function(){var a=A;if(Ma)return/rv:([^\);]+)(\)|;)/.exec(a);if(Ka)return/Edge\/([\d\.]+)/.exec(a);if(C)return/\b(?:MSIE|rv)[: ]([^\);]+)(\)|;)/.exec(a);if(Na)return/WebKit\/(\S+)/.exec(a);if(Ja)return/(?:Version)[ \/]?(\S+)/.exec(a)}();Ra&&(Qa=Ra?Ra[1]:"");if(C){var Sa=Oa();if(null!=Sa&&Sa>parseFloat(Qa)){Pa=String(Sa);break a}}Pa=Qa;}var Ia={};
-function Ta(a){return Ha(a,function(){for(var b=0,c=wa(String(Pa)).split("."),d=wa(String(a)).split("."),f=Math.max(c.length,d.length),g=0;0==b&&g<f;g++){var k=c[g]||"",p=d[g]||"";do{k=/(\d*)(\D*)(.*)/.exec(k)||["","","",""];p=/(\d*)(\D*)(.*)/.exec(p)||["","","",""];if(0==k[0].length&&0==p[0].length)break;b=xa(0==k[1].length?0:parseInt(k[1],10),0==p[1].length?0:parseInt(p[1],10))||xa(0==k[2].length,0==p[2].length)||xa(k[2],p[2]);k=k[3];p=p[3];}while(0==b)}return 0<=b})}var Ua;var Va=h.document;
-Ua=Va&&C?Oa()||("CSS1Compat"==Va.compatMode?parseInt(Pa,10):5):void 0;var Wa=Object.freeze||function(a){return a};var Xa=!C||9<=Number(Ua),Ya=C&&!Ta("9"),Za=function(){if(!h.addEventListener||!Object.defineProperty)return!1;var a=!1,b=Object.defineProperty({},"passive",{get:function(){a=!0;}});try{h.addEventListener("test",aa,b), h.removeEventListener("test",aa,b);}catch(c){}return a}();function D(a,b){this.type=a;this.currentTarget=this.target=b;this.defaultPrevented=this.Ea=!1;this.Be=!0;}D.prototype.stopPropagation=function(){this.Ea=!0;};D.prototype.preventDefault=function(){this.defaultPrevented=!0;this.Be=!1;};function E(a,b){D.call(this,a?a.type:"");this.relatedTarget=this.currentTarget=this.target=null;this.button=this.screenY=this.screenX=this.clientY=this.clientX=this.offsetY=this.offsetX=0;this.key="";this.charCode=this.keyCode=0;this.metaKey=this.shiftKey=this.altKey=this.ctrlKey=!1;this.state=null;this.pointerId=0;this.pointerType="";this.fb=null;a&&this.Kf(a,b);}x(E,D);var $a=Wa({2:"touch",3:"pen",4:"mouse"});
-E.prototype.Kf=function(a,b){var c=this.type=a.type,d=a.changedTouches?a.changedTouches[0]:null;this.target=a.target||a.srcElement;this.currentTarget=b;if(b=a.relatedTarget){if(Ma){a:{try{Ga(b.nodeName);var f=!0;break a}catch(g){}f=!1;}f||(b=null);}}else"mouseover"==c?b=a.fromElement:"mouseout"==c&&(b=a.toElement);this.relatedTarget=b;null===d?(this.offsetX=Na||void 0!==a.offsetX?a.offsetX:a.layerX, this.offsetY=Na||void 0!==a.offsetY?a.offsetY:a.layerY, this.clientX=void 0!==a.clientX?a.clientX:a.pageX, this.clientY=void 0!==a.clientY?a.clientY:a.pageY, this.screenX=a.screenX||0, this.screenY=a.screenY||0):(this.clientX=void 0!==d.clientX?d.clientX:d.pageX, this.clientY=void 0!==d.clientY?d.clientY:d.pageY, this.screenX=d.screenX||0, this.screenY=d.screenY||0);this.button=a.button;this.keyCode=a.keyCode||0;this.key=a.key||"";this.charCode=a.charCode||("keypress"==c?a.keyCode:0);this.ctrlKey=a.ctrlKey;this.altKey=a.altKey;this.shiftKey=a.shiftKey;this.metaKey=a.metaKey;this.pointerId=a.pointerId||0;this.pointerType=
-l(a.pointerType)?a.pointerType:$a[a.pointerType]||"";this.state=a.state;this.fb=a;a.defaultPrevented&&this.preventDefault();};E.prototype.stopPropagation=function(){E.L.stopPropagation.call(this);this.fb.stopPropagation?this.fb.stopPropagation():this.fb.cancelBubble=!0;};E.prototype.preventDefault=function(){E.L.preventDefault.call(this);var a=this.fb;if(a.preventDefault)a.preventDefault();else if(a.returnValue=!1, Ya)try{if(a.ctrlKey||112<=a.keyCode&&123>=a.keyCode)a.keyCode=-1;}catch(b){}};var ab="closure_listenable_"+(1E6*Math.random()|0);function F(a){return!(!a||!a[ab])}var bb=0;function cb(a,b,c,d,f){this.listener=a;this.proxy=null;this.src=b;this.type=c;this.capture=!!d;this.Ob=f;this.key=++bb;this.Sa=this.Eb=!1;}cb.prototype.Vb=function(){this.Sa=!0;this.Ob=this.src=this.proxy=this.listener=null;};function db(a){this.src=a;this.J={};this.xb=0;}e=db.prototype;e.add=function(a,b,c,d,f){var g=a.toString();a=this.J[g];a||(a=this.J[g]=[], this.xb++);var k=eb(a,b,d,f);-1<k?(b=a[k], c||(b.Eb=!1)):(b=new cb(b,this.src,g,!!d,f), b.Eb=c, a.push(b));return b};e.remove=function(a,b,c,d){a=a.toString();if(!(a in this.J))return!1;var f=this.J[a];b=eb(f,b,c,d);return-1<b?(f[b].Vb(), Array.prototype.splice.call(f,b,1), 0==f.length&&(delete this.J[a], this.xb--), !0):!1};
-e.ye=function(a){var b=a.type;b in this.J&&sa(this.J[b],a)&&(a.Vb(), 0==this.J[b].length&&(delete this.J[b], this.xb--));};e.pb=function(a){a=a&&a.toString();var c;for(c in this.J)if(!a||c==a){for(var d=this.J[c],f=0;f<d.length;f++)d[f].Vb();delete this.J[c];this.xb--;}};e.jb=function(a,b,c,d){a=this.J[a.toString()];var f=-1;a&&(f=eb(a,b,c,d));return-1<f?a[f]:null};function eb(a,b,c,d){for(var f=0;f<a.length;++f){var g=a[f];if(!g.Sa&&g.listener==b&&g.capture==!!c&&g.Ob==d)return f}return-1}var fb="closure_lm_"+(1E6*Math.random()|0),gb={};function ib(a,b,c,d,f){if(d&&d.once)return jb(a,b,c,d,f);if(n(b)){for(var g=0;g<b.length;g++)ib(a,b[g],c,d,f);return null}c=kb(c);return F(a)?a.nb(b,c,r(d)?!!d.capture:!!d,f):lb(a,b,c,!1,d,f)}
-function lb(a,b,c,d,f,g){if(!b)throw Error("Invalid event type");var k=r(f)?!!f.capture:!!f,p=G(a);p||(a[fb]=p=new db(a));c=p.add(b,c,d,k,g);if(c.proxy)return c;d=mb();c.proxy=d;d.src=a;d.listener=c;if(a.addEventListener)Za||(f=k), void 0===f&&(f=!1), a.addEventListener(b.toString(),d,f);else if(a.attachEvent)a.attachEvent(nb(b.toString()),d);else if(a.addListener&&a.removeListener)a.addListener(d);else throw Error("addEventListener and attachEvent are unavailable.");return c}
-function mb(){var a=ob,b=Xa?function(c){return a.call(b.src,b.listener,c)}:function(c){c=a.call(b.src,b.listener,c);if(!c)return c};return b}function jb(a,b,c,d,f){if(n(b)){for(var g=0;g<b.length;g++)jb(a,b[g],c,d,f);return null}c=kb(c);return F(a)?a.Oc(b,c,r(d)?!!d.capture:!!d,f):lb(a,b,c,!0,d,f)}function pb(a,b,c,d,f){if(n(b))for(var g=0;g<b.length;g++)pb(a,b[g],c,d,f);else d=r(d)?!!d.capture:!!d, c=kb(c), F(a)?a.ed(b,c,d,f):a&&(a=G(a))&&(b=a.jb(b,c,d,f))&&qb(b);}
-function qb(a){if("number"!=typeof a&&a&&!a.Sa){var b=a.src;if(F(b))b.Le(a);else{var c=a.type,d=a.proxy;b.removeEventListener?b.removeEventListener(c,d,a.capture):b.detachEvent?b.detachEvent(nb(c),d):b.addListener&&b.removeListener&&b.removeListener(d);(c=G(b))?(c.ye(a), 0==c.xb&&(c.src=null, b[fb]=null)):a.Vb();}}}function nb(a){return a in gb?gb[a]:gb[a]="on"+a}
-function rb(a,b,c,d){var f=!0;if(a=G(a))if(b=a.J[b.toString()])for(b=b.concat(), a=0;a<b.length;a++){var g=b[a];g&&g.capture==c&&!g.Sa&&(g=sb(g,d), f=f&&!1!==g);}return f}function sb(a,b){var c=a.listener,d=a.Ob||a.src;a.Eb&&qb(a);return c.call(d,b)}
-function ob(a,b){if(a.Sa)return!0;if(!Xa){var c=b||m("window.event");b=new E(c,this);var d=!0;if(!(0>c.keyCode||void 0!=c.returnValue)){a:{var f=!1;if(0==c.keyCode)try{c.keyCode=-1;break a}catch(k){f=!0;}if(f||void 0==c.returnValue)c.returnValue=!0;}c=[];for(f=b.currentTarget;f;f=f.parentNode)c.push(f);a=a.type;for(f=c.length-1;!b.Ea&&0<=f;f--){b.currentTarget=c[f];var g=rb(c[f],a,!0,b);d=d&&g;}for(f=0;!b.Ea&&f<c.length;f++)b.currentTarget=c[f], g=rb(c[f],a,!1,b), d=d&&g;}return d}return sb(a,new E(b,this))}
-function G(a){a=a[fb];return a instanceof db?a:null}var tb="__closure_events_fn_"+(1E9*Math.random()>>>0);function kb(a){if(q(a))return a;a[tb]||(a[tb]=function(b){return a.handleEvent(b)});return a[tb]}function H(){z.call(this);this.ka=new db(this);this.Pe=this;this.Uc=null;}x(H,z);H.prototype[ab]=!0;e=H.prototype;e.addEventListener=function(a,b,c,d){ib(this,a,b,c,d);};e.removeEventListener=function(a,b,c,d){pb(this,a,b,c,d);};
-e.dispatchEvent=function(a){var b,c=this.Uc;if(c)for(b=[];c;c=c.Uc)b.push(c);c=this.Pe;var d=a.type||a;if(l(a))a=new D(a,c);else if(a instanceof D)a.target=a.target||c;else{var f=a;a=new D(d,c);Fa(a,f);}f=!0;if(b)for(var g=b.length-1;!a.Ea&&0<=g;g--){var k=a.currentTarget=b[g];f=k.Lb(d,!0,a)&&f;}a.Ea||(k=a.currentTarget=c, f=k.Lb(d,!0,a)&&f, a.Ea||(f=k.Lb(d,!1,a)&&f));if(b)for(g=0;!a.Ea&&g<b.length;g++)k=a.currentTarget=b[g], f=k.Lb(d,!1,a)&&f;return f};
-e.F=function(){H.L.F.call(this);this.pg();this.Uc=null;};e.nb=function(a,b,c,d){return this.ka.add(String(a),b,!1,c,d)};e.Oc=function(a,b,c,d){return this.ka.add(String(a),b,!0,c,d)};e.ed=function(a,b,c,d){this.ka.remove(String(a),b,c,d);};e.Le=function(a){this.ka.ye(a);};e.pg=function(){this.ka&&this.ka.pb(void 0);};
-e.Lb=function(a,b,c){a=this.ka.J[String(a)];if(!a)return!0;a=a.concat();for(var d=!0,f=0;f<a.length;++f){var g=a[f];if(g&&!g.Sa&&g.capture==b){var k=g.listener,p=g.Ob||g.src;g.Eb&&this.Le(g);d=!1!==k.call(p,c)&&d;}}return d&&0!=c.Be};e.jb=function(a,b,c,d){return this.ka.jb(String(a),b,c,d)};var ub=h.JSON.stringify;function vb(a,b){this.Sf=100;this.ef=a;this.ug=b;this.Zb=0;this.Pb=null;}vb.prototype.get=function(){if(0<this.Zb){this.Zb--;var a=this.Pb;this.Pb=a.next;a.next=null;}else a=this.ef();return a};vb.prototype.put=function(a){this.ug(a);this.Zb<this.Sf&&(this.Zb++, a.next=this.Pb, this.Pb=a);};function I(){this.lc=this.Va=null;}var xb=new vb(function(){return new wb},function(a){a.reset();});I.prototype.add=function(a,b){var c=this.Af();c.set(a,b);this.lc?this.lc.next=c:this.Va=c;this.lc=c;};I.prototype.remove=function(){var a=null;this.Va&&(a=this.Va, this.Va=this.Va.next, this.Va||(this.lc=null), a.next=null);return a};I.prototype.wg=function(a){xb.put(a);};I.prototype.Af=function(){return xb.get()};function wb(){this.next=this.scope=this.Gc=null;}
-wb.prototype.set=function(a,b){this.Gc=a;this.scope=b;this.next=null;};wb.prototype.reset=function(){this.next=this.scope=this.Gc=null;};function yb(a){h.setTimeout(function(){throw a;},0);}var zb;
-function Ab(){var a=h.MessageChannel;"undefined"===typeof a&&"undefined"!==typeof window&&window.postMessage&&window.addEventListener&&!B("Presto")&&(a=function(){var a=document.createElement("IFRAME");a.style.display="none";a.src="";document.documentElement.appendChild(a);var b=a.contentWindow;a=b.document;a.open();a.write("");a.close();var c="callImmediate"+Math.random(),d="file:"==b.location.protocol?"*":b.location.protocol+"//"+b.location.host;a=u(function(a){if(("*"==d||a.origin==d)&&a.data==
-c)this.port1.onmessage();},this);b.addEventListener("message",a,!1);this.port1={};this.port2={postMessage:function(){b.postMessage(c,d);}};});if("undefined"!==typeof a&&!B("Trident")&&!B("MSIE")){var b=new a,c={},d=c;b.port1.onmessage=function(){if(void 0!==c.next){c=c.next;var a=c.rd;c.rd=null;a();}};return function(a){d.next={rd:a};d=d.next;b.port2.postMessage(0);}}return"undefined"!==typeof document&&"onreadystatechange"in document.createElement("SCRIPT")?function(a){var b=document.createElement("SCRIPT");
-b.onreadystatechange=function(){b.onreadystatechange=null;b.parentNode.removeChild(b);b=null;a();a=null;};document.documentElement.appendChild(b);}:function(a){h.setTimeout(a,0);}}var Bb;function Cb(){if(h.Promise&&h.Promise.resolve){var a=h.Promise.resolve(void 0);Bb=function(){a.then(Db);};}else Bb=function(){var a=Db;!q(h.setImmediate)||h.Window&&h.Window.prototype&&!B("Edge")&&h.Window.prototype.setImmediate==h.setImmediate?(zb||(zb=Ab()), zb(a)):h.setImmediate(a);};}var Eb=!1,Fb=new I;function Db(){for(var a;a=Fb.remove();){try{a.Gc.call(a.scope);}catch(b){yb(b);}Fb.wg(a);}Eb=!1;}function Gb(a,b){H.call(this);this.Na=a||1;this.wb=b||h;this.nd=u(this.Rg,this);this.ie=w();}x(Gb,H);e=Gb.prototype;e.enabled=!1;e.B=null;e.setInterval=function(a){this.Na=a;this.B&&this.enabled?(this.stop(), this.start()):this.B&&this.stop();};e.Rg=function(){if(this.enabled){var a=w()-this.ie;0<a&&a<.8*this.Na?this.B=this.wb.setTimeout(this.nd,this.Na-a):(this.B&&(this.wb.clearTimeout(this.B), this.B=null), this.ff(), this.enabled&&(this.stop(), this.start()));}};e.ff=function(){this.dispatchEvent("tick");};
-e.start=function(){this.enabled=!0;this.B||(this.B=this.wb.setTimeout(this.nd,this.Na), this.ie=w());};e.stop=function(){this.enabled=!1;this.B&&(this.wb.clearTimeout(this.B), this.B=null);};e.F=function(){Gb.L.F.call(this);this.stop();delete this.wb;};function Hb(a,b,c){if(q(a))c&&(a=u(a,c));else if(a&&"function"==typeof a.handleEvent)a=u(a.handleEvent,a);else throw Error("Invalid listener argument");return 2147483647<Number(b)?-1:h.setTimeout(a,b||0)}function Ib(a,b,c){z.call(this);this.Uf=null!=c?u(a,c):a;this.Na=b;this.Xe=u(this.fg,this);this.qc=[];}x(Ib,z);e=Ib.prototype;e.Ta=!1;e.ob=0;e.B=null;e.mf=function(a){this.qc=arguments;this.B||this.ob?this.Ta=!0:this.Cc();};e.stop=function(){this.B&&(h.clearTimeout(this.B), this.B=null, this.Ta=!1, this.qc=[]);};e.pause=function(){this.ob++;};e.resume=function(){this.ob--;this.ob||!this.Ta||this.B||(this.Ta=!1, this.Cc());};e.F=function(){Ib.L.F.call(this);this.stop();};
-e.fg=function(){this.B=null;this.Ta&&!this.ob&&(this.Ta=!1, this.Cc());};e.Cc=function(){this.B=Hb(this.Xe,this.Na);this.Uf.apply(null,this.qc);};function Jb(a){z.call(this);this.i=a;this.o={};}x(Jb,z);var Kb=[];e=Jb.prototype;e.nb=function(a,b,c,d){return this.Tf(a,b,c,d)};e.Tf=function(a,b,c,d){n(b)||(b&&(Kb[0]=b.toString()), b=Kb);for(var f=0;f<b.length;f++){var g=ib(a,b[f],c||this.handleEvent,d||!1,this.i||this);if(!g)break;this.o[g.key]=g;}return this};e.Oc=function(a,b,c,d){return this.je(a,b,c,d)};
-e.je=function(a,b,c,d,f){if(n(b))for(var g=0;g<b.length;g++)this.je(a,b[g],c,d,f);else{a=jb(a,b,c||this.handleEvent,d,f||this.i||this);if(!a)return this;this.o[a.key]=a;}return this};e.ed=function(a,b,c,d,f){if(n(b))for(var g=0;g<b.length;g++)this.ed(a,b[g],c,d,f);else c=c||this.handleEvent, d=r(d)?!!d.capture:!!d, f=f||this.i||this, c=kb(c), d=!!d, b=F(a)?a.jb(b,c,d,f):a?(a=G(a))?a.jb(b,c,d,f):null:null, b&&(qb(b), delete this.o[b.key]);};
-e.pb=function(){Aa(this.o,function(a,b){this.o.hasOwnProperty(b)&&qb(a);},this);this.o={};};e.F=function(){Jb.L.F.call(this);this.pb();};e.handleEvent=function(){throw Error("EventHandler.handleEvent not implemented");};function J(a,b,c){this.reset(a,b,c,void 0,void 0);}J.prototype.Md=null;J.prototype.reset=function(a,b,c,d,f){this.mb=a;delete this.Md;};J.prototype.Bg=function(a){this.Md=a;};J.prototype.Ge=function(a){this.mb=a;};function Mb(a){this.pe=a;this.Zd=this.uc=this.mb=this.$b=null;}function K(a,b){this.name=a;this.value=b;}K.prototype.toString=function(){return this.name};var Nb=new K("SEVERE",1E3),Ob=new K("WARNING",900),Pb=new K("INFO",800),Qb=new K("CONFIG",700),Rb=new K("FINE",500);e=Mb.prototype;e.getName=function(){return this.pe};e.getParent=function(){return this.$b};e.pf=function(){this.uc||(this.uc={});return this.uc};e.Ge=function(a){this.mb=a;};
-e.Qd=function(){if(this.mb)return this.mb;if(this.$b)return this.$b.Qd();ia("Root logger has no level set.");return null};e.Pf=function(a){return a.value>=this.Qd().value};e.log=function(a,b,c){this.Pf(a)&&(q(b)&&(b=b()), this.gf(this.uf(a,b,c)));};e.uf=function(a,b,c){a=new J(a,String(b),this.pe);c&&a.Bg(c);return a};e.ca=function(a,b){this.log(Nb,a,b);};e.T=function(a,b){this.log(Ob,a,b);};e.info=function(a,b){this.log(Pb,a,b);};e.lf=function(a){this.log(Rb,a,void 0);};
-e.gf=function(a){for(var b=this;b;)b.We(a), b=b.getParent();};e.We=function(a){if(this.Zd)for(var b=0,c;c=this.Zd[b];b++)c(a);};e.Fg=function(a){this.$b=a;};e.Qe=function(a,b){this.pf()[a]=b;};var Sb={},Tb=null;function Vb(a){Tb||(Tb=new Mb(""), Sb[""]=Tb, Tb.Ge(Qb));var b;if(!(b=Sb[a])){b=new Mb(a);var c=a.lastIndexOf("."),d=a.substr(c+1);c=Vb(a.substr(0,c));c.Qe(d,b);b.Fg(c);Sb[a]=b;}return b}function Wb(a,b){a&&a.info(b,void 0);}function L(a,b){a&&a.lf(b);}function Xb(){this.s=Vb("goog.labs.net.webChannel.WebChannelDebug");this.Wc=!0;}e=Xb.prototype;e.Id=function(){this.Wc=!1;};e.Tg=function(a,b,c,d,f){var g=this;this.info(function(){return"XMLHTTP REQ ("+c+") [attempt "+d+"]: "+a+"\n"+b+"\n"+g.Xf(f)});};e.Ug=function(a,b,c,d,f,g){this.info(function(){return"XMLHTTP RESP ("+c+") [ attempt "+d+"]: "+a+"\n"+b+"\n"+f+" "+g});};e.Wa=function(a,b,c){var d=this;this.info(function(){return"XMLHTTP TEXT ("+a+"): "+d.ng(b)+(c?" "+c:"")});};
-e.Sg=function(a){this.info(function(){return"TIMEOUT: "+a});};e.debug=function(a){L(this.s,a);};e.cb=function(a,b){var c=this.s;c&&c.ca(b||"Exception",a);};e.info=function(a){Wb(this.s,a);};e.T=function(a){var b=this.s;b&&b.T(a,void 0);};e.ca=function(a){var b=this.s;b&&b.ca(a,void 0);};
-e.ng=function(a){if(!this.Wc)return a;if(!a)return null;try{var b=JSON.parse(a);if(b)for(var c=0;c<b.length;c++)n(b[c])&&this.Wf(b[c]);return ub(b)}catch(d){return this.debug("Exception parsing expected JS array - probably was not JS"), a}};e.Wf=function(a){if(!(2>a.length||(a=a[1], !n(a)||1>a.length))){var b=a[0];if("noop"!=b&&"stop"!=b&&"close"!=b)for(b=1;b<a.length;b++)a[b]="";}};
-e.Xf=function(a){if(!this.Wc)return a;if(!a)return null;var b="";a=a.split("&");for(var c=0;c<a.length;c++){var d=a[c].split("=");if(1<d.length){var f=d[0];d=d[1];var g=f.split("_");b=2<=g.length&&"type"==g[1]?b+(f+"="+d+"&"):b+(f+"=redacted&");}}return b};var M=new H;function Yb(a){D.call(this,"serverreachability",a);}x(Yb,D);function N(a){M.dispatchEvent(new Yb(M,a));}function Zb(a,b){D.call(this,"statevent",a);this.stat=b;}x(Zb,D);function O(a){M.dispatchEvent(new Zb(M,a));}function $b(a,b,c){D.call(this,"timingevent",a);this.size=b;this.rtt=c;}x($b,D);function ac(a,b,c){M.dispatchEvent(new $b(M,a,b,c));}function P(a,b){if(!q(a))throw Error("Fn must not be null and must be a function");return h.setTimeout(function(){a();},b)}var bc={NO_ERROR:0,Vg:1,bh:2,ah:3,Yg:4,$g:5,dh:6,Ne:7,TIMEOUT:8,gh:9};var cc={Xg:"complete",kh:"success",Oe:"error",Ne:"abort",ih:"ready",jh:"readystatechange",TIMEOUT:"timeout",eh:"incrementaldata",hh:"progress",Zg:"downloadprogress",lh:"uploadprogress"};function dc(){}dc.prototype.pd=null;dc.prototype.Vd=function(){return this.pd||(this.pd=this.Mf())};function ec(){}var Q={OPEN:"a",Wg:"b",Oe:"c",fh:"d"};function fc(){D.call(this,"d");}x(fc,D);function gc(){D.call(this,"c");}x(gc,D);var hc;function ic(){}x(ic,dc);ic.prototype.Dd=function(){var a=this.Wd();return a?new ActiveXObject(a):new XMLHttpRequest};ic.prototype.Mf=function(){var a={};this.Wd()&&(a[0]=!0, a[1]=!0);return a};
-ic.prototype.Wd=function(){if(!this.be&&"undefined"==typeof XMLHttpRequest&&"undefined"!=typeof ActiveXObject){for(var a=["MSXML2.XMLHTTP.6.0","MSXML2.XMLHTTP.3.0","MSXML2.XMLHTTP","Microsoft.XMLHTTP"],b=0;b<a.length;b++){var c=a[b];try{return new ActiveXObject(c), this.be=c}catch(d){}}throw Error("Could not create ActiveXObject. ActiveX might be disabled, or MSXML might not be installed");}return this.be};hc=new ic;function R(a,b,c,d,f){this.b=a;this.a=b;this.ra=c;this.R=d;this.Xc=f||1;this.Fc=new Jb(this);this.Ua=jc;a=La?125:void 0;this.Vc=new Gb(a);this.A=null;this.S=!1;this.Da=this.pa=this.ua=this.ic=this.qb=this.hd=this.Ga=null;this.ba=[];this.h=null;this.Bb=0;this.I=this.Fa=null;this.w=-1;this.Za=!1;this.Ra=0;this.ac=null;this.lb=this.Ed=this.yc=!1;}var jc=45E3;
-function kc(a,b){switch(a){case 0:return"Non-200 return code ("+b+")";case 1:return"XMLHTTP failure (no data)";case 2:return"HttpConnection timeout";default:return"Unknown error"}}var lc={},mc={};e=R.prototype;e.ga=function(a){this.A=a;};e.setTimeout=function(a){this.Ua=a;};e.He=function(a){this.Ra=a;};e.Gg=function(a){this.ba=a;};e.la=function(){return this.ba};e.kd=function(a,b){this.ic=1;this.ua=a.clone().Ub();this.Da=b;this.yc=!0;this.Ce(null);};
-e.jd=function(a,b,c){this.ic=1;this.ua=a.clone().Ub();this.Da=null;this.yc=b;this.Ce(c);};
-e.Ce=function(a){this.qb=w();this.eb();this.pa=this.ua.clone();this.pa.dc("t",this.Xc);this.Bb=0;this.h=this.b.Jb(this.b.fc()?a:null);0<this.Ra&&(this.ac=new Ib(u(this.Me,this,this.h),this.Ra));this.Fc.nb(this.h,"readystatechange",this.mg);a=this.A?Da(this.A):{};this.Da?(this.Fa||(this.Fa="POST"), a["Content-Type"]="application/x-www-form-urlencoded", this.h.send(this.pa,this.Fa,this.Da,a)):(this.Fa="GET", this.h.send(this.pa,this.Fa,null,a));N(1);this.a.Tg(this.Fa,this.pa,this.R,this.Xc,this.Da);};
-e.mg=function(a){a=a.target;var b=this.ac;b&&3==a.ma()?(this.a.debug("Throttling readystatechange."), b.mf()):this.Me(a);};e.Me=function(a){try{a==this.h?this.hg():this.a.T("Called back with an unexpected xmlhttp");}catch(c){if(this.a.debug("Failed call to OnXmlHttpReadyStateChanged_"), this.h&&this.h.ya()){var b=this;this.a.cb(c,function(){return"ResponseText: "+b.h.ya()});}else this.a.cb(c,"No response text");}finally{}};
-e.hg=function(){var a=this.h.ma(),b=this.h.Ud(),c=this.h.za();if(!(3>a||3==a&&!La&&!this.h.ya())){this.Za||4!=a||7==b||(8==b||0>=c?N(3):N(2));this.Fb();var d=this.h.za();this.w=d;b=this.h.ya();if(!b){var f=this;this.a.debug(function(){return"No response text for uri "+f.pa+" status "+d});}this.S=200==d;this.a.Ug(this.Fa,this.pa,this.R,this.Xc,a,d);if(this.S){if(this.Ig())if(c=this.sf())this.a.Wa(this.R,c,"Initial handshake response via X-HTTP-Initial-Response"), this.lb=!0, this.Yc(c);else{this.S=!1;
-this.I=3;O(12);this.a.T("XMLHTTP Missing X_HTTP_INITIAL_RESPONSE ("+this.R+")");this.Ia();this.Kb();return}this.yc?(this.Fd(a,b), La&&this.S&&3==a&&this.Ng()):(this.a.Wa(this.R,b,null), this.Yc(b));4==a&&this.Ia();this.S&&!this.Za&&(4==a?this.b.Tc(this):(this.S=!1, this.eb()));}else 400==d&&0<b.indexOf("Unknown SID")?(this.I=3, O(12), this.a.T("XMLHTTP Unknown SID ("+this.R+")")):(this.I=0, O(13), this.a.T("XMLHTTP Bad status "+d+" ("+this.R+")")), this.Ia(), this.Kb();}};e.Ig=function(){return this.Ed&&!this.lb};
-e.sf=function(){if(this.h){var a=this.h.kb("X-HTTP-Initial-Response");if(a&&!va(a))return a}return null};e.Ag=function(){this.Ed=!0;};
-e.Fd=function(a,b){for(var c=!0;!this.Za&&this.Bb<b.length;){var d=this.vf(b);if(d==mc){4==a&&(this.I=4, O(14), c=!1);this.a.Wa(this.R,null,"[Incomplete Response]");break}else if(d==lc){this.I=4;O(15);this.a.Wa(this.R,b,"[Invalid Chunk]");c=!1;break}else this.a.Wa(this.R,d,null), this.Yc(d);}4==a&&0==b.length&&(this.I=1, O(16), c=!1);this.S=this.S&&c;c||(this.a.Wa(this.R,b,"[Invalid Chunked Response]"), this.Ia(), this.Kb());};
-e.kg=function(){if(this.h){var a=this.h.ma(),b=this.h.ya();this.Bb<b.length&&(this.Fb(), this.Fd(a,b), this.S&&4!=a&&this.eb());}};e.Ng=function(){this.Fc.nb(this.Vc,"tick",this.kg);this.Vc.start();};e.vf=function(a){var b=this.Bb,c=a.indexOf("\n",b);if(-1==c)return mc;b=Number(a.substring(b,c));if(isNaN(b))return lc;c+=1;if(c+b>a.length)return mc;a=a.substr(c,b);this.Bb=c+b;return a};
-e.yg=function(a){this.ic=2;this.ua=a.clone().Ub();a=!1;h.navigator&&h.navigator.sendBeacon&&(a=h.navigator.sendBeacon(this.ua.toString(),""));!a&&h.Image&&((new Image).src=this.ua, a=!0);a||(this.h=this.b.Jb(null), this.h.send(this.ua));this.qb=w();this.eb();};e.cancel=function(){this.Za=!0;this.Ia();};e.tg=function(a){a&&this.setTimeout(a);this.Ga&&(this.Fb(), this.eb());};e.eb=function(){this.hd=w()+this.Ua;this.Ke(this.Ua);};
-e.Ke=function(a){if(null!=this.Ga)throw Error("WatchDog timer not null");this.Ga=P(u(this.gg,this),a);};e.Fb=function(){this.Ga&&(h.clearTimeout(this.Ga), this.Ga=null);};e.gg=function(){this.Ga=null;var a=w();0<=a-this.hd?this.Df():(this.a.T("WatchDog timer called too early"), this.Ke(this.hd-a));};e.Df=function(){this.S&&this.a.ca("Received watchdog timeout even though request loaded successfully");this.a.Sg(this.pa);2!=this.ic&&(N(3), O(17));this.Ia();this.I=2;this.Kb();};
-e.Kb=function(){this.b.de()||this.Za||this.b.Tc(this);};e.Ia=function(){this.Fb();var a=this.ac;a&&"function"==typeof a.bb&&a.bb();this.ac=null;this.Vc.stop();this.Fc.pb();this.h&&(a=this.h, this.h=null, a.abort(), a.bb());};e.Hc=function(){return this.I};e.Yc=function(a){try{this.b.ue(this,a), N(4);}catch(b){this.a.cb(b,"Error in httprequest callback");}};function nc(a){if(a.H&&"function"==typeof a.H)return a.H();if(l(a))return a.split("");if(ca(a)){for(var b=[],c=a.length,d=0;d<c;d++)b.push(a[d]);return b}return Ba(a)}
-function oc(a,b,c){if(a.forEach&&"function"==typeof a.forEach)a.forEach(b,c);else if(ca(a)||l(a))na(a,b,c);else{if(a.W&&"function"==typeof a.W)var d=a.W();else if(a.H&&"function"==typeof a.H)d=void 0;else if(ca(a)||l(a)){d=[];for(var f=a.length,g=0;g<f;g++)d.push(g);}else d=Ca(a);f=nc(a);g=f.length;for(var k=0;k<g;k++)b.call(c,f[k],d&&d[k],a);}}function S(a,b){this.D={};this.o=[];this.j=0;var c=arguments.length;if(1<c){if(c%2)throw Error("Uneven number of arguments");for(var d=0;d<c;d+=2)this.set(arguments[d],arguments[d+1]);}else a&&this.addAll(a);}e=S.prototype;e.C=function(){return this.j};e.H=function(){this.wc();for(var a=[],b=0;b<this.o.length;b++)a.push(this.D[this.o[b]]);return a};e.W=function(){this.wc();return this.o.concat()};e.va=function(a){return T(this.D,a)};e.X=function(){return 0==this.j};
-e.clear=function(){this.D={};this.j=this.o.length=0;};e.remove=function(a){return T(this.D,a)?(delete this.D[a], this.j--, this.o.length>2*this.j&&this.wc(), !0):!1};e.wc=function(){if(this.j!=this.o.length){for(var a=0,b=0;a<this.o.length;){var c=this.o[a];T(this.D,c)&&(this.o[b++]=c);a++;}this.o.length=b;}if(this.j!=this.o.length){var d={};for(b=a=0;a<this.o.length;)c=this.o[a], T(d,c)||(this.o[b++]=c, d[c]=1), a++;this.o.length=b;}};e.get=function(a,b){return T(this.D,a)?this.D[a]:b};
-e.set=function(a,b){T(this.D,a)||(this.j++, this.o.push(a));this.D[a]=b;};e.addAll=function(a){if(a instanceof S)for(var b=a.W(),c=0;c<b.length;c++)this.set(b[c],a.get(b[c]));else for(b in a)this.set(b,a[b]);};e.forEach=function(a,b){for(var c=this.W(),d=0;d<c.length;d++){var f=c[d],g=this.get(f);a.call(b,g,f,this);}};e.clone=function(){return new S(this)};function T(a,b){return Object.prototype.hasOwnProperty.call(a,b)}var pc=/^(?:([^:/?#.]+):)?(?:\/\/(?:([^/?#]*)@)?([^/#?]*?)(?::([0-9]+))?(?=[/#?]|$))?([^?#]+)?(?:\?([^#]*))?(?:#([\s\S]*))?$/;function qc(a,b){if(a){a=a.split("&");for(var c=0;c<a.length;c++){var d=a[c].indexOf("="),f=null;if(0<=d){var g=a[c].substring(0,d);f=a[c].substring(d+1);}else g=a[c];b(g,f?decodeURIComponent(f.replace(/\+/g," ")):"");}}}function U(a,b){this.xa=this.zb=this.qa="";this.Ca=null;this.ib=this.K="";this.O=this.Qf=!1;var c;a instanceof U?(this.O=void 0!==b?b:a.O, this.tb(a.qa), this.cd(a.zb), this.rb(a.xa), this.sb(a.Ca), this.ec(a.K), this.bd(a.P.clone()), this.$c(a.ib)):a&&(c=String(a).match(pc))?(this.O=!!b, this.tb(c[1]||"",!0), this.cd(c[2]||"",!0), this.rb(c[3]||"",!0), this.sb(c[4]), this.ec(c[5]||"",!0), this.bd(c[6]||"",!0), this.$c(c[7]||"",!0)):(this.O=!!b, this.P=new rc(null,this.O));}e=U.prototype;
-e.toString=function(){var a=[],b=this.qa;b&&a.push(sc(b,tc,!0),":");var c=this.xa;if(c||"file"==b)a.push("//"), (b=this.zb)&&a.push(sc(b,tc,!0),"@"), a.push(encodeURIComponent(String(c)).replace(/%25([0-9a-fA-F]{2})/g,"%$1")), c=this.Ca, null!=c&&a.push(":",String(c));if(c=this.K)this.Ic()&&"/"!=c.charAt(0)&&a.push("/"), a.push(sc(c,"/"==c.charAt(0)?uc:wc,!0));(c=this.Rd())&&a.push("?",c);(c=this.ib)&&a.push("#",sc(c,xc));return a.join("")};
-e.resolve=function(a){var b=this.clone(),c=a.Hf();c?b.tb(a.qa):c=a.If();c?b.cd(a.zb):c=a.Ic();c?b.rb(a.xa):c=a.Ff();var d=a.K;if(c)b.sb(a.Ca);else if(c=a.ae()){if("/"!=d.charAt(0))if(this.Ic()&&!this.ae())d="/"+d;else{var f=b.K.lastIndexOf("/");-1!=f&&(d=b.K.substr(0,f+1)+d);}f=d;if(".."==f||"."==f)d="";else if(-1!=f.indexOf("./")||-1!=f.indexOf("/.")){d=0==f.lastIndexOf("/",0);f=f.split("/");for(var g=[],k=0;k<f.length;){var p=f[k++];"."==p?d&&k==f.length&&g.push(""):".."==p?((1<g.length||1==g.length&&
-""!=g[0])&&g.pop(), d&&k==f.length&&g.push("")):(g.push(p), d=!0);}d=g.join("/");}else d=f;}c?b.ec(d):c=a.Gf();c?b.bd(a.P.clone()):c=a.Ef();c&&b.$c(a.ib);return b};e.clone=function(){return new U(this)};e.tb=function(a,b){this.U();if(this.qa=b?yc(a,!0):a)this.qa=this.qa.replace(/:$/,"");};e.Hf=function(){return!!this.qa};e.cd=function(a,b){this.U();this.zb=b?yc(a):a;};e.If=function(){return!!this.zb};e.rb=function(a,b){this.U();this.xa=b?yc(a,!0):a;};e.Ic=function(){return!!this.xa};
-e.sb=function(a){this.U();if(a){a=Number(a);if(isNaN(a)||0>a)throw Error("Bad port number "+a);this.Ca=a;}else this.Ca=null;};e.Ff=function(){return null!=this.Ca};e.ec=function(a,b){this.U();this.K=b?yc(a,!0):a;};e.ae=function(){return!!this.K};e.Gf=function(){return""!==this.P.toString()};e.bd=function(a,b){this.U();a instanceof rc?(this.P=a, this.P.ad(this.O)):(b||(a=sc(a,zc)), this.P=new rc(a,this.O));};e.Rd=function(){return this.P.toString()};e.getQuery=function(){return this.Rd()};
-e.l=function(a,b){this.U();this.P.set(a,b);};e.dc=function(a,b){this.U();n(b)||(b=[String(b)]);this.P.Ie(a,b);};e.$c=function(a,b){this.U();this.ib=b?yc(a):a;};e.Ef=function(){return!!this.ib};e.Ub=function(){this.U();this.l("zx",Math.floor(2147483648*Math.random()).toString(36)+Math.abs(Math.floor(2147483648*Math.random())^w()).toString(36));return this};e.removeParameter=function(a){this.U();this.P.remove(a);return this};e.U=function(){if(this.Qf)throw Error("Tried to modify a read-only Uri");};
-e.ad=function(a){this.O=a;this.P&&this.P.ad(a);};function Ac(a){return a instanceof U?a.clone():new U(a,void 0)}function Bc(a,b,c,d){var f=new U(null,void 0);a&&f.tb(a);b&&f.rb(b);c&&f.sb(c);d&&f.ec(d);return f}function yc(a,b){return a?b?decodeURI(a.replace(/%25/g,"%2525")):decodeURIComponent(a):""}function sc(a,b,c){return l(a)?(a=encodeURI(a).replace(b,Cc), c&&(a=a.replace(/%25([0-9a-fA-F]{2})/g,"%$1")), a):null}
-function Cc(a){a=a.charCodeAt(0);return"%"+(a>>4&15).toString(16)+(a&15).toString(16)}var tc=/[#\/\?@]/g,wc=/[#\?:]/g,uc=/[#\?]/g,zc=/[#\?@]/g,xc=/#/g;function rc(a,b){this.j=this.m=null;this.ja=a||null;this.O=!!b;}e=rc.prototype;e.$=function(){if(!this.m&&(this.m=new S, this.j=0, this.ja)){var a=this;qc(this.ja,function(b,c){a.add(decodeURIComponent(b.replace(/\+/g," ")),c);});}};e.C=function(){this.$();return this.j};
-e.add=function(a,b){this.$();this.Oa();a=this.Ma(a);var c=this.m.get(a);c||this.m.set(a,c=[]);c.push(b);this.j+=1;return this};e.remove=function(a){this.$();a=this.Ma(a);return this.m.va(a)?(this.Oa(), this.j-=this.m.get(a).length, this.m.remove(a)):!1};e.clear=function(){this.Oa();this.m=null;this.j=0;};e.X=function(){this.$();return 0==this.j};e.va=function(a){this.$();a=this.Ma(a);return this.m.va(a)};
-e.forEach=function(a,b){this.$();this.m.forEach(function(c,d){na(c,function(c){a.call(b,c,d,this);},this);},this);};e.W=function(){this.$();for(var a=this.m.H(),b=this.m.W(),c=[],d=0;d<b.length;d++)for(var f=a[d],g=0;g<f.length;g++)c.push(b[d]);return c};e.H=function(a){this.$();var b=[];if(l(a))this.va(a)&&(b=ta(b,this.m.get(this.Ma(a))));else{a=this.m.H();for(var c=0;c<a.length;c++)b=ta(b,a[c]);}return b};
-e.set=function(a,b){this.$();this.Oa();a=this.Ma(a);this.va(a)&&(this.j-=this.m.get(a).length);this.m.set(a,[b]);this.j+=1;return this};e.get=function(a,b){if(!a)return b;a=this.H(a);return 0<a.length?String(a[0]):b};e.Ie=function(a,b){this.remove(a);0<b.length&&(this.Oa(), this.m.set(this.Ma(a),ua(b)), this.j+=b.length);};
-e.toString=function(){if(this.ja)return this.ja;if(!this.m)return"";for(var a=[],b=this.m.W(),c=0;c<b.length;c++){var d=b[c],f=encodeURIComponent(String(d));d=this.H(d);for(var g=0;g<d.length;g++){var k=f;""!==d[g]&&(k+="="+encodeURIComponent(String(d[g])));a.push(k);}}return this.ja=a.join("&")};e.Oa=function(){this.ja=null;};e.clone=function(){var a=new rc;a.ja=this.ja;this.m&&(a.m=this.m.clone(), a.j=this.j);return a};e.Ma=function(a){a=String(a);this.O&&(a=a.toLowerCase());return a};
-e.ad=function(a){a&&!this.O&&(this.$(), this.Oa(), this.m.forEach(function(a,c){var b=c.toLowerCase();c!=b&&(this.remove(c), this.Ie(b,a));},this));this.O=a;};e.extend=function(a){for(var b=0;b<arguments.length;b++)oc(arguments[b],function(a,b){this.add(b,a);},this);};function Fc(){}function Gc(){}x(Gc,Fc);function Hc(a,b){this.b=a;this.a=b;this.f=this.A=null;this.bc=!1;this.K=null;this.w=-1;this.Ad=this.na=null;}e=Hc.prototype;e.g=null;e.ga=function(a){this.A=a;};e.connect=function(a){this.K=a;a=this.b.Sd(this.K);O(3);var b=this.b.Ib.$d;null!=b?(this.na=this.b.$a(b[0]), this.g=1, this.xd()):(a.dc("MODE","init"), !this.b.ta&&this.b.aa&&a.dc("X-HTTP-Session-Id",this.b.aa), this.f=new R(this,this.a,void 0,void 0,void 0), this.f.ga(this.A), this.f.jd(a,!1,null), this.g=0);};
-e.xd=function(){this.a.debug("TestConnection: starting stage 2");var a=this.b.Ib.od;if(null!=a)this.a.debug(function(){return true?"Buffered":undefined}), O(4), a?(O(10), this.b.ub(this,!1)):(O(11), this.b.ub(this,!0));else{this.f=new R(this,this.a,void 0,void 0,void 0);this.f.ga(this.A);var b=this.b.Pd(this.na,this.K);O(4);b.dc("TYPE","xmlhttp");var c=this.b.aa,d=this.b.Kc;c&&d&&b.l(c,d);this.f.jd(b,!1,this.na);}};e.Jb=function(a){return this.b.Jb(a)};
-e.abort=function(){this.f&&(this.f.cancel(), this.f=null);this.w=-1;};e.de=function(){return!1};
-e.ue=function(a,b){this.w=a.w;if(0==this.g)if(this.a.debug("TestConnection: Got data for stage 1"), this.pc(a), b){try{var c=this.b.kc.zc(b);}catch(d){this.a.cb(d);this.b.dd(this);return}this.na=this.b.$a(c[0]);}else this.a.debug("TestConnection: Null responseText"), this.b.dd(this);else 1==this.g&&(this.bc?O(6):"11111"==b?(O(5), this.bc=!0, this.Ze()&&(this.w=200, this.f.cancel(), this.a.debug("Test connection succeeded; using streaming connection"), O(11), this.b.ub(this,!0))):(O(7), this.bc=!1));};
-e.Tc=function(){this.w=this.f.w;this.f.S?0==this.g?(this.g=1, this.a.debug("TestConnection: request complete for initial check"), this.xd()):1==this.g&&(this.a.debug("TestConnection: request complete for stage 2"), this.bc?(this.a.debug("Test connection succeeded; using streaming connection"), O(11), this.b.ub(this,!0)):(this.a.debug("Test connection failed; not using streaming"), O(10), this.b.ub(this,!1))):(this.a.debug("TestConnection: request failed, in state "+this.g), 0==this.g?O(8):1==this.g&&O(9), this.b.dd(this));};e.pc=function(a){if(!this.b.ta&&(a=a.h)){var b=a.kb("X-Client-Wire-Protocol");this.Ad=b?b:null;this.b.aa&&((a=a.kb("X-HTTP-Session-Id"))?this.b.Fe(a):this.a.T("Missing X_HTTP_SESSION_ID in the handshake response"));}};e.fc=function(){return this.b.fc()};e.Ba=function(){return this.b.Ba()};e.Ze=function(){return!C||10<=Number(Ua)};function Ic(){this.od=this.$d=null;}function Jc(a){this.D=new S;a&&this.addAll(a);}function Kc(a){var b=typeof a;return"object"==b&&a||"function"==b?"o"+(a[t]||(a[t]=++da)):b.substr(0,1)+a}e=Jc.prototype;e.C=function(){return this.D.C()};e.add=function(a){this.D.set(Kc(a),a);};e.addAll=function(a){a=nc(a);for(var b=a.length,c=0;c<b;c++)this.add(a[c]);};e.pb=function(a){a=nc(a);for(var b=a.length,c=0;c<b;c++)this.remove(a[c]);};e.remove=function(a){return this.D.remove(Kc(a))};e.clear=function(){this.D.clear();};e.X=function(){return this.D.X()};
-e.contains=function(a){return this.D.va(Kc(a))};e.H=function(){return this.D.H()};e.clone=function(){return new Jc(this)};function Lc(a,b){this.Pc=a;this.map=b;this.context=null;}function Mc(a){this.me=a||Nc;h.PerformanceNavigationTiming?(a=h.performance.getEntriesByType("navigation"), a=0<a.length&&("hq"==a[0].nextHopProtocol||"h2"==a[0].nextHopProtocol)):a=!!(h.vc&&h.vc.ke&&h.vc.ke()&&h.vc.ke().nh);this.Xb=a?this.me:1;this.v=null;1<this.Xb&&(this.v=new Jc);this.f=null;this.ba=[];}var Nc=10;e=Mc.prototype;e.ld=function(a){this.v||-1==a.indexOf("spdy")&&-1==a.indexOf("quic")&&-1==a.indexOf("h2")||(this.Xb=this.me, this.v=new Jc, this.f&&(this.oc(this.f), this.f=null));};
-e.ee=function(){return this.f?!0:this.v?this.v.C()>=this.Xb:!1};e.xf=function(){return this.f?1:this.v?this.v.C():0};e.Jc=function(a){return this.f?this.f==a:this.v?this.v.contains(a):!1};e.oc=function(a){this.v?this.v.add(a):this.f=a;};e.ze=function(a){this.f&&this.f==a?this.f=null:this.v&&this.v.contains(a)&&this.v.remove(a);};e.cancel=function(){this.ba=this.la();this.f?(this.f.cancel(), this.f=null):this.v&&!this.v.X()&&(na(this.v.H(),function(a){a.cancel();}), this.v.clear());};
-e.la=function(){if(null!=this.f)return this.ba.concat(this.f.la());if(null!=this.v&&!this.v.X()){var a=this.ba;na(this.v.H(),function(b){a=a.concat(b.la());});return a}return ua(this.ba)};e.Re=function(a){this.ba=this.ba.concat(a);};e.$e=function(){this.ba.length=0;};function Oc(){this.xg=this.rg=void 0;}Oc.prototype.stringify=function(a){return h.JSON.stringify(a,this.rg)};Oc.prototype.parse=function(a){return h.JSON.parse(a,this.xg)};function Pc(){this.jg=new Oc;}Pc.prototype.hf=function(a,b,c){var d=c||"";try{oc(a,function(a,c){var f=a;r(a)&&(f=ub(a));b.push(d+c+"="+encodeURIComponent(f));});}catch(f){throw b.push(d+"type="+encodeURIComponent("_badmap")), f;}};Pc.prototype.jf=function(a,b,c){for(var d=-1;;){var f=["count="+b];-1==d?0<b?(d=a[0].Pc, f.push("ofs="+d)):d=0:f.push("ofs="+d);for(var g=!0,k=0;k<b;k++){var p=a[k].Pc,Ub=a[k].map;p-=d;if(0>p)d=Math.max(0,a[k].Pc-100), g=!1;else try{this.hf(Ub,f,"req"+p+"_");}catch(md){c&&c(Ub);}}if(g)return f.join("&")}};
-Pc.prototype.zc=function(a){return this.jg.parse(a)};function Qc(a,b){var c=new Xb;c.debug("TestLoadImage: loading "+a);var d=new Image;d.onload=v(Rc,c,d,"TestLoadImage: loaded",!0,b);d.onerror=v(Rc,c,d,"TestLoadImage: error",!1,b);d.onabort=v(Rc,c,d,"TestLoadImage: abort",!1,b);d.ontimeout=v(Rc,c,d,"TestLoadImage: timeout",!1,b);h.setTimeout(function(){if(d.ontimeout)d.ontimeout();},1E4);d.src=a;}function Rc(a,b,c,d,f){try{a.debug(c), b.onload=null, b.onerror=null, b.onabort=null, b.ontimeout=null, f(d);}catch(g){a.cb(g);}}var Sc=h.JSON.parse;function V(a){H.call(this);this.headers=new S;this.Xa=a||null;this.ha=!1;this.mc=this.c=null;this.ge=this.Tb="";this.Pa=0;this.I="";this.Aa=this.Lc=this.Qb=this.Ec=!1;this.vb=0;this.hc=null;this.Ae=Tc;this.jc=this.lg=this.Ab=!1;}x(V,H);var Tc="";V.prototype.s=Vb("goog.net.XhrIo");var Uc=/^https?$/i,Vc=["POST","PUT"];e=V.prototype;e.Je=function(a){this.Ab=a;};
-e.send=function(a,b,c,d){if(this.c)throw Error("[goog.net.XhrIo] Object is active with another request="+this.Tb+"; newUri="+a);b=b?b.toUpperCase():"GET";this.Tb=a;this.I="";this.Pa=0;this.ge=b;this.Ec=!1;this.ha=!0;this.c=this.df();this.mc=this.Xa?this.Xa.Vd():hc.Vd();this.c.onreadystatechange=u(this.te,this);this.lg&&"onprogress"in this.c&&(this.c.onprogress=u(function(a){this.re(a,!0);},this), this.c.upload&&(this.c.upload.onprogress=u(this.re,this)));try{L(this.s,this.da("Opening Xhr")), this.Lc=
-!0, this.c.open(b,String(a),!0), this.Lc=!1;}catch(g){L(this.s,this.da("Error opening Xhr: "+g.message));this.Ld(g);return}a=c||"";var f=this.headers.clone();d&&oc(d,function(a,b){f.set(b,a);});d=pa(f.W());c=h.FormData&&a instanceof h.FormData;!(0<=la(Vc,b))||d||c||f.set("Content-Type","application/x-www-form-urlencoded;charset=utf-8");f.forEach(function(a,b){this.c.setRequestHeader(b,a);},this);this.Ae&&(this.c.responseType=this.Ae);"withCredentials"in this.c&&this.c.withCredentials!==this.Ab&&(this.c.withCredentials=
-this.Ab);try{this.yd(), 0<this.vb&&(this.jc=Wc(this.c), L(this.s,this.da("Will abort after "+this.vb+"ms if incomplete, xhr2 "+this.jc)), this.jc?(this.c.timeout=this.vb, this.c.ontimeout=u(this.Ua,this)):this.hc=Hb(this.Ua,this.vb,this)), L(this.s,this.da("Sending request")), this.Qb=!0, this.c.send(a), this.Qb=!1;}catch(g){L(this.s,this.da("Send error: "+g.message)), this.Ld(g);}};function Wc(a){return C&&Ta(9)&&"number"==typeof a.timeout&&void 0!==a.ontimeout}
-function qa(a){return"content-type"==a.toLowerCase()}e.df=function(){return this.Xa?this.Xa.Dd():hc.Dd()};e.Ua=function(){"undefined"!=typeof goog&&this.c&&(this.I="Timed out after "+this.vb+"ms, aborting", this.Pa=8, L(this.s,this.da(this.I)), this.dispatchEvent("timeout"), this.abort(8));};e.Ld=function(a){this.ha=!1;this.c&&(this.Aa=!0, this.c.abort(), this.Aa=!1);this.I=a;this.Pa=5;this.Jd();this.Gb();};e.Jd=function(){this.Ec||(this.Ec=!0, this.dispatchEvent("complete"), this.dispatchEvent("error"));};
-e.abort=function(a){this.c&&this.ha&&(L(this.s,this.da("Aborting")), this.ha=!1, this.Aa=!0, this.c.abort(), this.Aa=!1, this.Pa=a||7, this.dispatchEvent("complete"), this.dispatchEvent("abort"), this.Gb());};e.F=function(){this.c&&(this.ha&&(this.ha=!1, this.Aa=!0, this.c.abort(), this.Aa=!1), this.Gb(!0));V.L.F.call(this);};e.te=function(){this.Ka||(this.Lc||this.Qb||this.Aa?this.se():this.eg());};e.eg=function(){this.se();};
-e.se=function(){if(this.ha&&"undefined"!=typeof goog)if(this.mc[1]&&4==this.ma()&&2==this.za())L(this.s,this.da("Local request error detected and ignored"));else if(this.Qb&&4==this.ma())Hb(this.te,0,this);else if(this.dispatchEvent("readystatechange"), this.Mc()){L(this.s,this.da("Request complete"));this.ha=!1;try{this.Rf()?(this.dispatchEvent("complete"), this.dispatchEvent("success")):(this.Pa=6, this.I=this.Yd()+" ["+this.za()+"]", this.Jd());}finally{this.Gb();}}};
-e.re=function(a,b){this.dispatchEvent(Xc(a,"progress"));this.dispatchEvent(Xc(a,b?"downloadprogress":"uploadprogress"));};function Xc(a,b){return{type:b,lengthComputable:a.lengthComputable,loaded:a.loaded,total:a.total}}e.Gb=function(a){if(this.c){this.yd();var b=this.c,c=this.mc[0]?aa:null;this.mc=this.c=null;a||this.dispatchEvent("ready");try{b.onreadystatechange=c;}catch(d){(a=this.s)&&a.ca("Problem encountered resetting onreadystatechange: "+d.message,void 0);}}};
-e.yd=function(){this.c&&this.jc&&(this.c.ontimeout=null);this.hc&&(h.clearTimeout(this.hc), this.hc=null);};e.Ba=function(){return!!this.c};e.Mc=function(){return 4==this.ma()};e.Rf=function(){var a=this.za();a:switch(a){case 200:case 201:case 202:case 204:case 206:case 304:case 1223:var b=!0;break a;default:b=!1;}return b||0===a&&!this.Of()};
-e.Of=function(){var a=String(this.Tb).match(pc)[1]||null;!a&&h.self&&h.self.location&&(a=h.self.location.protocol, a=a.substr(0,a.length-1));return Uc.test(a?a.toLowerCase():"")};e.ma=function(){return this.c?this.c.readyState:0};e.za=function(){try{return 2<this.ma()?this.c.status:-1}catch(a){return-1}};e.Yd=function(){try{return 2<this.ma()?this.c.statusText:""}catch(a){return L(this.s,"Can not get status: "+a.message), ""}};
-e.ya=function(){try{return this.c?this.c.responseText:""}catch(a){return L(this.s,"Can not get responseText: "+a.message), ""}};e.yf=function(a){if(this.c){var b=this.c.responseText;a&&0==b.indexOf(a)&&(b=b.substring(a.length));return Sc(b)}};e.getResponseHeader=function(a){if(this.c&&this.Mc())return a=this.c.getResponseHeader(a), null===a?void 0:a};e.getAllResponseHeaders=function(){return this.c&&this.Mc()?this.c.getAllResponseHeaders()||"":""};
-e.kb=function(a){return this.c?this.c.getResponseHeader(a):null};e.Ud=function(){return this.Pa};e.Hc=function(){return l(this.I)?this.I:String(this.I)};e.da=function(a){return a+" ["+this.ge+" "+this.Tb+" "+this.za()+"]"};function Yc(a){var b="";Aa(a,function(a,d){b+=d;b+=":";b+=a;b+="\r\n";});return b}function Zc(a,b,c){a:{for(d in c){var d=!1;break a}d=!0;}if(d)return a;c=Yc(c);if(l(a)){b=encodeURIComponent(String(b));c=null!=c?"="+encodeURIComponent(String(c)):"";if(b+=c){c=a.indexOf("#");0>c&&(c=a.length);d=a.indexOf("?");if(0>d||d>c){d=c;var f="";}else f=a.substring(d+1,c);a=[a.substr(0,d),f,a.substr(c)];c=a[1];a[1]=b?c?c+"&"+b:b:c;a=a[0]+(a[1]?"?"+a[1]:"")+a[2];}return a}a.l(b,c);return a}function $c(a){this.Bd=22;this.De=0;this.M=[];this.a=new Xb;this.Ib=new Ic;this.na=this.md=this.hb=this.K=this.u=this.Kc=this.aa=this.gb=this.N=this.Rb=this.A=null;this.Te=!0;this.ag=this.Yb=0;this.kf=!!m("internalChannelParams.failFast",a);this.fd=this.Ja=this.wa=this.ia=this.ea=this.i=null;this.Se=!0;this.w=this.he=this.Sb=-1;this.rc=this.Ha=this.La=0;this.Ve=m("internalChannelParams.baseRetryDelayMs",a)||5E3;this.vg=m("internalChannelParams.retryDelaySeedMs",a)||1E4;this.nf=m("internalChannelParams.forwardChannelMaxRetries",
-a)||2;this.Od=m("internalChannelParams.forwardChannelRequestTimeoutMs",a)||2E4;this.Xa=a&&a.oh||void 0;this.Db=void 0;this.Ra=0;this.gc=a&&a.supportsCrossDomainXhr||!1;this.ra="";this.G=new Mc(a&&a.concurrentRequestLimit);this.kc=new Pc;this.ta=a&&void 0!==a.backgroundChannelTest?a.backgroundChannelTest:!0;(this.Nd=a&&a.fastHandshake||!1)&&!this.ta&&(this.a.T("Force backgroundChannelTest when fastHandshake is enabled."), this.ta=!0);a&&a.Id&&this.a.Id();}e=$c.prototype;e.tc=8;e.g=1;
-e.connect=function(a,b,c,d,f){this.a.debug("connect()");O(0);this.K=b;this.gb=c||{};d&&void 0!==f&&(this.gb.OSID=d, this.gb.OAID=f);this.ta&&(this.a.debug("connect() bypassed channel-test."), this.Ib.$d=[], this.Ib.od=!1);this.bf(a);};e.disconnect=function(){this.a.debug("disconnect()");this.qd();if(3==this.g){var a=this.Yb++,b=this.hb.clone();b.l("SID",this.ra);b.l("RID",a);b.l("TYPE","terminate");this.Ya(b);(new R(this,this.a,this.ra,a,void 0)).yg(b);}this.qe();};
-e.bf=function(a){this.a.debug("connectTest_()");this.Ja=new Hc(this,this.a);null===this.N&&this.Ja.ga(this.A);var b=a;this.N&&this.A&&(b=Zc(a,this.N,this.A));this.Ja.connect(b);};e.af=function(){this.a.debug("connectChannel_()");this.hb=this.Sd(this.K);this.Dc();};e.qd=function(){this.Ja&&(this.Ja.abort(), this.Ja=null);this.u&&(this.u.cancel(), this.u=null);this.ia&&(h.clearTimeout(this.ia), this.ia=null);this.Hb();this.G.cancel();this.ea&&(h.clearTimeout(this.ea), this.ea=null);};
-e.ga=function(a){this.A=a;};e.Eg=function(a){this.Rb=a;};e.Cg=function(a){this.N=a;};e.Dg=function(a){this.aa=a;};e.Fe=function(a){this.Kc=a;};e.He=function(a){this.Ra=a;};e.Hg=function(){this.gc=!0;};e.Ee=function(a){this.i=a;};e.Nf=function(){return!this.fd};e.Zc=function(a){1E3==this.M.length&&this.a.ca(function(){return"Already have 1000 queued maps upon queueing "+ub(a)});this.M.push(new Lc(this.ag++,a));3==this.g&&this.Dc();};e.qf=function(){return this.kf?0:this.nf};e.de=function(){return 0==this.g};
-e.getState=function(){return this.g};e.Dc=function(){this.G.ee()||this.ea||(this.ea=P(u(this.we,this),0), this.La=0);};e.Yf=function(a){if(this.G.xf()>=this.G.Xb-(this.ea?1:0))return this.a.ca("Unexpected retry request is scheduled."), !1;if(this.ea)return this.a.debug("Use the retry request that is already scheduled."), this.M=a.la().concat(this.M), !0;if(1==this.g||2==this.g||this.La>=this.qf())return!1;this.a.debug("Going to retry POST");this.ea=P(u(this.we,this,a),this.Xd(this.La));this.La++;return!0};
-e.we=function(a){this.ea=null;this.Mg(a);};e.Mg=function(a){this.a.debug("startForwardChannel_");1==this.g?a?this.a.ca("Not supposed to retry the open"):(this.ig(), this.g=2):3==this.g&&(a?this.le(a):0==this.M.length?this.a.debug("startForwardChannel_ returned: nothing to send"):this.G.ee()?this.a.ca("startForwardChannel_ returned: connection already in progress"):(this.le(), this.a.debug("startForwardChannel_ finished, sent request")));};
-e.ig=function(){this.a.debug("open_()");this.Yb=Math.floor(1E5*Math.random());var a=this.Yb++,b=new R(this,this.a,"",a,void 0),c=this.A;this.Rb&&(c?(c=Da(c), Fa(c,this.Rb)):c=this.Rb);null===this.N&&b.ga(c);var d=this.Hd(b),f=this.hb.clone();f.l("RID",a);0<this.Bd&&f.l("CVER",this.Bd);this.ta&&this.aa&&f.l("X-HTTP-Session-Id",this.aa);this.Ya(f);this.N&&c&&Zc(f,this.N,c);this.G.oc(b);this.Nd?(f.l("$req",d), f.l("SID","null"), b.Ag(), b.kd(f,null)):b.kd(f,d);};
-e.le=function(a){var b=a?a.R:this.Yb++;var c=this.hb.clone();c.l("SID",this.ra);c.l("RID",b);c.l("AID",this.Sb);this.Ya(c);this.N&&this.A&&Zc(c,this.N,this.A);b=new R(this,this.a,this.ra,b,this.La+1);null===this.N&&b.ga(this.A);a&&this.sg(a);a=this.Hd(b);b.setTimeout(Math.round(.5*this.Od)+Math.round(.5*this.Od*Math.random()));this.G.oc(b);b.kd(c,a);};e.Ya=function(a){this.i&&oc({},function(b,c){a.l(c,b);});};
-e.Hd=function(a){var b=Math.min(this.M.length,1E3),c=this.i?u(this.i.Ue,this.i,this):null;c=this.kc.jf(this.M,b,c);a.Gg(this.M.splice(0,b));return c};e.sg=function(a){this.M=a.la().concat(this.M);};e.Kd=function(){if(!this.u&&!this.ia){this.rc=1;var a=this.ve;Bb||Cb();Eb||(Bb(), Eb=!0);Fb.add(a,this);this.Ha=0;}};
-e.Qc=function(){if(this.u||this.ia)return this.a.ca("Request already in progress"), !1;if(3<=this.Ha)return!1;this.a.debug("Going to retry GET");this.rc++;this.ia=P(u(this.ve,this),this.Xd(this.Ha));this.Ha++;return!0};e.ve=function(){this.ia=null;this.Kg();};
-e.Kg=function(){this.a.debug("Creating new HttpRequest");this.u=new R(this,this.a,this.ra,"rpc",this.rc);null===this.N&&this.u.ga(this.A);this.u.He(this.Ra);var a=this.md.clone();a.l("RID","rpc");a.l("SID",this.ra);a.l("CI",this.fd?"0":"1");a.l("AID",this.Sb);this.Ya(a);a.l("TYPE","xmlhttp");this.N&&this.A&&Zc(a,this.N,this.A);this.Db&&this.u.setTimeout(this.Db);this.u.jd(a,!0,this.na);this.a.debug("New Request created");};
-e.ub=function(a,b){this.a.debug("Test Connection Finished");var c=a.Ad;c&&this.G.ld(c);this.fd=this.Se&&b;this.w=a.w;this.af();};e.dd=function(a){this.a.debug("Test Connection Failed");this.w=a.w;this.sa(2);};
-e.ue=function(a,b){if(0!=this.g&&(this.u==a||this.G.Jc(a)))if(this.w=a.w, !a.lb&&this.G.Jc(a)&&3==this.g){try{var c=this.kc.zc(b);}catch(d){c=null;}n(c)&&3==c.length?this.Cf(c,a):(this.a.debug("Bad POST response data returned"), this.sa(11));}else(a.lb||this.u==a)&&this.Hb(), va(b)||(c=this.kc.zc(b), this.dg(c,a));};
-e.Cf=function(a,b){0==a[0]?this.Bf(b):(this.he=a[1], b=this.he-this.Sb, 0<b&&(a=a[2], this.a.debug(a+" bytes (in "+b+" arrays) are outstanding on the BackChannel"), this.Jg(a)&&!this.wa&&(this.wa=P(u(this.bg,this),6E3))));};
-e.Bf=function(a){this.a.debug("Server claims our backchannel is missing.");if(this.ia)this.a.debug("But we are currently starting the request.");else{if(this.u)if(this.u.qb+3E3<a.qb)this.Hb(), this.u.cancel(), this.u=null;else return;else this.a.T("We do not have a BackChannel established");this.Qc();O(18);}};e.Jg=function(a){return 37500>a&&!this.Nf()&&0==this.Ha};e.$a=function(a){return this.Te?this.i?this.i.$a(a):a:null};
-e.bg=function(){null!=this.wa&&(this.wa=null, this.u.cancel(), this.u=null, this.Qc(), O(19));};e.Hb=function(){null!=this.wa&&(h.clearTimeout(this.wa), this.wa=null);};
-e.Tc=function(a){this.a.debug("Request complete");var b=null;if(this.u==a){this.Hb();this.u=null;var c=2;}else if(this.G.Jc(a))b=a.la(), this.G.ze(a), c=1;else return;this.w=a.w;if(0!=this.g)if(a.S)1==c?(ac(a.Da?a.Da.length:0,w()-a.qb,this.La), this.Dc()):this.Kd();else{var d=a.Hc();if(3==d||0==d&&0<this.w)this.a.debug("Not retrying due to error type");else{var f=this;this.a.debug(function(){return"Maybe retrying, last error: "+kc(d,f.w)});if(1==c&&this.Yf(a)||2==c&&this.Qc())return;this.a.debug("Exceeded max number of retries");}b&&
-0<b.length&&this.G.Re(b);this.a.debug("Error: HTTP request failed");switch(d){case 1:this.sa(5);break;case 4:this.sa(10);break;case 3:this.sa(6);break;default:this.sa(2);}}};e.Xd=function(a){var b=this.Ve+Math.floor(Math.random()*this.vg);this.Ba()||(this.a.debug("Inactive channel"), b*=2);return b*a};e.pc=function(a){if(this.ta&&(a=a.h)){var b=a.kb("X-Client-Wire-Protocol");b&&this.G.ld(b);this.aa&&((a=a.kb("X-HTTP-Session-Id"))?(this.Fe(a), this.hb.l(this.aa,a)):this.a.T("Missing X_HTTP_SESSION_ID in the handshake response"));}};
-e.dg=function(a,b){for(var c=this.i&&this.i.sc?[]:null,d=0;d<a.length;d++){var f=a[d];this.Sb=f[0];f=f[1];if(2==this.g)if("c"==f[0]){this.ra=f[1];this.na=this.$a(f[2]);var g=f[3];null!=g&&(this.tc=g, this.a.info("VER="+this.tc));g=f[4];null!=g&&(this.De=g, this.a.info("SVER="+this.De));f=f[5];null!=f&&"number"==typeof f&&0<f&&(this.Db=f*=1.5, this.a.info("backChannelRequestTimeoutMs_="+f));this.pc(b);this.g=3;this.i&&this.i.wd();this.Lg(b);}else"stop"!=f[0]&&"close"!=f[0]||this.sa(7);else 3==this.g&&
-("stop"==f[0]||"close"==f[0]?(c&&0!=c.length&&(this.i.sc(this,c), c.length=0), "stop"==f[0]?this.sa(7):this.disconnect()):"noop"!=f[0]&&(c?c.push(f):this.i&&this.i.ud(f)), this.Ha=0);}c&&0!=c.length&&this.i.sc(this,c);};e.Lg=function(a){this.md=this.Pd(this.na,this.K);a.lb?(this.a.debug("Upgrade the handshake request to a backchannel."), this.G.ze(a), a.tg(this.Db), this.u=a):this.Kd();};
-e.sa=function(a){this.a.info("Error code "+a);if(2==a){var b=null;this.i&&(b=null);var c=u(this.Pg,this);b||(b=new U("//www.google.com/images/cleardot.gif"), h.location&&"http"==h.location.protocol||b.tb("https"), b.Ub());Qc(b.toString(),c);}else O(2);this.cg(a);};e.Pg=function(a){a?(this.a.info("Successfully pinged google.com"), O(2)):(this.a.info("Failed to ping google.com"), O(1));};e.cg=function(a){this.a.debug("HttpChannel: error - "+a);this.g=0;this.i&&this.i.td(a);this.qe();this.qd();};
-e.qe=function(){this.g=0;this.w=-1;if(this.i){var a=this.G.la();if(0!=a.length||0!=this.M.length){var b=this;this.a.debug(function(){return"Number of undelivered maps, pending: "+a.length+", outgoing: "+b.M.length});this.G.$e();ua(this.M);this.M.length=0;}this.i.sd();}};e.Sd=function(a){a=this.Cd(null,a);this.a.debug("GetForwardChannelUri: "+a);return a};e.Pd=function(a,b){a=this.Cd(this.fc()?a:null,b);this.a.debug("GetBackChannelUri: "+a);return a};
-e.Cd=function(a,b){var c=Ac(b);if(""!=c.xa)a&&c.rb(a+"."+c.xa), c.sb(c.Ca);else{var d=h.location;c=Bc(d.protocol,a?a+"."+d.hostname:d.hostname,+d.port,b);}this.gb&&Aa(this.gb,function(a,b){c.l(b,a);});a=this.aa;b=this.Kc;a&&b&&c.l(a,b);c.l("VER",this.tc);this.Ya(c);return c};e.Jb=function(a){if(a&&!this.gc)throw Error("Can't create secondary domain capable XhrIo object.");a=new V(this.Xa);a.Je(this.gc);return a};e.Ba=function(){return!!this.i&&this.i.Ba()};e.fc=function(){return this.gc};function ad(){}e=ad.prototype;e.sc=null;e.wd=function(){};e.ud=function(){};e.td=function(){};e.sd=function(){};e.Ba=function(){return!0};e.Ue=function(){};e.$a=function(a){return a};function bd(a){for(var b=arguments[0],c=1;c<arguments.length;c++){var d=arguments[c];if(0==d.lastIndexOf("/",0))b=d;else{var f;(f=""==b)||(f=b.length-1, f=0<=f&&b.indexOf("/",f)==f);b=f?b+d:b+("/"+d);}}return b}function cd(){if(C&&!(10<=Number(Ua)))throw Error("Environmental error: no available transport.");}cd.prototype.cf=function(a,b){return new W(a,b)};
-function W(a,b){H.call(this);this.b=new $c(b);this.yb=a;this.Qg=b&&b.testUrl?b.testUrl:bd(this.yb,"test");this.s=Vb("goog.labs.net.webChannel.WebChannelBaseTransport");this.Rc=b&&b.messageUrlParams||null;a=b&&b.messageHeaders||null;b&&b.clientProtocolHeaderRequired&&(a?a["X-Client-Protocol"]="webchannel":a={"X-Client-Protocol":"webchannel"});this.b.ga(a);a=b&&b.initMessageHeaders||null;b&&b.messageContentType&&(a?a["X-WebChannel-Content-Type"]=b.messageContentType:a={"X-WebChannel-Content-Type":b.messageContentType});
-b&&b.zd&&(a?a["X-WebChannel-Client-Profile"]=b.zd:a={"X-WebChannel-Client-Profile":b.zd});this.b.Eg(a);(a=b&&b.httpHeadersOverwriteParam)&&!va(a)&&this.b.Cg(a);this.Og=b&&b.supportsCrossDomainXhr||!1;this.zg=b&&b.sendRawJson||!1;(b=b&&b.httpSessionIdParam)&&!va(b)&&(this.b.Dg(b), a=this.Rc, null!==a&&b in a&&(a=this.Rc, b in a&&delete a[b], (a=this.s)&&a.T("Ignore httpSessionIdParam also specified with messageUrlParams: "+b,void 0)));this.vd=new X(this);}x(W,H);e=W.prototype;
-e.addEventListener=function(a,b,c,d){W.L.addEventListener.call(this,a,b,c,d);};e.removeEventListener=function(a,b,c,d){W.L.removeEventListener.call(this,a,b,c,d);};e.open=function(){this.b.Ee(this.vd);this.Og&&this.b.Hg();this.b.connect(this.Qg,this.yb,this.Rc||void 0);};e.close=function(){this.b.disconnect();};e.send=function(a){if(l(a)){var b={};b.__data__=a;this.b.Zc(b);}else this.zg?(b={}, b.__data__=ub(a), this.b.Zc(b)):this.b.Zc(a);};
-e.F=function(){this.b.Ee(null);delete this.vd;this.b.disconnect();delete this.b;W.L.F.call(this);};function dd(a){fc.call(this);var b=a.__sm__;if(b){a:{for(var c in b){a=c;break a}a=void 0;}if(this.ne=a)a=this.ne, b=null!==b&&a in b?b[a]:void 0;this.data=b;}else this.data=a;}x(dd,fc);function ed(a){gc.call(this);this.status=1;this.errorCode=a;}x(ed,gc);function X(a){this.b=a;}x(X,ad);X.prototype.wd=function(){Wb(this.b.s,"WebChannel opened on "+this.b.yb);this.b.dispatchEvent("a");};X.prototype.ud=function(a){this.b.dispatchEvent(new dd(a));};
-X.prototype.td=function(a){Wb(this.b.s,"WebChannel aborted on "+this.b.yb+" due to channel error: "+a);this.b.dispatchEvent(new ed(a));};X.prototype.sd=function(){Wb(this.b.s,"WebChannel closed on "+this.b.yb);this.b.dispatchEvent("b");};var fd=v(function(a,b){function c(){}c.prototype=a.prototype;var d=new c;a.apply(d,Array.prototype.slice.call(arguments,1));return d},cd);function gd(){this.V=[];this.Z=[];}e=gd.prototype;e.Vf=function(){0==this.V.length&&(this.V=this.Z, this.V.reverse(), this.Z=[]);};e.enqueue=function(a){this.Z.push(a);};e.ab=function(){this.Vf();return this.V.pop()};e.C=function(){return this.V.length+this.Z.length};e.X=function(){return 0==this.V.length&&0==this.Z.length};e.clear=function(){this.V=[];this.Z=[];};e.contains=function(a){return 0<=la(this.V,a)||0<=la(this.Z,a)};
-e.remove=function(a){var b=this.V;var c=ma(b,a);0<=c?(Array.prototype.splice.call(b,c,1), b=!0):b=!1;return b||sa(this.Z,a)};e.H=function(){for(var a=[],b=this.V.length-1;0<=b;--b)a.push(this.V[b]);var c=this.Z.length;for(b=0;b<c;++b)a.push(this.Z[b]);return a};function hd(a,b){z.call(this);this.oe=a||0;this.Wb=b||10;if(this.oe>this.Wb)throw Error(id);this.fa=new gd;this.oa=new Jc;this.Ac=0;this.Nc=null;this.Cb();}x(hd,z);var id="[goog.structs.Pool] Min can not be greater than max";e=hd.prototype;e.Mb=function(){var a=w();if(!(null!=this.Nc&&a-this.Nc<this.Ac)){var b=this.qg();b&&(this.Nc=a, this.oa.add(b));return b}};e.og=function(a){return this.oa.remove(a)?(this.nc(a), !0):!1};
-e.qg=function(){for(var a;0<this.Td()&&(a=this.fa.ab(), !this.Sc(a));)this.Cb();!a&&this.C()<this.Wb&&(a=this.xc());return a};e.nc=function(a){this.oa.remove(a);this.Sc(a)&&this.C()<this.Wb?this.fa.enqueue(a):this.Bc(a);};e.Cb=function(){for(var a=this.fa;this.C()<this.oe;)a.enqueue(this.xc());for(;this.C()>this.Wb&&0<this.Td();)this.Bc(a.ab());};e.xc=function(){return{}};e.Bc=function(a){if("function"==typeof a.bb)a.bb();else for(var b in a)a[b]=null;};
-e.Sc=function(a){return"function"==typeof a.Ye?a.Ye():!0};e.contains=function(a){return this.fa.contains(a)||this.oa.contains(a)};e.C=function(){return this.fa.C()+this.oa.C()};e.rf=function(){return this.oa.C()};e.Td=function(){return this.fa.C()};e.X=function(){return this.fa.X()&&this.oa.X()};e.F=function(){hd.L.F.call(this);if(0<this.rf())throw Error("[goog.structs.Pool] Objects not released");delete this.oa;for(var a=this.fa;!a.X();)this.Bc(a.ab());delete this.fa;};function jd(a,b){this.fe=a;this.gd=b;}jd.prototype.getKey=function(){return this.fe};jd.prototype.clone=function(){return new jd(this.fe,this.gd)};function kd(a){this.Y=[];a&&this.Lf(a);}e=kd.prototype;e.ce=function(a,b){var c=this.Y;c.push(new jd(a,b));this.$f(c.length-1);};e.Lf=function(a){if(a instanceof kd){var b=a.W();a=a.H();if(0>=this.C()){for(var c=this.Y,d=0;d<b.length;d++)c.push(new jd(b[d],a[d]));return}}else b=Ca(a), a=Ba(a);for(d=0;d<b.length;d++)this.ce(b[d],a[d]);};e.remove=function(){var a=this.Y,b=a.length,c=a[0];if(!(0>=b))return 1==b?ra(a):(a[0]=a.pop(), this.Zf()), c.gd};
-e.Zf=function(){for(var a=0,b=this.Y,c=b.length,d=b[a];a<c>>1;){var f=this.tf(a),g=this.zf(a);f=g<c&&b[g].getKey()<b[f].getKey()?g:f;if(b[f].getKey()>d.getKey())break;b[a]=b[f];a=f;}b[a]=d;};e.$f=function(a){for(var b=this.Y,c=b[a];0<a;){var d=this.wf(a);if(b[d].getKey()>c.getKey())b[a]=b[d], a=d;else break}b[a]=c;};e.tf=function(a){return 2*a+1};e.zf=function(a){return 2*a+2};e.wf=function(a){return a-1>>1};e.H=function(){for(var a=this.Y,b=[],c=a.length,d=0;d<c;d++)b.push(a[d].gd);return b};
-e.W=function(){for(var a=this.Y,b=[],c=a.length,d=0;d<c;d++)b.push(a[d].getKey());return b};e.va=function(a){return oa(this.Y,function(b){return b.getKey()==a})};e.clone=function(){return new kd(this)};e.C=function(){return this.Y.length};e.X=function(){return 0==this.Y.length};e.clear=function(){ra(this.Y);};function ld(){kd.call(this);}x(ld,kd);ld.prototype.enqueue=function(a,b){this.ce(a,b);};ld.prototype.ab=function(){return this.remove()};function Y(a,b){this.Gd=void 0;this.cc=new ld;hd.call(this,a,b);}x(Y,hd);e=Y.prototype;e.Mb=function(a,b){if(!a)return(a=Y.L.Mb.call(this))&&this.Ac&&(this.Gd=h.setTimeout(u(this.Nb,this),this.Ac)), a;this.cc.enqueue(void 0!==b?b:100,a);this.Nb();};e.Nb=function(){for(var a=this.cc;0<a.C();){var b=this.Mb();if(b)a.ab().apply(this,[b]);else break}};e.nc=function(a){Y.L.nc.call(this,a);this.Nb();};e.Cb=function(){Y.L.Cb.call(this);this.Nb();};
-e.F=function(){Y.L.F.call(this);h.clearTimeout(this.Gd);this.cc.clear();this.cc=null;};function Z(a,b,c,d){this.Jf=a;this.Ab=!!d;Y.call(this,b,c);}x(Z,Y);Z.prototype.xc=function(){var a=new V,b=this.Jf;b&&b.forEach(function(b,d){a.headers.set(d,b);});this.Ab&&a.Je(!0);return a};Z.prototype.Sc=function(a){return!a.Ka&&!a.Ba()};cd.prototype.createWebChannel=cd.prototype.cf;W.prototype.send=W.prototype.send;W.prototype.open=W.prototype.open;W.prototype.close=W.prototype.close;bc.NO_ERROR=0;bc.TIMEOUT=8;bc.HTTP_ERROR=6;cc.COMPLETE="complete";ec.EventType=Q;Q.OPEN="a";Q.CLOSE="b";Q.ERROR="c";Q.MESSAGE="d";H.prototype.listen=H.prototype.nb;Z.prototype.getObject=Z.prototype.Mb;Z.prototype.releaseObject=Z.prototype.og;V.prototype.listenOnce=V.prototype.Oc;V.prototype.getLastError=V.prototype.Hc;V.prototype.getLastErrorCode=V.prototype.Ud;
-V.prototype.getStatus=V.prototype.za;V.prototype.getStatusText=V.prototype.Yd;V.prototype.getResponseJson=V.prototype.yf;V.prototype.getResponseText=V.prototype.ya;V.prototype.getResponseText=V.prototype.ya;V.prototype.send=V.prototype.send;var src={createWebChannelTransport:fd,ErrorCode:bc,EventType:cc,WebChannel:ec,XhrIoPool:Z};
-var src_1 = src.createWebChannelTransport;
-var src_2 = src.ErrorCode;
-var src_3 = src.EventType;
-var src_4 = src.WebChannel;
-var src_5 = src.XhrIoPool;
+var g,goog=goog||{},k=commonjsGlobal;function m(a){return "string"==typeof a}function aa(a){return "number"==typeof a}function n(a,b){a=a.split(".");b=b||k;for(var c=0;c<a.length;c++)if(b=b[a[c]],null==b)return null;return b}function ba(){}
+function p(a){var b=typeof a;if("object"==b)if(a){if(a instanceof Array)return "array";if(a instanceof Object)return b;var c=Object.prototype.toString.call(a);if("[object Window]"==c)return "object";if("[object Array]"==c||"number"==typeof a.length&&"undefined"!=typeof a.splice&&"undefined"!=typeof a.propertyIsEnumerable&&!a.propertyIsEnumerable("splice"))return "array";if("[object Function]"==c||"undefined"!=typeof a.call&&"undefined"!=typeof a.propertyIsEnumerable&&!a.propertyIsEnumerable("call"))return "function"}else return "null";
+else if("function"==b&&"undefined"==typeof a.call)return "object";return b}function q(a){return "array"==p(a)}function ca(a){var b=p(a);return "array"==b||"object"==b&&"number"==typeof a.length}function r(a){var b=typeof a;return "object"==b&&null!=a||"function"==b}var t="closure_uid_"+(1E9*Math.random()>>>0),da=0;function ea(a,b,c){return a.call.apply(a.bind,arguments)}
+function fa(a,b,c){if(!a)throw Error();if(2<arguments.length){var d=Array.prototype.slice.call(arguments,2);return function(){var e=Array.prototype.slice.call(arguments);Array.prototype.unshift.apply(e,d);return a.apply(b,e)}}return function(){return a.apply(b,arguments)}}function u(a,b,c){Function.prototype.bind&&-1!=Function.prototype.bind.toString().indexOf("native code")?u=ea:u=fa;return u.apply(null,arguments)}
+function v(a,b){var c=Array.prototype.slice.call(arguments,1);return function(){var d=c.slice();d.push.apply(d,arguments);return a.apply(this,d)}}var w=Date.now||function(){return +new Date};function x(a,b){function c(){}c.prototype=b.prototype;a.N=b.prototype;a.prototype=new c;a.prototype.constructor=a;a.yb=function(d,e,f){for(var h=Array(arguments.length-2),l=2;l<arguments.length;l++)h[l-2]=arguments[l];return b.prototype[e].apply(d,h)};}function y(){this.j=this.j;this.i=this.i;}var ha=0;y.prototype.j=!1;y.prototype.la=function(){if(!this.j&&(this.j=!0,this.G(),0!=ha)){var a=this[t]||(this[t]=++da);}};y.prototype.G=function(){if(this.i)for(;this.i.length;)this.i.shift()();};var ja=Array.prototype.indexOf?function(a,b){return Array.prototype.indexOf.call(a,b,void 0)}:function(a,b){if(m(a))return m(b)&&1==b.length?a.indexOf(b,0):-1;for(var c=0;c<a.length;c++)if(c in a&&a[c]===b)return c;return -1},la=Array.prototype.forEach?function(a,b,c){Array.prototype.forEach.call(a,b,c);}:function(a,b,c){for(var d=a.length,e=m(a)?a.split(""):a,f=0;f<d;f++)f in e&&b.call(c,e[f],f,a);};
+function ma(a){a:{var b=na;for(var c=a.length,d=m(a)?a.split(""):a,e=0;e<c;e++)if(e in d&&b.call(void 0,d[e],e,a)){b=e;break a}b=-1;}return 0>b?null:m(a)?a.charAt(b):a[b]}function oa(a){return Array.prototype.concat.apply([],arguments)}function pa(a){var b=a.length;if(0<b){for(var c=Array(b),d=0;d<b;d++)c[d]=a[d];return c}return []}function qa(a){return /^[\s\xa0]*$/.test(a)}var ra=String.prototype.trim?function(a){return a.trim()}:function(a){return /^[\s\xa0]*([\s\S]*?)[\s\xa0]*$/.exec(a)[1]};function z(a,b){return -1!=a.indexOf(b)}function sa(a,b){return a<b?-1:a>b?1:0}var A;a:{var ta=k.navigator;if(ta){var ua=ta.userAgent;if(ua){A=ua;break a}}A="";}function va(a,b,c){for(var d in a)b.call(c,a[d],d,a);}function wa(a){var b={},c;for(c in a)b[c]=a[c];return b}var xa="constructor hasOwnProperty isPrototypeOf propertyIsEnumerable toLocaleString toString valueOf".split(" ");function ya(a,b){for(var c,d,e=1;e<arguments.length;e++){d=arguments[e];for(c in d)a[c]=d[c];for(var f=0;f<xa.length;f++)c=xa[f],Object.prototype.hasOwnProperty.call(d,c)&&(a[c]=d[c]);}}function za(a){za[" "](a);return a}za[" "]=ba;function Aa(a,b){var c=Ba;return Object.prototype.hasOwnProperty.call(c,a)?c[a]:c[a]=b(a)}var Ca=z(A,"Opera"),B=z(A,"Trident")||z(A,"MSIE"),Da=z(A,"Edge"),Ea=Da||B,Fa=z(A,"Gecko")&&!(z(A.toLowerCase(),"webkit")&&!z(A,"Edge"))&&!(z(A,"Trident")||z(A,"MSIE"))&&!z(A,"Edge"),Ga=z(A.toLowerCase(),"webkit")&&!z(A,"Edge");function Ha(){var a=k.document;return a?a.documentMode:void 0}var Ia;
+a:{var Ja="",Ka=function(){var a=A;if(Fa)return /rv:([^\);]+)(\)|;)/.exec(a);if(Da)return /Edge\/([\d\.]+)/.exec(a);if(B)return /\b(?:MSIE|rv)[: ]([^\);]+)(\)|;)/.exec(a);if(Ga)return /WebKit\/(\S+)/.exec(a);if(Ca)return /(?:Version)[ \/]?(\S+)/.exec(a)}();Ka&&(Ja=Ka?Ka[1]:"");if(B){var La=Ha();if(null!=La&&La>parseFloat(Ja)){Ia=String(La);break a}}Ia=Ja;}var Ba={};
+function Ma(a){return Aa(a,function(){for(var b=0,c=ra(String(Ia)).split("."),d=ra(String(a)).split("."),e=Math.max(c.length,d.length),f=0;0==b&&f<e;f++){var h=c[f]||"",l=d[f]||"";do{h=/(\d*)(\D*)(.*)/.exec(h)||["","","",""];l=/(\d*)(\D*)(.*)/.exec(l)||["","","",""];if(0==h[0].length&&0==l[0].length)break;b=sa(0==h[1].length?0:parseInt(h[1],10),0==l[1].length?0:parseInt(l[1],10))||sa(0==h[2].length,0==l[2].length)||sa(h[2],l[2]);h=h[3];l=l[3];}while(0==b)}return 0<=b})}var Na;var Oa=k.document;
+Na=Oa&&B?Ha()||("CSS1Compat"==Oa.compatMode?parseInt(Ia,10):5):void 0;var Pa=!B||9<=Number(Na),Qa=B&&!Ma("9"),Ra=function(){if(!k.addEventListener||!Object.defineProperty)return !1;var a=!1,b=Object.defineProperty({},"passive",{get:function(){a=!0;}});try{k.addEventListener("test",ba,b),k.removeEventListener("test",ba,b);}catch(c){}return a}();function C(a,b){this.type=a;this.a=this.target=b;this.Ja=!0;}C.prototype.b=function(){this.Ja=!1;};function D(a,b){C.call(this,a?a.type:"");this.relatedTarget=this.a=this.target=null;this.button=this.screenY=this.screenX=this.clientY=this.clientX=0;this.key="";this.metaKey=this.shiftKey=this.altKey=this.ctrlKey=!1;this.pointerId=0;this.pointerType="";this.c=null;if(a){var c=this.type=a.type,d=a.changedTouches&&a.changedTouches.length?a.changedTouches[0]:null;this.target=a.target||a.srcElement;this.a=b;if(b=a.relatedTarget){if(Fa){a:{try{za(b.nodeName);var e=!0;break a}catch(f){}e=!1;}e||(b=null);}}else"mouseover"==
+c?b=a.fromElement:"mouseout"==c&&(b=a.toElement);this.relatedTarget=b;d?(this.clientX=void 0!==d.clientX?d.clientX:d.pageX,this.clientY=void 0!==d.clientY?d.clientY:d.pageY,this.screenX=d.screenX||0,this.screenY=d.screenY||0):(this.clientX=void 0!==a.clientX?a.clientX:a.pageX,this.clientY=void 0!==a.clientY?a.clientY:a.pageY,this.screenX=a.screenX||0,this.screenY=a.screenY||0);this.button=a.button;this.key=a.key||"";this.ctrlKey=a.ctrlKey;this.altKey=a.altKey;this.shiftKey=a.shiftKey;this.metaKey=
+a.metaKey;this.pointerId=a.pointerId||0;this.pointerType=m(a.pointerType)?a.pointerType:Sa[a.pointerType]||"";this.c=a;a.defaultPrevented&&this.b();}}x(D,C);var Sa={2:"touch",3:"pen",4:"mouse"};D.prototype.b=function(){D.N.b.call(this);var a=this.c;if(a.preventDefault)a.preventDefault();else if(a.returnValue=!1,Qa)try{if(a.ctrlKey||112<=a.keyCode&&123>=a.keyCode)a.keyCode=-1;}catch(b){}};var E="closure_listenable_"+(1E6*Math.random()|0),Ta=0;function Ua(a,b,c,d,e){this.listener=a;this.proxy=null;this.src=b;this.type=c;this.capture=!!d;this.da=e;this.key=++Ta;this.X=this.Z=!1;}function Va(a){a.X=!0;a.listener=null;a.proxy=null;a.src=null;a.da=null;}function Wa(a){this.src=a;this.a={};this.b=0;}Wa.prototype.add=function(a,b,c,d,e){var f=a.toString();a=this.a[f];a||(a=this.a[f]=[],this.b++);var h=Xa(a,b,d,e);-1<h?(b=a[h],c||(b.Z=!1)):(b=new Ua(b,this.src,f,!!d,e),b.Z=c,a.push(b));return b};function Ya(a,b){var c=b.type;if(c in a.a){var d=a.a[c],e=ja(d,b),f;(f=0<=e)&&Array.prototype.splice.call(d,e,1);f&&(Va(b),0==a.a[c].length&&(delete a.a[c],a.b--));}}
+function Xa(a,b,c,d){for(var e=0;e<a.length;++e){var f=a[e];if(!f.X&&f.listener==b&&f.capture==!!c&&f.da==d)return e}return -1}var Za="closure_lm_"+(1E6*Math.random()|0),$a={};function bb(a,b,c,d,e){if(d&&d.once)return cb(a,b,c,d,e);if(q(b)){for(var f=0;f<b.length;f++)bb(a,b[f],c,d,e);return null}c=db(c);return a&&a[E]?a.Aa(b,c,r(d)?!!d.capture:!!d,e):eb(a,b,c,!1,d,e)}
+function eb(a,b,c,d,e,f){if(!b)throw Error("Invalid event type");var h=r(e)?!!e.capture:!!e;if(h&&!Pa)return null;var l=fb(a);l||(a[Za]=l=new Wa(a));c=l.add(b,c,d,h,f);if(c.proxy)return c;d=gb();c.proxy=d;d.src=a;d.listener=c;if(a.addEventListener)Ra||(e=h),void 0===e&&(e=!1),a.addEventListener(b.toString(),d,e);else if(a.attachEvent)a.attachEvent(hb(b.toString()),d);else if(a.addListener&&a.removeListener)a.addListener(d);else throw Error("addEventListener and attachEvent are unavailable.");return c}function gb(){var a=ib,b=Pa?function(c){return a.call(b.src,b.listener,c)}:function(c){c=a.call(b.src,b.listener,c);if(!c)return c};return b}function cb(a,b,c,d,e){if(q(b)){for(var f=0;f<b.length;f++)cb(a,b[f],c,d,e);return null}c=db(c);return a&&a[E]?a.Ba(b,c,r(d)?!!d.capture:!!d,e):eb(a,b,c,!0,d,e)}
+function jb(a,b,c,d,e){if(q(b))for(var f=0;f<b.length;f++)jb(a,b[f],c,d,e);else(d=r(d)?!!d.capture:!!d,c=db(c),a&&a[E])?(a=a.c,b=String(b).toString(),b in a.a&&(f=a.a[b],c=Xa(f,c,d,e),-1<c&&(Va(f[c]),Array.prototype.splice.call(f,c,1),0==f.length&&(delete a.a[b],a.b--)))):a&&(a=fb(a))&&(b=a.a[b.toString()],a=-1,b&&(a=Xa(b,c,d,e)),(c=-1<a?b[a]:null)&&kb(c));}
+function kb(a){if(!aa(a)&&a&&!a.X){var b=a.src;if(b&&b[E])Ya(b.c,a);else{var c=a.type,d=a.proxy;b.removeEventListener?b.removeEventListener(c,d,a.capture):b.detachEvent?b.detachEvent(hb(c),d):b.addListener&&b.removeListener&&b.removeListener(d);(c=fb(b))?(Ya(c,a),0==c.b&&(c.src=null,b[Za]=null)):Va(a);}}}function hb(a){return a in $a?$a[a]:$a[a]="on"+a}function lb(a,b){var c=a.listener,d=a.da||a.src;a.Z&&kb(a);return c.call(d,b)}
+function ib(a,b){return a.X?!0:Pa?lb(a,new D(b,this)):(b=new D(b||n("window.event"),this),lb(a,b))}function fb(a){a=a[Za];return a instanceof Wa?a:null}var mb="__closure_events_fn_"+(1E9*Math.random()>>>0);function db(a){if("function"==p(a))return a;a[mb]||(a[mb]=function(b){return a.handleEvent(b)});return a[mb]}function G(){y.call(this);this.c=new Wa(this);this.J=this;this.B=null;}x(G,y);G.prototype[E]=!0;g=G.prototype;g.addEventListener=function(a,b,c,d){bb(this,a,b,c,d);};g.removeEventListener=function(a,b,c,d){jb(this,a,b,c,d);};
+g.dispatchEvent=function(a){var b,c=this.B;if(c)for(b=[];c;c=c.B)b.push(c);c=this.J;var d=a.type||a;if(m(a))a=new C(a,c);else if(a instanceof C)a.target=a.target||c;else{var e=a;a=new C(d,c);ya(a,e);}e=!0;if(b)for(var f=b.length-1;0<=f;f--){var h=a.a=b[f];e=nb(h,d,!0,a)&&e;}h=a.a=c;e=nb(h,d,!0,a)&&e;e=nb(h,d,!1,a)&&e;if(b)for(f=0;f<b.length;f++)h=a.a=b[f],e=nb(h,d,!1,a)&&e;return e};
+g.G=function(){G.N.G.call(this);if(this.c){var a=this.c,c;for(c in a.a){for(var d=a.a[c],e=0;e<d.length;e++)Va(d[e]);delete a.a[c];a.b--;}}this.B=null;};g.Aa=function(a,b,c,d){return this.c.add(String(a),b,!1,c,d)};g.Ba=function(a,b,c,d){return this.c.add(String(a),b,!0,c,d)};
+function nb(a,b,c,d){b=a.c.a[String(b)];if(!b)return !0;b=b.concat();for(var e=!0,f=0;f<b.length;++f){var h=b[f];if(h&&!h.X&&h.capture==c){var l=h.listener,F=h.da||h.src;h.Z&&Ya(a.c,h);e=!1!==l.call(F,d)&&e;}}return e&&0!=d.Ja}var ob=k.JSON.stringify;function pb(a,b){this.c=a;this.f=b;this.b=0;this.a=null;}pb.prototype.get=function(){if(0<this.b){this.b--;var a=this.a;this.a=a.next;a.next=null;}else a=this.c();return a};function qb(){this.b=this.a=null;}var sb=new pb(function(){return new rb},function(a){a.reset();});qb.prototype.add=function(a,b){var c=sb.get();c.set(a,b);this.b?this.b.next=c:this.a=c;this.b=c;};function tb(){var a=ub,b=null;a.a&&(b=a.a,a.a=a.a.next,a.a||(a.b=null),b.next=null);return b}function rb(){this.next=this.b=this.a=null;}rb.prototype.set=function(a,b){this.a=a;this.b=b;this.next=null;};rb.prototype.reset=function(){this.next=this.b=this.a=null;};function vb(a){k.setTimeout(function(){throw a;},0);}function wb(a,b){xb||yb();zb||(xb(),zb=!0);ub.add(a,b);}var xb;function yb(){var a=k.Promise.resolve(void 0);xb=function(){a.then(Ab);};}var zb=!1,ub=new qb;function Ab(){for(var a;a=tb();){try{a.a.call(a.b);}catch(c){vb(c);}var b=sb;b.f(a);100>b.b&&(b.b++,a.next=b.a,b.a=a);}zb=!1;}function Cb(a,b){G.call(this);this.b=a||1;this.a=b||k;this.f=u(this.gb,this);this.g=w();}x(Cb,G);g=Cb.prototype;g.ba=!1;g.L=null;g.gb=function(){if(this.ba){var a=w()-this.g;0<a&&a<.8*this.b?this.L=this.a.setTimeout(this.f,this.b-a):(this.L&&(this.a.clearTimeout(this.L),this.L=null),this.dispatchEvent("tick"),this.ba&&(Db(this),this.start()));}};g.start=function(){this.ba=!0;this.L||(this.L=this.a.setTimeout(this.f,this.b),this.g=w());};function Db(a){a.ba=!1;a.L&&(a.a.clearTimeout(a.L),a.L=null);}
+g.G=function(){Cb.N.G.call(this);Db(this);delete this.a;};function Eb(a,b,c){if("function"==p(a))c&&(a=u(a,c));else if(a&&"function"==typeof a.handleEvent)a=u(a.handleEvent,a);else throw Error("Invalid listener argument");return 2147483647<Number(b)?-1:k.setTimeout(a,b||0)}function Fb(a,b,c){y.call(this);this.f=null!=c?u(a,c):a;this.c=b;this.b=u(this.ab,this);this.a=[];}x(Fb,y);g=Fb.prototype;g.ea=!1;g.U=null;g.Ua=function(a){this.a=arguments;this.U?this.ea=!0:Gb(this);};g.G=function(){Fb.N.G.call(this);this.U&&(k.clearTimeout(this.U),this.U=null,this.ea=!1,this.a=[]);};g.ab=function(){this.U=null;this.ea&&(this.ea=!1,Gb(this));};function Gb(a){a.U=Eb(a.b,a.c);a.f.apply(null,a.a);}function H(a){y.call(this);this.b=a;this.a={};}x(H,y);var Hb=[];function Ib(a,b,c,d){q(c)||(c&&(Hb[0]=c.toString()),c=Hb);for(var e=0;e<c.length;e++){var f=bb(b,c[e],d||a.handleEvent,!1,a.b||a);if(!f)break;a.a[f.key]=f;}}function Jb(a){va(a.a,function(b,c){this.a.hasOwnProperty(c)&&kb(b);},a);a.a={};}H.prototype.G=function(){H.N.G.call(this);Jb(this);};H.prototype.handleEvent=function(){throw Error("EventHandler.handleEvent not implemented");};function Kb(){}var I=new G;function Lb(a){C.call(this,"serverreachability",a);}x(Lb,C);function J(a){I.dispatchEvent(new Lb(I,a));}function Mb(a){C.call(this,"statevent",a);}x(Mb,C);function K(a){I.dispatchEvent(new Mb(I,a));}function Nb(a){C.call(this,"timingevent",a);}x(Nb,C);function Ob(a,b){if("function"!=p(a))throw Error("Fn must not be null and must be a function");return k.setTimeout(function(){a();},b)}var Pb={NO_ERROR:0,hb:1,ob:2,nb:3,kb:4,mb:5,pb:6,Ma:7,TIMEOUT:8,sb:9};var Qb={jb:"complete",wb:"success",Na:"error",Ma:"abort",ub:"ready",vb:"readystatechange",TIMEOUT:"timeout",qb:"incrementaldata",tb:"progress",lb:"downloadprogress",xb:"uploadprogress"};function Rb(){}Rb.prototype.a=null;function Sb(a){var b;(b=a.a)||(b=a.a={});return b}function Tb(){}var L={OPEN:"a",ib:"b",Na:"c",rb:"d"};function Ub(){C.call(this,"d");}x(Ub,C);function Vb(){C.call(this,"c");}x(Vb,C);var Wb;function Xb(){}x(Xb,Rb);Wb=new Xb;function M(a,b,c){this.g=a;this.W=b;this.V=c||1;this.I=new H(this);this.O=Yb;a=Ea?125:void 0;this.P=new Cb(a);this.h=null;this.b=!1;this.l=this.D=this.f=this.F=this.v=this.R=this.i=null;this.j=[];this.a=null;this.A=0;this.c=this.w=null;this.o=-1;this.m=!1;this.J=0;this.B=null;this.s=this.S=this.H=!1;}var Yb=45E3,Zb={},$b={};g=M.prototype;g.setTimeout=function(a){this.O=a;};function ac(a,b,c){a.F=1;a.f=bc(N(b));a.l=c;a.H=!0;cc(a,null);}function dc(a,b,c,d){a.F=1;a.f=bc(N(b));a.l=null;a.H=c;cc(a,d);}
+function cc(a,b){a.v=w();ec(a);a.D=N(a.f);fc(a.D,"t",a.V);a.A=0;a.a=a.g.$(a.g.Y()?b:null);0<a.J&&(a.B=new Fb(u(a.Ka,a,a.a),a.J));Ib(a.I,a.a,"readystatechange",a.eb);b=a.h?wa(a.h):{};a.l?(a.w||(a.w="POST"),b["Content-Type"]="application/x-www-form-urlencoded",a.a.ca(a.D,a.w,a.l,b)):(a.w="GET",a.a.ca(a.D,a.w,null,b));J(1);}g.eb=function(a){a=a.target;var b=this.B;b&&3==O(a)?b.Ua():this.Ka(a);};
+g.Ka=function(a){try{if(a==this.a)a:{var b=O(this.a),c=this.a.ya(),d=this.a.T();if(!(3>b||3==b&&!Ea&&!this.a.aa())){this.m||4!=b||7==c||(8==c||0>=d?J(3):J(2));gc(this);var e=this.a.T();this.o=e;var f=this.a.aa();if(this.b=200==e){if(this.S&&!this.s){b:{if(this.a){var h=hc(this.a,"X-HTTP-Initial-Response");if(h&&!qa(h)){var l=h;break b}}l=null;}if(l)this.s=!0,ic(this,l);else{this.b=!1;this.c=3;K(12);P(this);jc(this);break a}}this.H?(kc(this,b,f),Ea&&this.b&&3==b&&(Ib(this.I,this.P,"tick",this.cb),this.P.start())):
+ic(this,f);4==b&&P(this);this.b&&!this.m&&(4==b?this.g.na(this):(this.b=!1,ec(this)));}else 400==e&&0<f.indexOf("Unknown SID")?(this.c=3,K(12)):(this.c=0,K(13)),P(this),jc(this);}}}catch(F){}finally{}};function kc(a,b,c){for(var d=!0;!a.m&&a.A<c.length;){var e=lc(a,c);if(e==$b){4==b&&(a.c=4,K(14),d=!1);break}else if(e==Zb){a.c=4;K(15);d=!1;break}else ic(a,e);}4==b&&0==c.length&&(a.c=1,K(16),d=!1);a.b=a.b&&d;d||(P(a),jc(a));}
+g.cb=function(){if(this.a){var a=O(this.a),b=this.a.aa();this.A<b.length&&(gc(this),kc(this,a,b),this.b&&4!=a&&ec(this));}};function lc(a,b){var c=a.A,d=b.indexOf("\n",c);if(-1==d)return $b;c=Number(b.substring(c,d));if(isNaN(c))return Zb;d+=1;if(d+c>b.length)return $b;b=b.substr(d,c);a.A=d+c;return b}g.cancel=function(){this.m=!0;P(this);};function ec(a){a.R=w()+a.O;mc(a,a.O);}function mc(a,b){if(null!=a.i)throw Error("WatchDog timer not null");a.i=Ob(u(a.bb,a),b);}
+function gc(a){a.i&&(k.clearTimeout(a.i),a.i=null);}g.bb=function(){this.i=null;var a=w();0<=a-this.R?(2!=this.F&&(J(3),K(17)),P(this),this.c=2,jc(this)):mc(this,this.R-a);};function jc(a){a.g.Da()||a.m||a.g.na(a);}function P(a){gc(a);var b=a.B;b&&"function"==typeof b.la&&b.la();a.B=null;Db(a.P);Jb(a.I);a.a&&(b=a.a,a.a=null,b.abort(),b.la());}function ic(a,b){try{a.g.Ga(a,b),J(4);}catch(c){}}function nc(a){if(a.C&&"function"==typeof a.C)return a.C();if(m(a))return a.split("");if(ca(a)){for(var b=[],c=a.length,d=0;d<c;d++)b.push(a[d]);return b}b=[];c=0;for(d in a)b[c++]=a[d];return b}
+function oc(a,b){if(a.forEach&&"function"==typeof a.forEach)a.forEach(b,void 0);else if(ca(a)||m(a))la(a,b,void 0);else{if(a.K&&"function"==typeof a.K)var c=a.K();else if(a.C&&"function"==typeof a.C)c=void 0;else if(ca(a)||m(a)){c=[];for(var d=a.length,e=0;e<d;e++)c.push(e);}else for(e in c=[],d=0,a)c[d++]=e;d=nc(a);e=d.length;for(var f=0;f<e;f++)b.call(void 0,d[f],c&&c[f],a);}}function Q(a,b){this.b={};this.a=[];this.c=0;var c=arguments.length;if(1<c){if(c%2)throw Error("Uneven number of arguments");for(var d=0;d<c;d+=2)this.set(arguments[d],arguments[d+1]);}else if(a)if(a instanceof Q)for(c=a.K(),d=0;d<c.length;d++)this.set(c[d],a.get(c[d]));else for(d in a)this.set(d,a[d]);}g=Q.prototype;g.C=function(){pc(this);for(var a=[],b=0;b<this.a.length;b++)a.push(this.b[this.a[b]]);return a};g.K=function(){pc(this);return this.a.concat()};
+function qc(a){a.b={};a.a.length=0;a.c=0;}function rc(a,b){R(a.b,b)&&(delete a.b[b],a.c--,a.a.length>2*a.c&&pc(a));}function pc(a){if(a.c!=a.a.length){for(var b=0,c=0;b<a.a.length;){var d=a.a[b];R(a.b,d)&&(a.a[c++]=d);b++;}a.a.length=c;}if(a.c!=a.a.length){var e={};for(c=b=0;b<a.a.length;)d=a.a[b],R(e,d)||(a.a[c++]=d,e[d]=1),b++;a.a.length=c;}}g.get=function(a,b){return R(this.b,a)?this.b[a]:b};g.set=function(a,b){R(this.b,a)||(this.c++,this.a.push(a));this.b[a]=b;};
+g.forEach=function(a,b){for(var c=this.K(),d=0;d<c.length;d++){var e=c[d],f=this.get(e);a.call(b,f,e,this);}};function R(a,b){return Object.prototype.hasOwnProperty.call(a,b)}var sc=/^(?:([^:/?#.]+):)?(?:\/\/(?:([^/?#]*)@)?([^/#?]*?)(?::([0-9]+))?(?=[/#?]|$))?([^?#]+)?(?:\?([^#]*))?(?:#([\s\S]*))?$/;function tc(a,b){if(a){a=a.split("&");for(var c=0;c<a.length;c++){var d=a[c].indexOf("="),e=null;if(0<=d){var f=a[c].substring(0,d);e=a[c].substring(d+1);}else f=a[c];b(f,e?decodeURIComponent(e.replace(/\+/g," ")):"");}}}function S(a,b){this.b=this.j=this.f="";this.i=null;this.g=this.a="";this.h=!1;var c;a instanceof S?(this.h=void 0!==b?b:a.h,uc(this,a.f),this.j=a.j,vc(this,a.b),wc(this,a.i),this.a=a.a,xc(this,yc(a.c)),this.g=a.g):a&&(c=String(a).match(sc))?(this.h=!!b,uc(this,c[1]||"",!0),this.j=zc(c[2]||""),vc(this,c[3]||"",!0),wc(this,c[4]),this.a=zc(c[5]||"",!0),xc(this,c[6]||"",!0),this.g=zc(c[7]||"")):(this.h=!!b,this.c=new Ac(null,this.h));}
+S.prototype.toString=function(){var a=[],b=this.f;b&&a.push(Bc(b,Cc,!0),":");var c=this.b;if(c||"file"==b)a.push("//"),(b=this.j)&&a.push(Bc(b,Cc,!0),"@"),a.push(encodeURIComponent(String(c)).replace(/%25([0-9a-fA-F]{2})/g,"%$1")),c=this.i,null!=c&&a.push(":",String(c));if(c=this.a)this.b&&"/"!=c.charAt(0)&&a.push("/"),a.push(Bc(c,"/"==c.charAt(0)?Dc:Ec,!0));(c=this.c.toString())&&a.push("?",c);(c=this.g)&&a.push("#",Bc(c,Fc));return a.join("")};
+S.prototype.resolve=function(a){var b=N(this),c=!!a.f;c?uc(b,a.f):c=!!a.j;c?b.j=a.j:c=!!a.b;c?vc(b,a.b):c=null!=a.i;var d=a.a;if(c)wc(b,a.i);else if(c=!!a.a){if("/"!=d.charAt(0))if(this.b&&!this.a)d="/"+d;else{var e=b.a.lastIndexOf("/");-1!=e&&(d=b.a.substr(0,e+1)+d);}e=d;if(".."==e||"."==e)d="";else if(z(e,"./")||z(e,"/.")){d=0==e.lastIndexOf("/",0);e=e.split("/");for(var f=[],h=0;h<e.length;){var l=e[h++];"."==l?d&&h==e.length&&f.push(""):".."==l?((1<f.length||1==f.length&&""!=f[0])&&f.pop(),d&&
+h==e.length&&f.push("")):(f.push(l),d=!0);}d=f.join("/");}else d=e;}c?b.a=d:c=""!==a.c.toString();c?xc(b,yc(a.c)):c=!!a.g;c&&(b.g=a.g);return b};function N(a){return new S(a)}function uc(a,b,c){a.f=c?zc(b,!0):b;a.f&&(a.f=a.f.replace(/:$/,""));}function vc(a,b,c){a.b=c?zc(b,!0):b;}function wc(a,b){if(b){b=Number(b);if(isNaN(b)||0>b)throw Error("Bad port number "+b);a.i=b;}else a.i=null;}function xc(a,b,c){b instanceof Ac?(a.c=b,Gc(a.c,a.h)):(c||(b=Bc(b,Hc)),a.c=new Ac(b,a.h));}
+function T(a,b,c){a.c.set(b,c);}function fc(a,b,c){q(c)||(c=[String(c)]);Ic(a.c,b,c);}function bc(a){T(a,"zx",Math.floor(2147483648*Math.random()).toString(36)+Math.abs(Math.floor(2147483648*Math.random())^w()).toString(36));return a}function Jc(a){return a instanceof S?N(a):new S(a,void 0)}function Kc(a,b,c,d){var e=new S(null,void 0);a&&uc(e,a);b&&vc(e,b);c&&wc(e,c);d&&(e.a=d);return e}function zc(a,b){return a?b?decodeURI(a.replace(/%25/g,"%2525")):decodeURIComponent(a):""}
+function Bc(a,b,c){return m(a)?(a=encodeURI(a).replace(b,Lc),c&&(a=a.replace(/%25([0-9a-fA-F]{2})/g,"%$1")),a):null}function Lc(a){a=a.charCodeAt(0);return "%"+(a>>4&15).toString(16)+(a&15).toString(16)}var Cc=/[#\/\?@]/g,Ec=/[#\?:]/g,Dc=/[#\?]/g,Hc=/[#\?@]/g,Fc=/#/g;function Ac(a,b){this.b=this.a=null;this.c=a||null;this.f=!!b;}function U(a){a.a||(a.a=new Q,a.b=0,a.c&&tc(a.c,function(b,c){a.add(decodeURIComponent(b.replace(/\+/g," ")),c);}));}g=Ac.prototype;
+g.add=function(a,b){U(this);this.c=null;a=V(this,a);var c=this.a.get(a);c||this.a.set(a,c=[]);c.push(b);this.b+=1;return this};function Mc(a,b){U(a);b=V(a,b);R(a.a.b,b)&&(a.c=null,a.b-=a.a.get(b).length,rc(a.a,b));}function Nc(a,b){U(a);b=V(a,b);return R(a.a.b,b)}g.forEach=function(a,b){U(this);this.a.forEach(function(c,d){la(c,function(e){a.call(b,e,d,this);},this);},this);};
+g.K=function(){U(this);for(var a=this.a.C(),b=this.a.K(),c=[],d=0;d<b.length;d++)for(var e=a[d],f=0;f<e.length;f++)c.push(b[d]);return c};g.C=function(a){U(this);var b=[];if(m(a))Nc(this,a)&&(b=oa(b,this.a.get(V(this,a))));else{a=this.a.C();for(var c=0;c<a.length;c++)b=oa(b,a[c]);}return b};g.set=function(a,b){U(this);this.c=null;a=V(this,a);Nc(this,a)&&(this.b-=this.a.get(a).length);this.a.set(a,[b]);this.b+=1;return this};
+g.get=function(a,b){if(!a)return b;a=this.C(a);return 0<a.length?String(a[0]):b};function Ic(a,b,c){Mc(a,b);0<c.length&&(a.c=null,a.a.set(V(a,b),pa(c)),a.b+=c.length);}g.toString=function(){if(this.c)return this.c;if(!this.a)return "";for(var a=[],b=this.a.K(),c=0;c<b.length;c++){var d=b[c],e=encodeURIComponent(String(d));d=this.C(d);for(var f=0;f<d.length;f++){var h=e;""!==d[f]&&(h+="="+encodeURIComponent(String(d[f])));a.push(h);}}return this.c=a.join("&")};
+function yc(a){var b=new Ac;b.c=a.c;a.a&&(b.a=new Q(a.a),b.b=a.b);return b}function V(a,b){b=String(b);a.f&&(b=b.toLowerCase());return b}function Gc(a,b){b&&!a.f&&(U(a),a.c=null,a.a.forEach(function(c,d){var e=d.toLowerCase();d!=e&&(Mc(this,d),Ic(this,e,c));},a));a.f=b;}function Qc(){}function Rc(){}x(Rc,Qc);function Sc(a){this.a=a;this.b=this.h=null;this.g=!1;this.i=null;this.c=-1;this.l=this.f=null;}g=Sc.prototype;g.M=null;function Uc(a){var b=a.a.F.a;if(null!=b)K(4),b?(K(10),Vc(a.a,a,!1)):(K(11),Vc(a.a,a,!0));else{a.b=new M(a,void 0,void 0);a.b.h=a.h;b=a.a;b=Wc(b,b.Y()?a.f:null,a.i);K(4);fc(b,"TYPE","xmlhttp");var c=a.a.j,d=a.a.I;c&&d&&T(b,c,d);dc(a.b,b,!1,a.f);}}g.$=function(a){return this.a.$(a)};g.abort=function(){this.b&&(this.b.cancel(),this.b=null);this.c=-1;};g.Da=function(){return !1};
+g.Ga=function(a,b){this.c=a.o;if(0==this.M){if(!this.a.o&&(a=a.a)){var c=hc(a,"X-Client-Wire-Protocol");this.l=c?c:null;this.a.j&&(a=hc(a,"X-HTTP-Session-Id"))&&(this.a.I=a);}if(b){try{var d=this.a.ja.a.parse(b);}catch(e){b=this.a;b.m=this.c;W(b,2);return}this.f=d[0];}else b=this.a,b.m=this.c,W(b,2);}else if(1==this.M)if(this.g)K(6);else if("11111"==b){if(K(5),this.g=!0,!B||10<=Number(Na))this.c=200,this.b.cancel(),K(11),Vc(this.a,this,!0);}else K(7),this.g=!1;};
+g.na=function(){this.c=this.b.o;if(this.b.b)0==this.M?(this.M=1,Uc(this)):1==this.M&&(this.g?(K(11),Vc(this.a,this,!0)):(K(10),Vc(this.a,this,!1)));else{0==this.M?K(8):1==this.M&&K(9);var a=this.a;a.m=this.c;W(a,2);}};g.Y=function(){return this.a.Y()};g.ma=function(){return this.a.ma()};function Xc(){this.a=this.b=null;}function Yc(){this.a=new Q;}function Zc(a){var b=typeof a;return "object"==b&&a||"function"==b?"o"+(a[t]||(a[t]=++da)):b.charAt(0)+a}Yc.prototype.add=function(a){this.a.set(Zc(a),a);};Yc.prototype.C=function(){return this.a.C()};function $c(a,b){this.b=a;this.a=b;}function ad(a){this.g=a||bd;k.PerformanceNavigationTiming?(a=k.performance.getEntriesByType("navigation"),a=0<a.length&&("hq"==a[0].nextHopProtocol||"h2"==a[0].nextHopProtocol)):a=!!(k.ka&&k.ka.Ea&&k.ka.Ea()&&k.ka.Ea().zb);this.f=a?this.g:1;this.a=null;1<this.f&&(this.a=new Yc);this.b=null;this.c=[];}var bd=10;function cd(a,b){!a.a&&(z(b,"spdy")||z(b,"quic")||z(b,"h2"))&&(a.f=a.g,a.a=new Yc,a.b&&(dd(a,a.b),a.b=null));}function ed(a){return a.b?!0:a.a?a.a.a.c>=a.f:!1}
+function fd(a){return a.b?1:a.a?a.a.a.c:0}function gd(a,b){a.b?a=a.b==b:a.a?(b=Zc(b),a=R(a.a.a.b,b)):a=!1;return a}function dd(a,b){a.a?a.a.add(b):a.b=b;}function hd(a,b){if(a.b&&a.b==b)a.b=null;else{var c;if(c=a.a)c=Zc(b),c=R(a.a.a.b,c);c&&rc(a.a.a,Zc(b));}}ad.prototype.cancel=function(){this.c=id(this);this.b?(this.b.cancel(),this.b=null):this.a&&0!=this.a.a.c&&(la(this.a.C(),function(a){a.cancel();}),qc(this.a.a));};
+function id(a){if(null!=a.b)return a.c.concat(a.b.j);if(null!=a.a&&0!=a.a.a.c){var b=a.c;la(a.a.C(),function(c){b=b.concat(c.j);});return b}return pa(a.c)}function jd(){}jd.prototype.stringify=function(a){return k.JSON.stringify(a,void 0)};jd.prototype.parse=function(a){return k.JSON.parse(a,void 0)};function kd(){this.a=new jd;}function ld(a,b,c){var d=c||"";try{oc(a,function(e,f){var h=e;r(e)&&(h=ob(e));b.push(d+f+"="+encodeURIComponent(h));});}catch(e){throw b.push(d+"type="+encodeURIComponent("_badmap")),e;}}function md(a,b){var c=new Kb;if(k.Image){var d=new Image;d.onload=v(nd,c,d,"TestLoadImage: loaded",!0,b);d.onerror=v(nd,c,d,"TestLoadImage: error",!1,b);d.onabort=v(nd,c,d,"TestLoadImage: abort",!1,b);d.ontimeout=v(nd,c,d,"TestLoadImage: timeout",!1,b);k.setTimeout(function(){if(d.ontimeout)d.ontimeout();},1E4);d.src=a;}else b(!1);}function nd(a,b,c,d,e){try{b.onload=null,b.onerror=null,b.onabort=null,b.ontimeout=null,e(d);}catch(f){}}var od=k.JSON.parse;function X(a){G.call(this);this.headers=new Q;this.H=a||null;this.b=!1;this.s=this.a=null;this.A="";this.h=0;this.f="";this.g=this.w=this.l=this.v=!1;this.o=0;this.m=null;this.I=pd;this.D=this.F=!1;}x(X,G);var pd="",qd=/^https?$/i,rd=["POST","PUT"];g=X.prototype;
+g.ca=function(a,b,c,d){if(this.a)throw Error("[goog.net.XhrIo] Object is active with another request="+this.A+"; newUri="+a);b=b?b.toUpperCase():"GET";this.A=a;this.f="";this.h=0;this.v=!1;this.b=!0;this.a=new XMLHttpRequest;this.s=this.H?Sb(this.H):Sb(Wb);this.a.onreadystatechange=u(this.Fa,this);try{this.w=!0,this.a.open(b,String(a),!0),this.w=!1;}catch(f){sd(this,f);return}a=c||"";var e=new Q(this.headers);d&&oc(d,function(f,h){e.set(h,f);});d=ma(e.K());c=k.FormData&&a instanceof k.FormData;!(0<=
+ja(rd,b))||d||c||e.set("Content-Type","application/x-www-form-urlencoded;charset=utf-8");e.forEach(function(f,h){this.a.setRequestHeader(h,f);},this);this.I&&(this.a.responseType=this.I);"withCredentials"in this.a&&this.a.withCredentials!==this.F&&(this.a.withCredentials=this.F);try{td(this),0<this.o&&((this.D=ud(this.a))?(this.a.timeout=this.o,this.a.ontimeout=u(this.Ca,this)):this.m=Eb(this.Ca,this.o,this)),this.l=!0,this.a.send(a),this.l=!1;}catch(f){sd(this,f);}};
+function ud(a){return B&&Ma(9)&&aa(a.timeout)&&void 0!==a.ontimeout}function na(a){return "content-type"==a.toLowerCase()}g.Ca=function(){"undefined"!=typeof goog&&this.a&&(this.f="Timed out after "+this.o+"ms, aborting",this.h=8,this.dispatchEvent("timeout"),this.abort(8));};function sd(a,b){a.b=!1;a.a&&(a.g=!0,a.a.abort(),a.g=!1);a.f=b;a.h=5;vd(a);wd(a);}function vd(a){a.v||(a.v=!0,a.dispatchEvent("complete"),a.dispatchEvent("error"));}
+g.abort=function(a){this.a&&this.b&&(this.b=!1,this.g=!0,this.a.abort(),this.g=!1,this.h=a||7,this.dispatchEvent("complete"),this.dispatchEvent("abort"),wd(this));};g.G=function(){this.a&&(this.b&&(this.b=!1,this.g=!0,this.a.abort(),this.g=!1),wd(this,!0));X.N.G.call(this);};g.Fa=function(){this.j||(this.w||this.l||this.g?xd(this):this.$a());};g.$a=function(){xd(this);};
+function xd(a){if(a.b&&"undefined"!=typeof goog&&(!a.s[1]||4!=O(a)||2!=a.T()))if(a.l&&4==O(a))Eb(a.Fa,0,a);else if(a.dispatchEvent("readystatechange"),4==O(a)){a.b=!1;try{var b=a.T();a:switch(b){case 200:case 201:case 202:case 204:case 206:case 304:case 1223:var c=!0;break a;default:c=!1;}var d;if(!(d=c)){var e;if(e=0===b){var f=String(a.A).match(sc)[1]||null;if(!f&&k.self&&k.self.location){var h=k.self.location.protocol;f=h.substr(0,h.length-1);}e=!qd.test(f?f.toLowerCase():"");}d=e;}d?(a.dispatchEvent("complete"),
+a.dispatchEvent("success")):(a.h=6,a.f=a.za()+" ["+a.T()+"]",vd(a));}finally{wd(a);}}}function wd(a,b){if(a.a){td(a);var c=a.a,d=a.s[0]?ba:null;a.a=null;a.s=null;b||a.dispatchEvent("ready");try{c.onreadystatechange=d;}catch(e){}}}function td(a){a.a&&a.D&&(a.a.ontimeout=null);a.m&&(k.clearTimeout(a.m),a.m=null);}function O(a){return a.a?a.a.readyState:0}g.T=function(){try{return 2<O(this)?this.a.status:-1}catch(a){return -1}};g.za=function(){try{return 2<O(this)?this.a.statusText:""}catch(a){return ""}};
+g.aa=function(){try{return this.a?this.a.responseText:""}catch(a){return ""}};g.Va=function(a){if(this.a){var b=this.a.responseText;a&&0==b.indexOf(a)&&(b=b.substring(a.length));return od(b)}};function hc(a,b){return a.a?a.a.getResponseHeader(b):null}g.ya=function(){return this.h};g.Ya=function(){return m(this.f)?this.f:String(this.f)};function yd(a){var b="";va(a,function(c,d){b+=d;b+=":";b+=c;b+="\r\n";});return b}function zd(a,b,c){a:{for(d in c){var d=!1;break a}d=!0;}if(d)return a;c=yd(c);if(m(a)){b=encodeURIComponent(String(b));c=null!=c?"="+encodeURIComponent(String(c)):"";if(b+=c){c=a.indexOf("#");0>c&&(c=a.length);d=a.indexOf("?");if(0>d||d>c){d=c;var e="";}else e=a.substring(d+1,c);a=[a.substr(0,d),e,a.substr(c)];c=a[1];a[1]=b?c?c+"&"+b:b:c;a=a[0]+(a[1]?"?"+a[1]:"")+a[2];}return a}T(a,b,c);return a}function Ad(a){this.f=[];this.F=new Xc;this.ga=this.pa=this.B=this.ha=this.a=this.I=this.j=this.V=this.g=this.J=this.i=null;this.Ra=this.P=0;this.Pa=!!n("internalChannelParams.failFast",a);this.ia=this.w=this.s=this.l=this.h=this.c=null;this.oa=!0;this.m=this.ra=this.O=-1;this.S=this.v=this.A=0;this.Oa=n("internalChannelParams.baseRetryDelayMs",a)||5E3;this.Sa=n("internalChannelParams.retryDelaySeedMs",a)||1E4;this.Qa=n("internalChannelParams.forwardChannelMaxRetries",a)||2;this.qa=n("internalChannelParams.forwardChannelRequestTimeoutMs",
+a)||2E4;this.La=a&&a.Ab||void 0;this.D=void 0;this.R=a&&a.supportsCrossDomainXhr||!1;this.H="";this.b=new ad(a&&a.concurrentRequestLimit);this.ja=new kd;this.o=a&&void 0!==a.backgroundChannelTest?a.backgroundChannelTest:!0;(this.W=a&&a.fastHandshake||!1)&&!this.o&&(this.o=!0);a&&a.forceLongPolling&&(this.oa=!1);this.fa=void 0;}g=Ad.prototype;g.wa=8;g.u=1;
+function Bd(a){Cd(a);if(3==a.u){var b=a.P++,c=N(a.B);T(c,"SID",a.H);T(c,"RID",b);T(c,"TYPE","terminate");Dd(a,c);b=new M(a,b,void 0);b.F=2;b.f=bc(N(c));c=!1;k.navigator&&k.navigator.sendBeacon&&(c=k.navigator.sendBeacon(b.f.toString(),""));!c&&k.Image&&((new Image).src=b.f,c=!0);c||(b.a=b.g.$(null),b.a.ca(b.f));b.v=w();ec(b);}Ed(a);}
+function Cd(a){a.w&&(a.w.abort(),a.w=null);a.a&&(a.a.cancel(),a.a=null);a.l&&(k.clearTimeout(a.l),a.l=null);Fd(a);a.b.cancel();a.h&&(aa(a.h)&&k.clearTimeout(a.h),a.h=null);}function Gd(a,b){a.f.push(new $c(a.Ra++,b));3==a.u&&Hd(a);}g.Da=function(){return 0==this.u};function Hd(a){ed(a.b)||a.h||(a.h=!0,wb(a.Ia,a),a.A=0);}
+function Id(a,b){if(fd(a.b)>=a.b.f-(a.h?1:0))return !1;if(a.h)return a.f=b.j.concat(a.f),!0;if(1==a.u||2==a.u||a.A>=(a.Pa?0:a.Qa))return !1;a.h=Ob(u(a.Ia,a,b),Jd(a,a.A));a.A++;return !0}
+g.Ia=function(a){if(this.h)if(this.h=null,1==this.u){if(!a){this.P=Math.floor(1E5*Math.random());a=this.P++;var b=new M(this,a,void 0),c=this.i;this.J&&(c?(c=wa(c),ya(c,this.J)):c=this.J);null===this.g&&(b.h=c);var d;if(this.W)a:{for(var e=d=0;e<this.f.length;e++){b:{var f=this.f[e];if("__data__"in f.a&&(f=f.a.__data__,m(f))){f=f.length;break b}f=void 0;}if(void 0===f)break;d+=f;if(4096<d){d=e;break a}if(4096===d||e===this.f.length-1){d=e+1;break a}}d=1E3;}else d=1E3;d=Kd(this,b,d);e=N(this.B);T(e,
+"RID",a);T(e,"CVER",22);this.o&&this.j&&T(e,"X-HTTP-Session-Id",this.j);Dd(this,e);this.g&&c&&zd(e,this.g,c);dd(this.b,b);this.W?(T(e,"$req",d),T(e,"SID","null"),b.S=!0,ac(b,e,null)):ac(b,e,d);this.u=2;}}else 3==this.u&&(a?Ld(this,a):0==this.f.length||ed(this.b)||Ld(this));};
+function Ld(a,b){var c;b?c=b.W:c=a.P++;var d=N(a.B);T(d,"SID",a.H);T(d,"RID",c);T(d,"AID",a.O);Dd(a,d);a.g&&a.i&&zd(d,a.g,a.i);c=new M(a,c,a.A+1);null===a.g&&(c.h=a.i);b&&(a.f=b.j.concat(a.f));b=Kd(a,c,1E3);c.setTimeout(Math.round(.5*a.qa)+Math.round(.5*a.qa*Math.random()));dd(a.b,c);ac(c,d,b);}function Dd(a,b){a.c&&oc({},function(c,d){T(b,d,c);});}
+function Kd(a,b,c){c=Math.min(a.f.length,c);var d=a.c?u(a.c.Ta,a.c,a):null;a:for(var e=a.f,f=-1;;){var h=["count="+c];-1==f?0<c?(f=e[0].b,h.push("ofs="+f)):f=0:h.push("ofs="+f);for(var l=!0,F=0;F<c;F++){var Bb=e[F].b,Tc=e[F].a;Bb-=f;if(0>Bb)f=Math.max(0,e[F].b-100),l=!1;else try{ld(Tc,h,"req"+Bb+"_");}catch(Ud){d&&d(Tc);}}if(l){d=h.join("&");break a}}a=a.f.splice(0,c);b.j=a;return d}function Md(a){a.a||a.l||(a.S=1,wb(a.Ha,a),a.v=0);}
+function Nd(a){if(a.a||a.l||3<=a.v)return !1;a.S++;a.l=Ob(u(a.Ha,a),Jd(a,a.v));a.v++;return !0}g.Ha=function(){this.l=null;this.a=new M(this,"rpc",this.S);null===this.g&&(this.a.h=this.i);this.a.J=0;var a=N(this.pa);T(a,"RID","rpc");T(a,"SID",this.H);T(a,"CI",this.ia?"0":"1");T(a,"AID",this.O);Dd(this,a);T(a,"TYPE","xmlhttp");this.g&&this.i&&zd(a,this.g,this.i);this.D&&this.a.setTimeout(this.D);dc(this.a,a,!0,this.ga);};
+function Vc(a,b,c){var d=b.l;d&&cd(a.b,d);a.ia=a.oa&&c;a.m=b.c;a.B=Wc(a,null,a.ha);Hd(a);}
+g.Ga=function(a,b){if(0!=this.u&&(this.a==a||gd(this.b,a)))if(this.m=a.o,!a.s&&gd(this.b,a)&&3==this.u){try{var c=this.ja.a.parse(b);}catch(f){c=null;}if(q(c)&&3==c.length){b=c;if(0==b[0])a:{if(!this.l){if(this.a)if(this.a.v+3E3<a.v)Fd(this),this.a.cancel(),this.a=null;else break a;Nd(this);K(18);}}else this.ra=b[1],0<this.ra-this.O&&37500>b[2]&&this.ia&&0==this.v&&!this.s&&(this.s=Ob(u(this.Za,this),6E3));if(1>=fd(this.b)&&this.fa){try{this.fa();}catch(f){}this.fa=void 0;}}else W(this,11);}else if((a.s||
+this.a==a)&&Fd(this),!qa(b))for(b=c=this.ja.a.parse(b),c=0;c<b.length;c++){var d=b[c];this.O=d[0];d=d[1];if(2==this.u)if("c"==d[0]){this.H=d[1];this.ga=d[2];var e=d[3];null!=e&&(this.wa=e);d=d[5];null!=d&&aa(d)&&0<d&&(this.D=1.5*d);this.o&&(d=a.a)&&((e=hc(d,"X-Client-Wire-Protocol"))&&cd(this.b,e),this.j&&(d=hc(d,"X-HTTP-Session-Id")))&&(this.I=d,T(this.B,this.j,d));this.u=3;this.c&&this.c.va();d=a;this.pa=Wc(this,this.Y()?this.ga:null,this.ha);d.s?(hd(this.b,d),(e=this.D)&&d.setTimeout(e),d.i&&(gc(d),
+ec(d)),this.a=d):Md(this);0<this.f.length&&Hd(this);}else"stop"!=d[0]&&"close"!=d[0]||W(this,7);else 3==this.u&&("stop"==d[0]||"close"==d[0]?"stop"==d[0]?W(this,7):Bd(this):"noop"!=d[0]&&this.c&&this.c.ua(d),this.v=0);}};g.Za=function(){null!=this.s&&(this.s=null,this.a.cancel(),this.a=null,Nd(this),K(19));};function Fd(a){null!=a.s&&(k.clearTimeout(a.s),a.s=null);}
+g.na=function(a){var b=null;if(this.a==a){Fd(this);this.a=null;var c=2;}else if(gd(this.b,a))b=a.j,hd(this.b,a),c=1;else return;this.m=a.o;if(0!=this.u)if(a.b)1==c?(b=w()-a.v,I.dispatchEvent(new Nb(I,a.l?a.l.length:0,b,this.A)),Hd(this)):Md(this);else{var d=a.c;if(3==d||0==d&&0<this.m||!(1==c&&Id(this,a)||2==c&&Nd(this)))switch(b&&0<b.length&&(a=this.b,a.c=a.c.concat(b)),d){case 1:W(this,5);break;case 4:W(this,10);break;case 3:W(this,6);break;default:W(this,2);}}};
+function Jd(a,b){var c=a.Oa+Math.floor(Math.random()*a.Sa);a.ma()||(c*=2);return c*b}function W(a,b){if(2==b){var c=null;a.c&&(c=null);var d=u(a.fb,a);c||(c=new S("//www.google.com/images/cleardot.gif"),k.location&&"http"==k.location.protocol||uc(c,"https"),bc(c));md(c.toString(),d);}else K(2);a.u=0;a.c&&a.c.ta(b);Ed(a);Cd(a);}g.fb=function(a){a?K(2):K(1);};function Ed(a){a.u=0;a.m=-1;if(a.c){if(0!=id(a.b).length||0!=a.f.length)a.b.c.length=0,pa(a.f),a.f.length=0;a.c.sa();}}
+function Wc(a,b,c){var d=Jc(c);if(""!=d.b)b&&vc(d,b+"."+d.b),wc(d,d.i);else{var e=k.location,f;b?f=b+"."+e.hostname:f=e.hostname;d=Kc(e.protocol,f,+e.port,c);}a.V&&va(a.V,function(h,l){T(d,l,h);});b=a.j;c=a.I;b&&c&&T(d,b,c);T(d,"VER",a.wa);Dd(a,d);return d}g.$=function(a){if(a&&!this.R)throw Error("Can't create secondary domain capable XhrIo object.");a=new X(this.La);a.F=this.R;return a};g.ma=function(){return !!this.c&&!0};g.Y=function(){return this.R};function Od(){}g=Od.prototype;g.va=function(){};
+g.ua=function(){};g.ta=function(){};g.sa=function(){};g.Ta=function(){};function Pd(a){for(var b=arguments[0],c=1;c<arguments.length;c++){var d=arguments[c];if(0==d.lastIndexOf("/",0))b=d;else{var e;(e=""==b)||(e=b.length-1,e=0<=e&&b.indexOf("/",e)==e);e?b+=d:b+="/"+d;}}return b}function Qd(){if(B&&!(10<=Number(Na)))throw Error("Environmental error: no available transport.");}Qd.prototype.a=function(a,b){return new Y(a,b)};
+function Y(a,b){G.call(this);this.a=new Ad(b);this.g=a;this.m=b&&b.testUrl?b.testUrl:Pd(this.g,"test");this.b=b&&b.messageUrlParams||null;a=b&&b.messageHeaders||null;b&&b.clientProtocolHeaderRequired&&(a?a["X-Client-Protocol"]="webchannel":a={"X-Client-Protocol":"webchannel"});this.a.i=a;a=b&&b.initMessageHeaders||null;b&&b.messageContentType&&(a?a["X-WebChannel-Content-Type"]=b.messageContentType:a={"X-WebChannel-Content-Type":b.messageContentType});b&&b.xa&&(a?a["X-WebChannel-Client-Profile"]=b.xa:
+a={"X-WebChannel-Client-Profile":b.xa});this.a.J=a;(a=b&&b.httpHeadersOverwriteParam)&&!qa(a)&&(this.a.g=a);this.l=b&&b.supportsCrossDomainXhr||!1;this.h=b&&b.sendRawJson||!1;(b=b&&b.httpSessionIdParam)&&!qa(b)&&(this.a.j=b,a=this.b,null!==a&&b in a&&(a=this.b,b in a&&delete a[b]));this.f=new Z(this);}x(Y,G);g=Y.prototype;g.addEventListener=function(a,b,c,d){Y.N.addEventListener.call(this,a,b,c,d);};g.removeEventListener=function(a,b,c,d){Y.N.removeEventListener.call(this,a,b,c,d);};
+g.Wa=function(){this.a.c=this.f;this.l&&(this.a.R=!0);var a=this.a,b=this.m,c=this.g,d=this.b||void 0;K(0);a.ha=c;a.V=d||{};a.o&&(a.F.b=[],a.F.a=!1);a.w=new Sc(a);null===a.g&&(a.w.h=a.i);c=b;a.g&&a.i&&(c=zd(b,a.g,a.i));a=a.w;a.i=c;b=Wc(a.a,null,a.i);K(3);c=a.a.F.b;null!=c?(a.f=c[0],a.M=1,Uc(a)):(fc(b,"MODE","init"),!a.a.o&&a.a.j&&fc(b,"X-HTTP-Session-Id",a.a.j),a.b=new M(a,void 0,void 0),a.b.h=a.h,dc(a.b,b,!1,null),a.M=0);};g.close=function(){Bd(this.a);};
+g.Xa=function(a){if(m(a)){var b={};b.__data__=a;Gd(this.a,b);}else this.h?(b={},b.__data__=ob(a),Gd(this.a,b)):Gd(this.a,a);};g.G=function(){this.a.c=null;delete this.f;Bd(this.a);delete this.a;Y.N.G.call(this);};function Rd(a){Ub.call(this);var b=a.__sm__;if(b){a:{for(var c in b){a=c;break a}a=void 0;}(this.c=a)?(a=this.c,this.data=null!==b&&a in b?b[a]:void 0):this.data=b;}else this.data=a;}x(Rd,Ub);function Sd(){Vb.call(this);this.status=1;}x(Sd,Vb);function Z(a){this.a=a;}x(Z,Od);Z.prototype.va=function(){this.a.dispatchEvent("a");};
+Z.prototype.ua=function(a){this.a.dispatchEvent(new Rd(a));};Z.prototype.ta=function(a){this.a.dispatchEvent(new Sd(a));};Z.prototype.sa=function(){this.a.dispatchEvent("b");};var Td=v(function(a,b){function c(){}c.prototype=a.prototype;var d=new c;a.apply(d,Array.prototype.slice.call(arguments,1));return d},Qd);/*
 
-/* harmony default export */ __webpack_exports__["default"] = (src);
+ Copyright 2017 Google Inc.
 
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+   http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+*/
+Qd.prototype.createWebChannel=Qd.prototype.a;Y.prototype.send=Y.prototype.Xa;Y.prototype.open=Y.prototype.Wa;Y.prototype.close=Y.prototype.close;Pb.NO_ERROR=0;Pb.TIMEOUT=8;Pb.HTTP_ERROR=6;Qb.COMPLETE="complete";Tb.EventType=L;L.OPEN="a";L.CLOSE="b";L.ERROR="c";L.MESSAGE="d";G.prototype.listen=G.prototype.Aa;X.prototype.listenOnce=X.prototype.Ba;X.prototype.getLastError=X.prototype.Ya;X.prototype.getLastErrorCode=X.prototype.ya;X.prototype.getStatus=X.prototype.T;X.prototype.getStatusText=X.prototype.za;
+X.prototype.getResponseJson=X.prototype.Va;X.prototype.getResponseText=X.prototype.aa;X.prototype.send=X.prototype.ca;var tmp={createWebChannelTransport:Td,ErrorCode:Pb,EventType:Qb,WebChannel:Tb,XhrIo:X};
+var tmp_1 = tmp.createWebChannelTransport;
+var tmp_2 = tmp.ErrorCode;
+var tmp_3 = tmp.EventType;
+var tmp_4 = tmp.WebChannel;
+var tmp_5 = tmp.XhrIo;
+
+/* harmony default export */ __webpack_exports__["default"] = (tmp);
+
+//# sourceMappingURL=index.esm.js.map
 
 
 /***/ }),
@@ -28282,8 +31499,95 @@ __webpack_require__(/*! @firebase/firestore */ "./node_modules/@firebase/firesto
 __webpack_require__(/*! @firebase/functions */ "./node_modules/@firebase/functions/dist/index.cjs.js");
 __webpack_require__(/*! @firebase/messaging */ "./node_modules/@firebase/messaging/dist/index.esm.js");
 __webpack_require__(/*! @firebase/storage */ "./node_modules/@firebase/storage/dist/index.esm.js");
+__webpack_require__(/*! @firebase/performance */ "./node_modules/@firebase/performance/dist/index.cjs.js");
 
 /**
+ * @license
+ * Copyright 2017 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/**
+ * @license
+ * Copyright 2017 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/**
+ * @license
+ * Copyright 2017 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/**
+ * @license
+ * Copyright 2017 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/**
+ * @license
+ * Copyright 2017 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -28316,70 +31620,7 @@ __webpack_require__(/*! @firebase/storage */ "./node_modules/@firebase/storage/d
  */
 
 /**
- * Copyright 2017 Google Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
-/**
- * Copyright 2017 Google Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
-/**
- * Copyright 2017 Google Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
-/**
- * Copyright 2017 Google Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
-/**
+ * @license
  * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -28397,6 +31638,333 @@ __webpack_require__(/*! @firebase/storage */ "./node_modules/@firebase/storage/d
 console.warn("\nIt looks like you're using the development build of the Firebase JS SDK.\nWhen deploying Firebase apps to production, it is advisable to only import\nthe individual SDK components you intend to use.\n\nFor the module builds, these are available in the following manner\n(replace <PACKAGE> with the name of a component - i.e. auth, database, etc):\n\nCommonJS Modules:\nconst firebase = require('firebase/app');\nrequire('firebase/<PACKAGE>');\n\nES Modules:\nimport firebase from 'firebase/app';\nimport 'firebase/<PACKAGE>';\n\nTypescript:\nimport * as firebase from 'firebase/app';\nimport 'firebase/<PACKAGE>';\n");
 
 module.exports = firebase;
+//# sourceMappingURL=index.cjs.js.map
+
+
+/***/ }),
+
+/***/ "./node_modules/idb/build/idb.js":
+/*!***************************************!*\
+  !*** ./node_modules/idb/build/idb.js ***!
+  \***************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+(function (global, factory) {
+   true ? factory(exports) :
+  undefined;
+}(this, function (exports) { 'use strict';
+
+  function toArray(arr) {
+    return Array.prototype.slice.call(arr);
+  }
+
+  function promisifyRequest(request) {
+    return new Promise(function(resolve, reject) {
+      request.onsuccess = function() {
+        resolve(request.result);
+      };
+
+      request.onerror = function() {
+        reject(request.error);
+      };
+    });
+  }
+
+  function promisifyRequestCall(obj, method, args) {
+    var request;
+    var p = new Promise(function(resolve, reject) {
+      request = obj[method].apply(obj, args);
+      promisifyRequest(request).then(resolve, reject);
+    });
+
+    p.request = request;
+    return p;
+  }
+
+  function promisifyCursorRequestCall(obj, method, args) {
+    var p = promisifyRequestCall(obj, method, args);
+    return p.then(function(value) {
+      if (!value) return;
+      return new Cursor(value, p.request);
+    });
+  }
+
+  function proxyProperties(ProxyClass, targetProp, properties) {
+    properties.forEach(function(prop) {
+      Object.defineProperty(ProxyClass.prototype, prop, {
+        get: function() {
+          return this[targetProp][prop];
+        },
+        set: function(val) {
+          this[targetProp][prop] = val;
+        }
+      });
+    });
+  }
+
+  function proxyRequestMethods(ProxyClass, targetProp, Constructor, properties) {
+    properties.forEach(function(prop) {
+      if (!(prop in Constructor.prototype)) return;
+      ProxyClass.prototype[prop] = function() {
+        return promisifyRequestCall(this[targetProp], prop, arguments);
+      };
+    });
+  }
+
+  function proxyMethods(ProxyClass, targetProp, Constructor, properties) {
+    properties.forEach(function(prop) {
+      if (!(prop in Constructor.prototype)) return;
+      ProxyClass.prototype[prop] = function() {
+        return this[targetProp][prop].apply(this[targetProp], arguments);
+      };
+    });
+  }
+
+  function proxyCursorRequestMethods(ProxyClass, targetProp, Constructor, properties) {
+    properties.forEach(function(prop) {
+      if (!(prop in Constructor.prototype)) return;
+      ProxyClass.prototype[prop] = function() {
+        return promisifyCursorRequestCall(this[targetProp], prop, arguments);
+      };
+    });
+  }
+
+  function Index(index) {
+    this._index = index;
+  }
+
+  proxyProperties(Index, '_index', [
+    'name',
+    'keyPath',
+    'multiEntry',
+    'unique'
+  ]);
+
+  proxyRequestMethods(Index, '_index', IDBIndex, [
+    'get',
+    'getKey',
+    'getAll',
+    'getAllKeys',
+    'count'
+  ]);
+
+  proxyCursorRequestMethods(Index, '_index', IDBIndex, [
+    'openCursor',
+    'openKeyCursor'
+  ]);
+
+  function Cursor(cursor, request) {
+    this._cursor = cursor;
+    this._request = request;
+  }
+
+  proxyProperties(Cursor, '_cursor', [
+    'direction',
+    'key',
+    'primaryKey',
+    'value'
+  ]);
+
+  proxyRequestMethods(Cursor, '_cursor', IDBCursor, [
+    'update',
+    'delete'
+  ]);
+
+  // proxy 'next' methods
+  ['advance', 'continue', 'continuePrimaryKey'].forEach(function(methodName) {
+    if (!(methodName in IDBCursor.prototype)) return;
+    Cursor.prototype[methodName] = function() {
+      var cursor = this;
+      var args = arguments;
+      return Promise.resolve().then(function() {
+        cursor._cursor[methodName].apply(cursor._cursor, args);
+        return promisifyRequest(cursor._request).then(function(value) {
+          if (!value) return;
+          return new Cursor(value, cursor._request);
+        });
+      });
+    };
+  });
+
+  function ObjectStore(store) {
+    this._store = store;
+  }
+
+  ObjectStore.prototype.createIndex = function() {
+    return new Index(this._store.createIndex.apply(this._store, arguments));
+  };
+
+  ObjectStore.prototype.index = function() {
+    return new Index(this._store.index.apply(this._store, arguments));
+  };
+
+  proxyProperties(ObjectStore, '_store', [
+    'name',
+    'keyPath',
+    'indexNames',
+    'autoIncrement'
+  ]);
+
+  proxyRequestMethods(ObjectStore, '_store', IDBObjectStore, [
+    'put',
+    'add',
+    'delete',
+    'clear',
+    'get',
+    'getAll',
+    'getKey',
+    'getAllKeys',
+    'count'
+  ]);
+
+  proxyCursorRequestMethods(ObjectStore, '_store', IDBObjectStore, [
+    'openCursor',
+    'openKeyCursor'
+  ]);
+
+  proxyMethods(ObjectStore, '_store', IDBObjectStore, [
+    'deleteIndex'
+  ]);
+
+  function Transaction(idbTransaction) {
+    this._tx = idbTransaction;
+    this.complete = new Promise(function(resolve, reject) {
+      idbTransaction.oncomplete = function() {
+        resolve();
+      };
+      idbTransaction.onerror = function() {
+        reject(idbTransaction.error);
+      };
+      idbTransaction.onabort = function() {
+        reject(idbTransaction.error);
+      };
+    });
+  }
+
+  Transaction.prototype.objectStore = function() {
+    return new ObjectStore(this._tx.objectStore.apply(this._tx, arguments));
+  };
+
+  proxyProperties(Transaction, '_tx', [
+    'objectStoreNames',
+    'mode'
+  ]);
+
+  proxyMethods(Transaction, '_tx', IDBTransaction, [
+    'abort'
+  ]);
+
+  function UpgradeDB(db, oldVersion, transaction) {
+    this._db = db;
+    this.oldVersion = oldVersion;
+    this.transaction = new Transaction(transaction);
+  }
+
+  UpgradeDB.prototype.createObjectStore = function() {
+    return new ObjectStore(this._db.createObjectStore.apply(this._db, arguments));
+  };
+
+  proxyProperties(UpgradeDB, '_db', [
+    'name',
+    'version',
+    'objectStoreNames'
+  ]);
+
+  proxyMethods(UpgradeDB, '_db', IDBDatabase, [
+    'deleteObjectStore',
+    'close'
+  ]);
+
+  function DB(db) {
+    this._db = db;
+  }
+
+  DB.prototype.transaction = function() {
+    return new Transaction(this._db.transaction.apply(this._db, arguments));
+  };
+
+  proxyProperties(DB, '_db', [
+    'name',
+    'version',
+    'objectStoreNames'
+  ]);
+
+  proxyMethods(DB, '_db', IDBDatabase, [
+    'close'
+  ]);
+
+  // Add cursor iterators
+  // TODO: remove this once browsers do the right thing with promises
+  ['openCursor', 'openKeyCursor'].forEach(function(funcName) {
+    [ObjectStore, Index].forEach(function(Constructor) {
+      // Don't create iterateKeyCursor if openKeyCursor doesn't exist.
+      if (!(funcName in Constructor.prototype)) return;
+
+      Constructor.prototype[funcName.replace('open', 'iterate')] = function() {
+        var args = toArray(arguments);
+        var callback = args[args.length - 1];
+        var nativeObject = this._store || this._index;
+        var request = nativeObject[funcName].apply(nativeObject, args.slice(0, -1));
+        request.onsuccess = function() {
+          callback(request.result);
+        };
+      };
+    });
+  });
+
+  // polyfill getAll
+  [Index, ObjectStore].forEach(function(Constructor) {
+    if (Constructor.prototype.getAll) return;
+    Constructor.prototype.getAll = function(query, count) {
+      var instance = this;
+      var items = [];
+
+      return new Promise(function(resolve) {
+        instance.iterateCursor(query, function(cursor) {
+          if (!cursor) {
+            resolve(items);
+            return;
+          }
+          items.push(cursor.value);
+
+          if (count !== undefined && items.length == count) {
+            resolve(items);
+            return;
+          }
+          cursor.continue();
+        });
+      });
+    };
+  });
+
+  function openDb(name, version, upgradeCallback) {
+    var p = promisifyRequestCall(indexedDB, 'open', [name, version]);
+    var request = p.request;
+
+    if (request) {
+      request.onupgradeneeded = function(event) {
+        if (upgradeCallback) {
+          upgradeCallback(new UpgradeDB(request.result, event.oldVersion, request.transaction));
+        }
+      };
+    }
+
+    return p.then(function(db) {
+      return new DB(db);
+    });
+  }
+
+  function deleteDb(name) {
+    return promisifyRequestCall(indexedDB, 'deleteDatabase', [name]);
+  }
+
+  exports.openDb = openDb;
+  exports.deleteDb = deleteDb;
+
+  Object.defineProperty(exports, '__esModule', { value: true });
+
+}));
 
 
 /***/ }),
@@ -28462,7 +32030,7 @@ module.exports = ".form-control {\r\n    height: 38px !important;\r\n    backgro
 /*! no static exports found */
 /***/ (function(module, exports) {
 
-module.exports = "<!--nav class=\"navbar navbar-expand-lg navbar-dark ftco_navbar bg-dark ftco-navbar-light\" style=\"position: absolute\"\n  id=\"ftco-navbar\">\n  <div class=\"container\">\n    <img class=\"mr-2\" src=\"assets\\image\\LogoBS.png\">\n    <a class=\"navbar-brand\" style=\"color: white\">BarberPro</a>\n    <button class=\"navbar-toggler\" type=\"button\" data-toggle=\"collapse\" data-target=\"#ftco-nav\" aria-controls=\"ftco-nav\"\n      aria-expanded=\"false\" aria-label=\"Toggle navigation\">\n      <span class=\"navbar-toggler-icon\"></span>\n    </button>\n\n    <div class=\"collapse navbar-collapse\" id=\"ftco-nav\">\n      <ul class=\"navbar-nav ml-auto\">\n        <li class=\"nav-item \"> <a routerLink=\"/menu/calendario\" class=\"nav-link\"\n            href=\"#\">{{ 'NAV.MYSCHEDULE' | translate }}</a></li>\n        <li class=\"nav-item active\"><a class=\"nav-link\">{{ 'NAV.SETTINGS' | translate }}</a></li>\n        <li class=\"nav-item\"><a (click)=\"Logout()\" class=\"nav-link\"\n            style=\"cursor: pointer\">{{ 'NAV.LOGOUT' | translate }}</a></li>\n      </ul>\n    </div>\n  </div>\n</nav-->\n\n\n\n<div class=\"hero-wrap\" style=\"background-image: url('assets/image/b5.jpg');\" data-stellar-background-ratio=\"0.5\">\n  <div class=\"overlay\"></div>\n  <div class=\"container\">\n    <div class=\"row no-gutters slider-text\" data-scrollax-parent=\"true\">\n\n      <div class=\"col-md-6 mb-4\" style=\"margin-top: 7rem\" data-scrollax=\" properties: { translateY: '70%' }\">\n\n        <div class=\"card\">\n\n          <h3 class=\"card-title mx-1\" style=\"color: #ce9c6b\">{{ 'CONFIG.MYSETTINGS' | translate }}</h3>\n\n\n\n          <form class=\"form-horizontal \" [formGroup]=\"formulario\" (ngSubmit)=\"onSubmit()\">\n            <div class=\"card-body\">\n\n\n              <input type=\"hidden\" class=\"form-control \" formControlName=\"id\" id=\"id\" (input)=\"onInput()\">\n              <input type=\"hidden\" class=\"form-control \" formControlName=\"fk\" id=\"fk\" (input)=\"onInput()\">\n              <input type=\"hidden\" class=\"form-control \" formControlName=\"url\" id=\"url\" (input)=\"onInput()\">\n              <input type=\"hidden\" class=\"form-control \" formControlName=\"urlLogo\" id=\"urlLogo\" (input)=\"onInput()\">\n\n              <div class=\"row\" [ngClass]=\"aplicaCssErro('txt_NomeSalao')\">\n\n                <div class=\"col-sm-12  mb-3\">\n                  <input type=\"text\" class=\"form-control\" placeholder=\"{{ 'CONFIG.NAMEOFBARBERSHOP' | translate }}\"\n                    formControlName=\"txt_NomeSalao\" id=\"txt_NomeSalao\" (input)=\"onInput()\">\n                  <app-error-msg [control]=\"formulario.get('txt_NomeSalao')\" label=\"{{ 'CONFIG.NAMEOFBARBERSHOP' | translate }}\">\n                  </app-error-msg>\n                </div>\n              </div>\n\n\n              <!--combobox-->\n              <div class=\"row\" [ngClass]=\"aplicaCssErro('txt_pais')\">\n                <div class=\"col-sm-12  mb-3\">\n                  <!--input type=\"text\" class=\"form-control\" placeholder=\"Country\" formControlName=\"txt_pais\" id=\"txt_pais\"\n                    (input)=\"onInput()\"-->\n                  <select class=\"form-control\" formControlName=\"txt_pais\" id=\"txt_pais\">\n                    <!--Dar preferencia para pipe async em observable vindo do controle-->\n                    <option *ngFor=\"let pais of paises$ | async\" [value]=\"pais.sigla\"> {{ pais.nome_pais_int }}\n                    </option>\n                  </select>\n                  <app-error-msg [control]=\"formulario.get('txt_pais')\" label=\"{{ 'CONFIG.COUNTRY' | translate }}\"></app-error-msg>\n                </div>\n              </div>\n\n\n\n\n              <div class=\"row\" [ngClass]=\"aplicaCssErro('txt_UF')\">\n                <div class=\"col-sm-12  mb-3\">\n                  <input type=\"text\" class=\"form-control\" placeholder=\"{{ 'CONFIG.STATE' | translate }}\" formControlName=\"txt_UF\" id=\"txt_UF\"\n                    (input)=\"onInput()\">\n                  <app-error-msg [control]=\"formulario.get('txt_UF')\" label=\"{{ 'CONFIG.STATE' | translate }}\"></app-error-msg>\n                </div>\n              </div>\n\n\n              <div class=\"row\" [ngClass]=\"aplicaCssErro('txt_Cidade')\">\n                <div class=\"col-sm-12 mb-3\">\n                  <input type=\"text\" class=\"form-control\" placeholder=\"{{ 'CONFIG.CITY' | translate }}\" formControlName=\"txt_Cidade\"\n                    id=\"txt_Cidade\" (input)=\"onInput()\">\n                  <app-error-msg [control]=\"formulario.get('txt_Cidade')\" label=\"{{ 'CONFIG.CITY' | translate }}\"></app-error-msg>\n                </div>\n              </div>\n\n\n\n              <div class=\"row\" [ngClass]=\"aplicaCssErro('txt_NomeResp')\">\n\n                <div class=\"col-sm-12  mb-3\">\n                  <input type=\"text\" class=\"form-control\" formControlName=\"txt_NomeResp\" placeholder=\"{{ 'CONFIG.NEIGHBORHOOD' | translate }}\"\n                    id=\"txt_NomeResp\" (input)=\"onInput()\">\n                  <app-error-msg [control]=\"formulario.get('txt_NomeResp')\" label=\"{{ 'CONFIG.NEIGHBORHOOD' | translate }}\"></app-error-msg>\n                </div>\n              </div>\n\n\n              <div class=\"row\" [ngClass]=\"aplicaCssErro('txt_End')\">\n                <div class=\"col-sm-12 mb-3\">\n                  <input type=\"text\" placeholder=\"{{ 'CONFIG.STREET' | translate }}\" class=\"form-control\" formControlName=\"txt_End\" id=\"txt_End\"\n                    (input)=\"onInput()\">\n                  <app-error-msg [control]=\"formulario.get('txt_End')\" label=\"{{ 'CONFIG.STREET' | translate }}\"></app-error-msg>\n                </div>\n              </div>\n\n\n\n              <div class=\"row\">\n\n                <div class=\"col-sm-6 input-group mb-3\" [ngClass]=\"aplicaCssErro('txt_Numero')\">\n                  <input type=\"text\" class=\"form-control\" placeholder=\"{{ 'CONFIG.NUMBER' | translate }}\" formControlName=\"txt_Numero\"\n                    id=\"txt_Numero\" (input)=\"onInput()\">\n\n                </div>\n\n\n                <div class=\"col-sm-6 input-group mb-3\">\n                  <input type=\"text\" class=\"form-control\" placeholder=\"{{ 'CONFIG.ZIPCODE' | translate }}\" formControlName=\"txt_CEP\"\n                    id=\"txt_CEP\" (input)=\"onInput()\" (keypress)=\"numberOnly($event)\">\n\n                </div>\n\n              </div>\n\n\n\n\n\n\n              <div class=\"row\">\n\n                <div class=\"col-sm-6 input-group mb-3\">\n                  <input type=\"text\" placeholder=\"{{ 'CONFIG.CELLPHONE' | translate }}\" class=\"form-control \" formControlName=\"txt_Cel\"\n                    id=\"txt_Cel\" (input)=\"onInput()\">\n                </div>\n\n                <div class=\"col-sm-6 input-group mb-3\">\n                  <input type=\"text\" class=\"form-control\" placeholder=\"{{ 'CONFIG.TELEPHONE' | translate }}\" formControlName=\"txt_Tel\" id=\"txt_Tel\"\n                    (input)=\"onInput()\">\n                </div>\n\n              </div>\n\n\n\n\n\n\n\n              <div class=\"row\">\n\n                <div class=\"col-sm-8 input-group\" [ngClass]=\"aplicaCssErro('txt_email')\">\n                  <input type=\"text\" class=\"form-control\" placeholder=\"{{ 'CONFIG.EMAIL' | translate }}\" formControlName=\"txt_email\"\n                    id=\"txt_email\" (input)=\"onInput()\">\n                  <app-error-msg [control]=\"formulario.get('txt_email')\" label=\"{{ 'CONFIG.EMAIL' | translate }}\"></app-error-msg>\n                </div>\n\n\n              </div>\n\n            </div>\n\n\n            <div class=\"card-footer justify-content-end\"\n              style=\"background-color: transparent; border-top-color: transparent\">\n              <button type=\"submit\" class=\"btn btn-primary \">{{ 'CONFIG.SUBMIT' | translate }}</button>\n            </div>\n\n          </form>\n\n\n\n        </div>\n\n        <br><br>\n\n\n      </div>\n    </div>\n  </div>\n</div>\n\n<section class=\"ftco-section ftco-intro\" style=\"margin-top: 15rem; padding-top: 0px\">\n  <div class=\"container\">\n\n\n    <div class=\"row justify-content-center  mb-3 pb-3\" data-scrollax-parent=\"true\">\n      <div class=\"col-md-7 heading-section text-center fadeInUp ftco-animated \" style=\"margin-top: 7rem\"\n        data-scrollax=\" properties: { translateY: '70%' }\">\n        <h3 class=\"mb-4\">{{ 'CONFIG.PHOTOBARBERSHOP' | translate }}</h3>\n        <p class=\"flip\">\n          <span class=\"deg1\"></span>\n          <span class=\"deg2\"></span>\n          <span class=\"deg3\"></span>\n        </p>\n      </div>\n    </div>\n\n\n    <div class=\"row d-flex\">\n\n      <div class=\"col-md-6 col-sm-12 col-12 justify-content-center\">\n        <img class=\"mr-2  img-fluid\" src=\"assets\\image\\polaroid.jpg\" alt=\"\">\n      </div>\n\n      <div class=\"col-md-6 col-sm-12 col-12 pl-5 mt-5\" style=\"padding-right: 48px\">\n\n        <div class=\"row text-center\">\n\n          <blockquote class=\"blockquote text-center\">\n            <p class=\"mb-0\">{{ 'CONFIG.TEXTEFFECT' | translate }}</p>\n            <footer class=\"blockquote-footer\">Oliver Goldsmith <cite title=\"Título\">{{ 'CONFIG.TEXTEFFECTCont' | translate }}</cite></footer>\n\n          </blockquote>\n\n        </div>\n\n        <br><br><br>\n        <p>{{ 'CONFIG.TEXTEFFECT2' | translate }}</p>\n        <div class=\"row\" style=\"margin-left: 1\">\n          <button class=\"btn btn-primary mr-3\" data-toggle=\"modal\" data-target=\"#fotoModal\"\n            [disabled]=\"ativarDesativar\">{{ 'CONFIG.CHOOSEPHOTO' | translate }}</button>\n\n          <button class=\"btn btn-outline-primary\" data-toggle=\"modal\" data-target=\"#fotoModalLogo\"\n            [disabled]=\"ativarDesativar\">{{ 'CONFIG.CHOOSELOGO' | translate }}</button>\n        </div>\n      </div>\n\n\n    </div>\n  </div>\n</section>\n\n\n\n<section class=\"ftco-section ftco-bg-dark\">\n  <div class=\"container\">\n\n\n    <div class=\"row justify-content-center  mb-3 pb-3\" data-scrollax-parent=\"true\">\n      <div class=\"col-md-7 heading-section text-center fadeInUp ftco-animated \" style=\"margin-top: 7rem\"\n        data-scrollax=\" properties: { translateY: '70%' }\">\n        <h3 class=\"mb-4\">{{ 'CONFIG.BUSINESSHOURS' | translate }}</h3>\n        <p class=\"flip\">\n          <span class=\"deg1\"></span>\n          <span class=\"deg2\"></span>\n          <span class=\"deg3\"></span>\n        </p>\n      </div>\n    </div>\n\n\n    <div class=\"container\">\n    <div class=\"row  justify-content-center mb-5\">\n      <p class=\"mb-0\">{{ 'CONFIG.TEXTEFFECT3' | translate }}</p>\n    </div>\n  </div>\n\n\n\n\n\n    <div class=\"row justify-content-center\">\n      <div class=\"card\" style=\"border-color: #ce9c6b\">\n        <img class=\"card-img-top\" src=\"assets\\image\\b6.jpg\">\n\n        <div class=\"card-body\" style=\"background-color: #1b1b1b\">\n\n\n\n\n          <div class=\"container\" style=\"cursor: pointer\" data-toggle=\"modal\" data-target=\"#myModal\">\n            <!--Div com ng*For-->\n\n\n\n            <div class=\"row\">\n\n              <div class=\"col-4\">\n                <i class=\"far fa-clock\" aria-hidden=\"true\"></i>\n              </div>\n\n              <div class=\"col-4\">\n\n              </div>\n\n              <div class=\"col-4\" style=\"padding-left: 0px\">\n                <i class=\"fa fa-pencil-alt\" style=\"float: right\" aria-hidden=\"true\"></i>\n              </div>\n            </div>\n\n\n            <div class=\"row mb-2\">\n\n\n              <div class=\"col-5\" style=\"padding-left: 0px\">\n                <h5 style=\"font-size: 15px\">\n                  <span>{{ 'CONFIG.SUNDAY' | translate }}</span>\n                </h5>\n              </div>\n\n              <div class=\"col-7 justify-content-center\"\n                *ngIf=\"horariosDom$ | async as horariosDom ; else elseTemplateDom\">\n                <div *ngFor=\"let item of horariosDom\">\n\n                  <div *ngIf=\"item.closedDom==false; else elseDom\">\n                    <p\n                      style=\"font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif; margin-bottom: 0rem\">\n                      {{ 'CONFIG.CLOSED' | translate }}</p>\n                  </div>\n\n                  <ng-template #elseDom>\n                    <div *ngFor=\"let item of item.formArrayDomingo\">\n\n                      <p\n                        style=\"font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif; margin-bottom: 0rem\">\n                        {{item.itemPropertyOneDomingo}} - {{item.itemPropertyTwoDomingo}} </p>\n\n\n                    </div>\n                  </ng-template>\n\n                </div>\n              </div>\n\n              <ng-template #elseTemplateDom>\n                <p\n                  style=\"font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif; margin-bottom: 0rem\">\n                  {{ 'CONFIG.CLOSED' | translate }}</p>\n              </ng-template>\n\n\n\n            </div>\n\n\n\n\n\n            <div class=\"row mb-2\">\n              <div class=\"col-5\" style=\"padding-left: 0px\">\n                <h5 style=\"font-size: 15px\">\n                  <span>{{ 'CONFIG.MONDAY' | translate }}</span>\n                </h5>\n              </div>\n\n              <div class=\"col-7 justify-content-center\"\n                *ngIf=\"horariosSeg$ | async as horariosSeg ; else elseTemplateSeg\">\n                <div *ngFor=\"let item of horariosSeg\">\n\n                  <div *ngIf=\"item.closedSeg==false; else elseSeg\">\n                    <p\n                      style=\"font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif; margin-bottom: 0rem\">\n                      {{ 'CONFIG.CLOSED' | translate }}</p>\n                  </div>\n\n                  <ng-template #elseSeg>\n                    <div *ngFor=\"let item of item.formArraySegunda\">\n\n                      <p\n                        style=\"font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif; margin-bottom: 0rem\">\n                        {{item.itemPropertyOneSegunda}} - {{item.itemPropertyTwoSegunda}} </p>\n\n\n                    </div>\n                  </ng-template>\n\n                </div>\n              </div>\n\n              <ng-template #elseTemplateSeg>\n                <p\n                  style=\"font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif; margin-bottom: 0rem\">\n                  {{ 'CONFIG.CLOSED' | translate }}</p>\n              </ng-template>\n            </div>\n\n\n\n\n\n\n\n\n\n            <div class=\"row mb-2\">\n              <div class=\"col-5\" style=\"padding-left: 0px\">\n                <h5 style=\"font-size: 15px\">\n                  <span>{{ 'CONFIG.TUESDAY' | translate }}</span>\n                </h5>\n              </div>\n\n              <div class=\"col-7 justify-content-center\"\n                *ngIf=\"horariosTer$ | async as horariosTer ; else elseTemplateTer\">\n                <div *ngFor=\"let item of horariosTer\">\n\n                  <div *ngIf=\"item.closedTer==false; else elseTer\">\n                    <p\n                      style=\"font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif; margin-bottom: 0rem\">\n                      {{ 'CONFIG.CLOSED' | translate }}</p>\n                  </div>\n\n                  <ng-template #elseTer>\n                    <div *ngFor=\"let item of item.formArrayTerca\">\n\n                      <p\n                        style=\"font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif; margin-bottom: 0rem\">\n                        {{item.itemPropertyOneTerca}} - {{item.itemPropertyTwoTerca}} </p>\n\n\n                    </div>\n                  </ng-template>\n\n                </div>\n              </div>\n              <ng-template #elseTemplateTer>\n                <p\n                  style=\"font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif; margin-bottom: 0rem\">\n                  {{ 'CONFIG.CLOSED' | translate }}</p>\n              </ng-template>\n            </div>\n\n\n\n\n\n\n            <div class=\"row mb-2\">\n              <div class=\"col-5\" style=\"padding-left: 0px\">\n                <h5 style=\"font-size: 15px\">\n                  <span>{{ 'CONFIG.WEDNESDAY' | translate }}</span>\n                </h5>\n              </div>\n\n              <div class=\"col-7 justify-content-center\"\n                *ngIf=\"horariosQua$ | async as horariosQua ; else elseTemplateQua\">\n                <div *ngFor=\"let item of horariosQua\">\n\n                  <div *ngIf=\"item.closedQua==false; else elseQua\">\n                    <p\n                      style=\"font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif; margin-bottom: 0rem\">\n                      {{ 'CONFIG.CLOSED' | translate }}</p>\n                  </div>\n\n                  <ng-template #elseQua>\n                    <div *ngFor=\"let item of item.formArrayQuarta\">\n\n                      <p\n                        style=\"font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif; margin-bottom: 0rem\">\n                        {{item.itemPropertyOneQuarta}} - {{item.itemPropertyTwoQuarta}} </p>\n\n\n                    </div>\n                  </ng-template>\n\n                </div>\n              </div>\n              <ng-template #elseTemplateQua>\n                <p\n                  style=\"font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif; margin-bottom: 0rem\">\n                  {{ 'CONFIG.CLOSED' | translate }}</p>\n              </ng-template>\n            </div>\n\n\n\n\n\n\n\n\n            <div class=\"row mb-2\">\n              <div class=\"col-5\" style=\"padding-left: 0px\">\n                <h5 style=\"font-size: 15px\">\n                  <span>{{ 'CONFIG.THURSDAY' | translate }}</span>\n                </h5>\n              </div>\n\n              <div class=\"col-7 justify-content-center\"\n                *ngIf=\"horariosQui$ | async as horariosQui ; else elseTemplateQui\">\n                <div *ngFor=\"let item of horariosQui\">\n\n                  <div *ngIf=\"item.closedQui==false; else elseQui\">\n                    <p\n                      style=\"font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif; margin-bottom: 0rem\">\n                      {{ 'CONFIG.CLOSED' | translate }}</p>\n                  </div>\n\n                  <ng-template #elseQui>\n                    <div *ngFor=\"let item of item.formArrayQuinta\">\n\n                      <p\n                        style=\"font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif; margin-bottom: 0rem\">\n                        {{item.itemPropertyOneQuinta}} - {{item.itemPropertyTwoQuinta}} </p>\n\n                    </div>\n                  </ng-template>\n\n                </div>\n              </div>\n\n              <ng-template #elseTemplateQui>\n                <p\n                  style=\"font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif; margin-bottom: 0rem\">\n                  {{ 'CONFIG.CLOSED' | translate }}</p>\n              </ng-template>\n            </div>\n\n\n\n\n\n\n            <div class=\"row mb-2\">\n              <div class=\"col-5\" style=\"padding-left: 0px\">\n                <h5 style=\"font-size: 15px\">\n                  <span>{{ 'CONFIG.FRIDAY' | translate }}</span>\n                </h5>\n              </div>\n\n\n              <div class=\"col-7 justify-content-center\"\n                *ngIf=\"horariosSex$ | async as horariosSex ; else elseTemplateSex\">\n                <div *ngFor=\"let item of horariosSex\">\n\n                  <div *ngIf=\"item.closedSex==false; else elseSex\">\n                    <p\n                      style=\"font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif; margin-bottom: 0rem\">\n                      {{ 'CONFIG.CLOSED' | translate }}</p>\n                  </div>\n\n                  <ng-template #elseSex>\n                    <div *ngFor=\"let item of item.formArraySexta\">\n\n                      <p\n                        style=\"font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif; margin-bottom: 0rem\">\n                        {{item.itemPropertyOneSexta}} - {{item.itemPropertyTwoSexta}} </p>\n\n\n                    </div>\n                  </ng-template>\n\n                </div>\n              </div>\n              <ng-template #elseTemplateSex>\n                <p\n                  style=\"font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif; margin-bottom: 0rem\">\n                  {{ 'CONFIG.CLOSED' | translate }}</p>\n              </ng-template>\n            </div>\n\n\n\n\n\n\n\n\n            <div class=\"row\">\n              <div class=\"col-5\" style=\"padding-left: 0px\">\n                <h5 style=\"font-size: 15px\">\n                  <span>{{ 'CONFIG.SATURDAY' | translate }}</span>\n                </h5>\n              </div>\n\n              <div class=\"col-7 justify-content-center\"\n                *ngIf=\"horariosSab$ | async as horariosSab ; else elseTemplateSab\">\n                <div *ngFor=\"let item of horariosSab\">\n\n                  <div *ngIf=\"item.closedSab==false; else elseSab\">\n                    <p\n                      style=\"font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif; margin-bottom: 0rem\">\n                      {{ 'CONFIG.CLOSED' | translate }}</p>\n                  </div>\n\n                  <ng-template #elseSab>\n                    <div *ngFor=\"let item of item.formArraySabado\">\n\n                      <p\n                        style=\"font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif; margin-bottom: 0rem\">\n                        {{item.itemPropertyOneSabado}} - {{item.itemPropertyTwoSabado}} </p>\n\n\n                    </div>\n                  </ng-template>\n\n                </div>\n              </div>\n              <ng-template #elseTemplateSab>\n                <p\n                  style=\"font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif; margin-bottom: 0rem\">\n                  {{ 'CONFIG.CLOSED' | translate }}</p>\n              </ng-template>\n            </div>\n\n\n\n\n\n          </div>\n          <!--End Div com ng*For-->\n\n\n          <hr>\n\n          <div class=\"container\" style=\"cursor: pointer\" data-toggle=\"modal\" data-target=\"#precoModal\">\n\n            <div class=\"row\">\n\n              <div class=\"col-4\">\n                <i class=\"fas fa-cut\" aria-hidden=\"true\"></i>\n              </div>\n\n              <div class=\"col-4\">\n\n              </div>\n\n              <div class=\"col-4\">\n                <i class=\"fa fa-pencil-alt\" style=\"float: right\" aria-hidden=\"true\"></i>\n              </div>\n            </div>\n\n\n\n            <div class=\"row justify-content-center\" *ngIf=\"precos$ | async as precos ; else elseTemplateprecos\">\n              <div class=\"pricing-entry\" *ngFor=\"let item of precos\">\n                <div class=\"d-flex text align-items-center\" *ngFor=\"let item of item.formArrayPrecos\">\n                  <h3 style=\"font-size: 15px\">\n                    <span>{{ item.itemPropertyServico }}</span>\n                  </h3>\n\n                  <span class=\"price\" style=\"font-size: 15px\">{{ item.itemPropertyPreco }}</span>\n\n                </div>\n              </div>\n\n            </div>\n            <ng-template #elseTemplateprecos>\n\n              <p\n                style=\"font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif; margin-bottom: 0rem\">{{ 'CONFIG.ADDSERVICE' | translate }}</p>\n\n            </ng-template>\n\n          </div>\n\n\n        </div>\n\n      </div>\n    </div>\n  </div>\n\n</section>\n\n\n\n\n\n\n\n<!-- Modal Horario-->\n\n<div class=\"modal\" id=\"myModal\">\n  <div class=\"modal-dialog\">\n    <div class=\"modal-content\">\n\n      <div class=\"modal-header\" style=\"border-bottom: 0px\">\n        <button class=\"close float-right\" data-dismiss=\"modal\" aria-label=\"Close\">\n          <span aria-hidden=\"true\">x</span>\n        </button>\n      </div>\n\n      <div class=\"modal-body\">\n\n\n\n\n\n        <div class=\"container\">\n\n\n          <div class=\"row mb-3\">\n\n            <form class=\"appointment-form2 form-check-inline \" [formGroup]=\"myFormDomingo\">\n\n              <input type=\"hidden\" class=\"form-control2\" formControlName=\"id\" id=\"id\">\n\n              <input type=\"hidden\" class=\"form-control2\" formControlName=\"fk\" id=\"fk\">\n\n              <div class=\"row\">\n                <div class=\"col-12 col-md-3\">\n                  <div class=\"row \" style=\"width: 115px\">\n                    <div class=\"col-8 justify-content-start\">\n                      <span class=\"mr-1\" style=\"color: lightslategray ; font-size: 14px\">{{ 'CONFIG.SUNDAY' | translate }}</span>\n                    </div>\n                    <div class=\"col-4 justify-content-end\">\n                      <label class=\"switch\">\n                        <input type=\"checkbox\" [checked]=\"mostrarHoraDom\" (click)=\"onClickMostraHoraDom()\">\n                        <span class=\"slider round\"></span>\n                      </label>\n                    </div>\n\n                  </div>\n                </div>\n\n\n\n\n\n\n                <input type=\"hidden\" class=\"form-control2\" formControlName=\"closedDom\" id=\"closedDom\">\n\n                <div class=\"col-8 col-md-7\" [hidden]=\"!mostrarHoraDom\">\n                  <div formArrayName=\"formArrayDomingo\">\n                    <div *ngFor=\"let control of myFormDomingo.controls.formArrayDomingo.controls; let i=index\">\n\n                      <div class=\"row\" style=\"margin-left: 2px\">\n                        <div class=\"col-10 col-md-11\">\n                          <app-domingo [myFormDomingo]=\"myFormDomingo.controls.formArrayDomingo.controls[i]\">\n                          </app-domingo>\n                        </div>\n                        <div class=\"col-2 col-md-1\" style=\"padding: 0px\">\n                          <span (click)=\"delInputDomingo(i)\"\n                            style=\"cursor: pointer; position: absolute; right: 0\">x</span>\n                        </div>\n                      </div>\n\n                    </div>\n                  </div>\n\n\n                </div>\n\n\n\n                <div class=\"col-4 col-md-2\" style=\"padding: 0px\" [hidden]=\"!mostrarHoraDom\">\n                  <button class=\"btn btn-outline-primary\" style=\"margin-left: 6px; padding: 9px\"\n                    (click)=\"addInputDomingo()\">Add+</button>\n                </div>\n\n\n                <div class=\"col-4 col-md-3\" [hidden]=\"mostrarHoraDom\" style=\"width: 0px; height: 0px\">\n                </div>\n\n\n                <div class=\"col-4 col-md-3\" [hidden]=\"mostrarHoraDom\">\n                  <span>{{ 'CONFIG.CLOSED' | translate }}</span>\n                </div>\n\n              </div>\n            </form>\n          </div>\n\n\n          <div class=\"row mb-3\">\n            <form class=\"appointment-form2 form-check-inline\" [formGroup]=\"myFormSegunda\">\n\n              <input type=\"hidden\" class=\"form-control2\" formControlName=\"id\" id=\"id\">\n\n              <input type=\"hidden\" class=\"form-control2\" formControlName=\"fk\" id=\"fk\">\n\n\n              <div class=\"row \">\n                <div class=\"col-12 col-md-3\">\n                  <div class=\"row\" style=\"width: 115px\">\n                    <div class=\"col-8 justify-content-start\">\n                      <span class=\"mr-1\" style=\"color: lightslategray ; font-size: 14px\">{{ 'CONFIG.MONDAY' | translate }}</span>\n                    </div>\n                    <div class=\"col-4 justify-content-end\">\n                      <label class=\"switch\">\n                        <input type=\"checkbox\" [checked]=\"mostrarHoraSeg\" (click)=\"onClickMostraHoraSeg()\">\n                        <span class=\"slider round\"></span>\n                      </label>\n                    </div>\n\n                  </div>\n                </div>\n\n\n                <input type=\"hidden\" class=\"form-control2\" formControlName=\"closedSeg\" id=\"closedSeg\">\n\n                <div class=\"col-8 col-md-7\" [hidden]=\"!mostrarHoraSeg\">\n                  <div formArrayName=\"formArraySegunda\">\n                    <div *ngFor=\"let control of myFormSegunda.controls.formArraySegunda.controls; let i=index\">\n\n                      <div class=\"row\" style=\"margin-left: 2px\">\n                        <div class=\"col-10 col-md-11\">\n                          <app-segunda [myFormSegunda]=\"myFormSegunda.controls.formArraySegunda.controls[i]\">\n                          </app-segunda>\n                        </div>\n                        <div class=\"col-2 col-md-1\" style=\"padding: 0px\">\n                          <span (click)=\"delInputSegunda(i)\"\n                            style=\"cursor: pointer; position: absolute; right: 0\">x</span>\n                        </div>\n                      </div>\n\n                    </div>\n                  </div>\n\n\n                </div>\n\n\n\n\n                <div class=\"col-4 col-md-2\" style=\"padding: 0px\" [hidden]=\"!mostrarHoraSeg\">\n                  <button class=\"btn btn-outline-primary\" style=\"margin-left: 6px; padding: 9px\"\n                    (click)=\"addInputSegunda()\">Add+</button>\n                </div>\n\n\n                <div class=\"col-4 col-md-3\" [hidden]=\"mostrarHoraSeg\" style=\"width: 0px; height: 0px\">\n                </div>\n\n\n                <div class=\"col-4 col-md-3\" [hidden]=\"mostrarHoraSeg\">\n                  <span>{{ 'CONFIG.CLOSED' | translate }}</span>\n                </div>\n\n              </div>\n\n            </form>\n          </div>\n\n          <div class=\"row mb-3\">\n            <form class=\"appointment-form2 form-check-inline\" [formGroup]=\"myFormTerca\">\n\n              <input type=\"hidden\" class=\"form-control2\" formControlName=\"id\" id=\"id\">\n\n              <input type=\"hidden\" class=\"form-control2\" formControlName=\"fk\" id=\"fk\">\n\n\n\n              <div class=\"row \">\n                <div class=\"col-12 col-md-3\">\n                  <div class=\"row\" style=\"width: 115px\">\n                    <div class=\" col-8 justify-content-start\">\n                      <span class=\"mr-1\" style=\"color: lightslategray ; font-size: 14px\">{{ 'CONFIG.TUESDAY' | translate }}</span>\n                    </div>\n                    <div class=\"col-4 justify-content-end\">\n                      <label class=\"switch\">\n                        <input type=\"checkbox\" [checked]=\"mostrarHoraTer\" (click)=\"onClickMostraHoraTer()\">\n                        <span class=\"slider round\"></span>\n                      </label>\n                    </div>\n\n                  </div>\n                </div>\n\n\n\n\n\n\n                <input type=\"hidden\" class=\"form-control2\" formControlName=\"closedTer\" id=\"closedTer\">\n\n                <div class=\"col-8 col-md-7\" [hidden]=\"!mostrarHoraTer\">\n                  <div formArrayName=\"formArrayTerca\">\n                    <div *ngFor=\"let control of myFormTerca.controls.formArrayTerca.controls; let i=index\">\n\n                      <div class=\"row\" style=\"margin-left: 2px\">\n                        <div class=\"col-10 col-md-11\">\n                          <app-terca [myFormTerca]=\"myFormTerca.controls.formArrayTerca.controls[i]\"> </app-terca>\n                        </div>\n                        <div class=\"col-2 col-md-1\" style=\"padding: 0px\">\n                          <span (click)=\"delInputTerca(i)\"\n                            style=\"cursor: pointer; position: absolute; right: 0\">x</span>\n                        </div>\n                      </div>\n\n                    </div>\n                  </div>\n\n\n                </div>\n\n\n\n\n                <div class=\"col-4 col-md-2\" style=\"padding: 0px\" [hidden]=\"!mostrarHoraTer\">\n                  <button class=\"btn btn-outline-primary\" style=\"margin-left: 6px; padding: 9px\"\n                    (click)=\"addInputTerca()\">Add+</button>\n                </div>\n\n\n                <div class=\"col-4 col-md-3\" [hidden]=\"mostrarHoraTer\" style=\"width: 0px; height: 0px\">\n                </div>\n\n\n                <div class=\"col-4 col-md-3\" [hidden]=\"mostrarHoraTer\">\n                  <span>{{ 'CONFIG.CLOSED' | translate }}</span>\n                </div>\n\n              </div>\n            </form>\n          </div>\n\n\n\n          <div class=\"row mb-3\">\n            <form class=\"appointment-form2 form-check-inline \" [formGroup]=\"myFormQuarta\">\n\n              <input type=\"hidden\" class=\"form-control2\" formControlName=\"id\" id=\"id\">\n\n              <input type=\"hidden\" class=\"form-control2\" formControlName=\"fk\" id=\"fk\">\n\n\n\n              <div class=\"row \">\n                <div class=\"col-12 col-md-3\">\n                  <div class=\"row \" style=\"width: 115px\">\n                    <div class=\"col-8 justify-content-start\">\n                      <span class=\"mr-1\" style=\"color: lightslategray; font-size: 14px\">{{ 'CONFIG.WEDNESDAY' | translate }}</span>\n                    </div>\n                    <div class=\"col-4 justify-content-end\">\n                      <label class=\"switch\">\n                        <input type=\"checkbox\" [checked]=\"mostrarHoraQua\" (click)=\"onClickMostraHoraQua()\">\n                        <span class=\"slider round\"></span>\n                      </label>\n                    </div>\n\n                  </div>\n                </div>\n\n\n\n\n\n\n                <input type=\"hidden\" class=\"form-control2\" formControlName=\"closedQua\" id=\"closedQua\">\n\n                <div class=\"col-8 col-md-7\" [hidden]=\"!mostrarHoraQua\">\n                  <div formArrayName=\"formArrayQuarta\">\n                    <div *ngFor=\"let control of myFormQuarta.controls.formArrayQuarta.controls; let i=index\">\n\n                      <div class=\"row\" style=\"margin-left: 2px\">\n                        <div class=\"col-10 col-md-11\">\n                          <app-quarta [myFormQuarta]=\"myFormQuarta.controls.formArrayQuarta.controls[i]\">\n                          </app-quarta>\n                        </div>\n                        <div class=\"col-2 col-md-1\" style=\"padding: 0px\">\n                          <span (click)=\"delInputQuarta(i)\"\n                            style=\"cursor: pointer; position: absolute; right: 0\">x</span>\n                        </div>\n                      </div>\n\n                    </div>\n                  </div>\n\n\n                </div>\n\n\n\n\n                <div class=\"col-4 col-md-2\" style=\"padding: 0px\" [hidden]=\"!mostrarHoraQua\">\n                  <button class=\"btn btn-outline-primary\" style=\"margin-left: 6px; padding: 9px\"\n                    (click)=\"addInputQuarta()\">Add+</button>\n                </div>\n\n\n                <div class=\"col-4 col-md-3\" [hidden]=\"mostrarHoraQua\" style=\"width: 0px; height: 0px\">\n                </div>\n\n\n                <div class=\"col-4 col-md-3\" [hidden]=\"mostrarHoraQua\">\n                  <span>{{ 'CONFIG.CLOSED' | translate }}</span>\n                </div>\n\n              </div>\n            </form>\n          </div>\n\n\n\n          <div class=\"row mb-3\">\n            <form class=\"appointment-form2 form-check-inline\" [formGroup]=\"myFormQuinta\">\n\n              <input type=\"hidden\" class=\"form-control2\" formControlName=\"id\" id=\"id\">\n\n              <input type=\"hidden\" class=\"form-control2\" formControlName=\"fk\" id=\"fk\">\n\n\n\n\n              <div class=\"row \">\n                <div class=\"col-12 col-md-3\">\n                  <div class=\"row\" style=\"width: 115px\">\n                    <div class=\"col-8 justify-content-start\">\n                      <span class=\"mr-1\" style=\"color: lightslategray ; font-size: 14px\">{{ 'CONFIG.THURSDAY' | translate }}</span>\n                    </div>\n                    <div class=\"col-4 justify-content-end\">\n                      <label class=\"switch\">\n                        <input type=\"checkbox\" [checked]=\"mostrarHoraQui\" (click)=\"onClickMostraHoraQui()\">\n                        <span class=\"slider round\"></span>\n                      </label>\n                    </div>\n\n                  </div>\n                </div>\n\n\n\n\n\n\n                <input type=\"hidden\" class=\"form-control2\" formControlName=\"closedQui\" id=\"closedQui\">\n\n                <div class=\"col-8 col-md-7\" [hidden]=\"!mostrarHoraQui\">\n                  <div formArrayName=\"formArrayQuinta\">\n                    <div *ngFor=\"let control of myFormQuinta.controls.formArrayQuinta.controls; let i=index\">\n\n                      <div class=\"row\" style=\"margin-left: 2px\">\n                        <div class=\"col-10 col-md-11\">\n                          <app-quinta [myFormQuinta]=\"myFormQuinta.controls.formArrayQuinta.controls[i]\">\n                          </app-quinta>\n                        </div>\n                        <div class=\"col-2 col-md-1\" style=\"padding: 0px\">\n                          <span (click)=\"delInputQuinta(i)\"\n                            style=\"cursor: pointer; position: absolute; right: 0\">x</span>\n                        </div>\n                      </div>\n\n                    </div>\n                  </div>\n\n\n                </div>\n\n\n\n\n                <div class=\"col-4 col-md-2\" style=\"padding: 0px\" [hidden]=\"!mostrarHoraQui\">\n                  <button class=\"btn btn-outline-primary\" style=\"margin-left: 6px; padding: 9px\"\n                    (click)=\"addInputQuinta()\">Add+</button>\n                </div>\n\n\n                <div class=\"col-4 col-md-3\" [hidden]=\"mostrarHoraQui\" style=\"width: 0px; height: 0px\">\n                </div>\n\n\n                <div class=\"col-4 col-md-3\" [hidden]=\"mostrarHoraQui\">\n                  <span>{{ 'CONFIG.CLOSED' | translate }}</span>\n                </div>\n\n              </div>\n\n            </form>\n          </div>\n\n\n          <div class=\"row mb-3\">\n            <form class=\"appointment-form2 form-check-inline\" [formGroup]=\"myFormSexta\">\n\n              <input type=\"hidden\" class=\"form-control2\" formControlName=\"id\" id=\"id\">\n\n              <input type=\"hidden\" class=\"form-control2\" formControlName=\"fk\" id=\"fk\">\n\n\n\n\n\n\n\n              <div class=\"row\">\n                <div class=\"col-12 col-md-3\">\n                  <div class=\"row\" style=\"width: 115px\">\n                    <div class=\"col-8 justify-content-start\">\n                      <span class=\"mr-1\" style=\"color: lightslategray ; font-size: 14px\">{{ 'CONFIG.FRIDAY' | translate }}</span>\n                    </div>\n                    <div class=\"col-4 justify-content-end\">\n                      <label class=\"switch\">\n                        <input type=\"checkbox\" [checked]=\"mostrarHoraSex\" (click)=\"onClickMostraHoraSex()\">\n                        <span class=\"slider round\"></span>\n                      </label>\n\n                    </div>\n                  </div>\n                </div>\n\n\n\n\n\n\n                <input type=\"hidden\" class=\"form-control2\" formControlName=\"closedSex\" id=\"closedSex\">\n\n                <div class=\"col-8 col-md-7\" [hidden]=\"!mostrarHoraSex\">\n                  <div formArrayName=\"formArraySexta\">\n                    <div *ngFor=\"let control of myFormSexta.controls.formArraySexta.controls; let i=index\">\n\n                      <div class=\"row\" style=\"margin-left: 2px\">\n                        <div class=\"col-10 col-md-11\">\n                          <app-sexta [myFormSexta]=\"myFormSexta.controls.formArraySexta.controls[i]\"> </app-sexta>\n                        </div>\n                        <div class=\"col-2 col-md-1\" style=\"padding: 0px\">\n                          <span (click)=\"delInputSexta(i)\"\n                            style=\"cursor: pointer; position: absolute; right: 0\">x</span>\n                        </div>\n                      </div>\n\n                    </div>\n                  </div>\n\n\n                </div>\n\n\n\n\n                <div class=\"col-4 col-md-2\" style=\"padding: 0px\" [hidden]=\"!mostrarHoraSex\">\n                  <button class=\"btn btn-outline-primary\" style=\"margin-left: 6px; padding: 9px\"\n                    (click)=\"addInputSexta()\">Add+</button>\n                </div>\n\n\n                <div class=\"col-4 col-md-3\" [hidden]=\"mostrarHoraSex\" style=\"width: 0px; height: 0px\">\n                </div>\n\n\n                <div class=\"col-4 col-md-3\" [hidden]=\"mostrarHoraSex\">\n                  <span>{{ 'CONFIG.CLOSED' | translate }}</span>\n                </div>\n\n              </div>\n\n            </form>\n          </div>\n\n\n\n          <div class=\"row mb-3\">\n\n            <form class=\"appointment-form2 form-check-inline\" [formGroup]=\"myFormSabado\">\n\n              <input type=\"hidden\" class=\"form-control2\" formControlName=\"id\" id=\"id\">\n\n              <input type=\"hidden\" class=\"form-control2\" formControlName=\"fk\" id=\"fk\">\n\n\n\n\n\n\n              <div class=\"row\">\n                <div class=\"col-12 col-md-3\">\n                  <div class=\"row\" style=\"width: 115px\">\n                    <div class=\"col-8 justify-content-start\">\n                      <span class=\"mr-1\" style=\"color: lightslategray ; font-size: 14px\">{{ 'CONFIG.SATURDAY' | translate }}</span>\n                    </div>\n\n                    <div class=\"col-4 justify-content-end\">\n                      <label class=\"switch\">\n                        <input type=\"checkbox\" [checked]=\"mostrarHoraSab\" (click)=\"onClickMostraHoraSab()\">\n                        <span class=\"slider round\"></span>\n                      </label>\n\n                    </div>\n                  </div>\n                </div>\n\n\n\n\n\n\n                <input type=\"hidden\" class=\"form-control2\" formControlName=\"closedSab\" id=\"closedSab\">\n\n                <div class=\"col-8 col-md-7\" [hidden]=\"!mostrarHoraSab\">\n                  <div formArrayName=\"formArraySabado\">\n                    <div *ngFor=\"let control of myFormSabado.controls.formArraySabado.controls; let i=index\">\n\n                      <div class=\"row\" style=\"margin-left: 2px\">\n                        <div class=\"col-10 col-md-11\">\n                          <app-sabado [myFormSabado]=\"myFormSabado.controls.formArraySabado.controls[i]\">\n                          </app-sabado>\n                        </div>\n                        <div class=\"col-2 col-md-1\" style=\"padding: 0px\">\n                          <span (click)=\"delInputSabado(i)\"\n                            style=\"cursor: pointer; position: absolute; right: 0\">x</span>\n                        </div>\n                      </div>\n\n                    </div>\n                  </div>\n\n\n                </div>\n\n\n\n\n                <div class=\"col-4 col-md-2\" style=\"padding: 0px\" [hidden]=\"!mostrarHoraSab\">\n                  <button class=\"btn btn-outline-primary\" style=\"margin-left: 6px; padding: 9px\"\n                    (click)=\"addInputSabado()\">Add+</button>\n                </div>\n\n\n                <div class=\"col-4 col-md-3\" [hidden]=\"mostrarHoraSab\" style=\"width: 0px; height: 0px\">\n                </div>\n\n\n                <div class=\"col-4 col-md-3\" [hidden]=\"mostrarHoraSab\">\n                  <span>{{ 'CONFIG.CLOSED' | translate }}</span>\n                </div>\n\n              </div>\n            </form>\n\n          </div>\n\n\n        </div>\n\n\n\n\n\n      </div>\n\n\n      <div class=\"modal-footer\" style=\"padding: 20px; border-top-color: transparent\">\n        <button class=\"btn btn-secondary\" (click)=\"onClickAdd()\" data-dismiss=\"modal\">{{ 'CONFIG.APPLY' | translate }}</button>\n      </div>\n\n    </div>\n  </div>\n</div>\n\n\n\n\n<div class=\"modal\" id=\"precoModal\">\n  <div class=\"modal-dialog\">\n    <div class=\"modal-content\">\n\n      <div class=\"modal-header\" style=\"border-bottom: 0px\">\n        <button class=\"close float-right\" data-dismiss=\"modal\" aria-label=\"Close\">\n          <span aria-hidden=\"true\">x</span>\n        </button>\n      </div>\n\n      <div class=\"modal-body\">\n        <div class=\"container\">\n          <div class=\"row\">\n            <div class=\"col-lg-2\"></div>\n\n            <div class=\"col-12 col-lg-8\">\n              <form class=\"appointment-form2 form-check-inline\" [formGroup]=\"myFormPrecos\">\n\n                <input type=\"hidden\" class=\"form-control2\" formControlName=\"id\" id=\"id\">\n\n                <input type=\"hidden\" class=\"form-control2\" formControlName=\"fk\" id=\"fk\">\n                <div formArrayName=\"formArrayPrecos\">\n                  <div *ngFor=\"let control of myFormPrecos.controls.formArrayPrecos.controls; let i=index\">\n\n                    <div class=\"row\">\n                      <div class=\"col-9\">\n                        <app-precos [myFormPrecos]=\"myFormPrecos.controls.formArrayPrecos.controls[i]\"></app-precos>\n                      </div>\n\n\n                      <div class=\"col-1\">\n                        <i class=\"fas fa-plus\" (click)=\"addInputPrecos()\" style=\"cursor: pointer; color: #ce9c6b\"></i>\n                      </div>\n\n                      <div class=\"col-1\">\n                        <i class=\"fas fa-trash\" (click)=\"delInputPrecos(i)\" style=\"cursor: pointer\"></i>\n                      </div>\n\n                    </div>\n                  </div>\n                </div>\n              </form>\n            </div>\n\n            <div class=\"col-1 col-lg-2\"></div>\n          </div>\n        </div>\n      </div>\n      <div class=\"modal-footer\" style=\"padding: 20px; border-top-color: transparent\">\n        <button class=\"btn btn-secondary\" (click)=\"onClickAddPrecos()\" data-dismiss=\"modal\">{{ 'CONFIG.APPLY' | translate }}</button>\n      </div>\n    </div>\n\n  </div>\n</div>\n\n\n\n<div class=\"modal\" id=\"fotoModal\">\n  <div class=\"modal-dialog\">\n    <div class=\"modal-content\">\n\n      <div class=\"modal-header\" style=\"border-bottom-width: 0px\">\n        <h5 class=\"modal-title\" style=\"color: gray\">BarberPro</h5>\n\n      </div>\n\n      <div class=\"modal-body\">\n        <div class=\"container\">\n\n          <img [src]=\"downloadURL\" style=\"max-width: 398px; max-height: 260px; width:auto; height: auto\"> <br>\n\n          <input type=\"file\" accept=\"image/*\" class=\"form-control2\" (change)=\"featuredPhotoSelected($event)\" />\n        </div>\n      </div>\n      <div class=\"modal-footer\" style=\"padding: 20px; border-top-color: transparent\">\n\n        <button class=\"btn btn-primary\" data-dismiss=\"modal\">Ok</button>\n      </div>\n    </div>\n\n  </div>\n</div>\n\n\n\n\n<div class=\"modal\" id=\"fotoModalLogo\">\n  <div class=\"modal-dialog\">\n    <div class=\"modal-content\">\n\n      <div class=\"modal-header\" style=\"border-bottom-width: 0px\">\n        <h5 class=\"modal-title\" style=\"color: gray\">BarberPro</h5>\n\n      </div>\n\n      <div class=\"modal-body\">\n        <div class=\"container\">\n\n          <img [src]=\"downloadURLLogo\" style=\"width: 70px; height: 70px;\"> <br>\n\n          <input type=\"file\" accept=\"image/*\" class=\"form-control2\" (change)=\"featuredPhotoSelectedLogo($event)\" />\n        </div>\n      </div>\n      <div class=\"modal-footer\" style=\"padding: 20px; border-top-color: transparent\">\n\n        <button class=\"btn btn-primary\" data-dismiss=\"modal\">Ok</button>\n      </div>\n    </div>\n\n  </div>\n</div>\n\n\n\n\n\n\n\n\n\n<section style=\"background: #000\">\n  <div class=\"container\" style=\"padding-top: 30px; padding-bottom: 5px\">\n    <div class=\"row\">\n      <div class=\"col-8\">\n        <p style=\"cursor: pointer\" data-toggle=\"modal\" data-target=\"#contatoModal\"><i class=\"fas fa-headset\"></i>\n          {{ 'HOME.TITLE24' | translate }}</p>\n      </div>\n     \n    </div>\n  </div>\n</section>\n\n\n\n\n\n<div class=\"modal\" id=\"contatoModal\">\n  <div class=\"modal-dialog\">\n    <div class=\"modal-content\">\n\n      <div class=\"modal-header\" style=\"border-bottom-width: 0px\">\n        <h5 class=\"modal-title\" style=\"color: gray\">{{ 'HOME.TITLE17' | translate }}</h5>\n        <button class=\"close float-right\" data-dismiss=\"modal\" aria-label=\"Close\">\n          <span aria-hidden=\"true\">x</span>\n        </button>\n      </div>\n\n      <div class=\"modal-body\">\n\n\n\n\n\n        <div class=\"container\">\n\n          <form action=\"#\" class=\"contact-form\" [formGroup]=\"formularioContato\">\n            <div class=\"row\">\n\n\n              <div class=\"col-md-6\">\n                <div class=\"form-group\">\n                  <input type=\"text\" style=\"font-size: 13px\" class=\"form-control\" placeholder=\"{{ 'HOME.TITLE20' | translate }}\" formControlName=\"yourName\"\n                    id=\"yourName\">\n                  <app-error-msg style=\"font-size: 10px\" [control]=\"formularioContato.get('yourName')\" label=\"Name\">\n                  </app-error-msg>\n                </div>\n              </div>\n\n\n              <div class=\"col-md-6\" >\n                <div class=\"form-group\">\n                  <input type=\"text\" style=\"font-size: 13px\" class=\"form-control\" placeholder=\"{{ 'HOME.TITLE21' | translate }}\" formControlName=\"yourEmail\"\n                    id=\"yourEmail\">\n                  <app-error-msg style=\"font-size: 10px\" [control]=\"formularioContato.get('yourEmail')\" label=\"Email\">\n                  </app-error-msg>\n                </div>\n\n              </div>\n            </div>\n\n\n          \n              <div class=\"form-group\">\n                <input type=\"text\" style=\"font-size: 13px\" class=\"form-control\" placeholder=\"{{ 'HOME.TITLE22' | translate }}\" formControlName=\"assunto\" id=\"assunto\">\n                <app-error-msg style=\"font-size: 10px\" [control]=\"formularioContato.get('assunto')\" label=\"{{ 'HOME.TITLE22' | translate }}\">\n                </app-error-msg>\n              </div>\n           \n\n         \n              <div class=\"form-group\">\n                <textarea cols=\"30\" rows=\"7\" style=\"font-size: 13px\" class=\"form-control\" placeholder=\"{{ 'HOME.TITLE23' | translate }}\" formControlName=\"message\"\n                  id=\"message\"></textarea>\n                <app-error-msg style=\"font-size: 10px\" [control]=\"formularioContato.get('message')\" label=\"Message\">\n                </app-error-msg>\n              </div>\n         \n\n          </form>\n\n\n        </div>\n\n\n      </div>\n\n\n      <div class=\"modal-footer\" style=\"padding: 20px; border-top-color: transparent\">\n\n        <div>\n          <button class=\"btn btn-outline-primary mr-2\" data-dismiss=\"modal\">{{ 'HOME.TITLE18' | translate }}</button>\n          <button class=\"btn btn-primary\" (click)=\"sendEmail()\" data-dismiss=\"modal\">{{ 'HOME.TITLE19' | translate }}</button>\n        </div>\n      </div>\n    </div>\n  </div>\n\n</div>\n"
+module.exports = "<!--nav class=\"navbar navbar-expand-lg navbar-dark ftco_navbar bg-dark ftco-navbar-light\" style=\"position: absolute\"\n  id=\"ftco-navbar\">\n  <div class=\"container\">\n    <img class=\"mr-2\" src=\"assets\\image\\LogoBS.png\">\n    <a class=\"navbar-brand\" style=\"color: white\">BarberPro</a>\n    <button class=\"navbar-toggler\" type=\"button\" data-toggle=\"collapse\" data-target=\"#ftco-nav\" aria-controls=\"ftco-nav\"\n      aria-expanded=\"false\" aria-label=\"Toggle navigation\">\n      <span class=\"navbar-toggler-icon\"></span>\n    </button>\n\n    <div class=\"collapse navbar-collapse\" id=\"ftco-nav\">\n      <ul class=\"navbar-nav ml-auto\">\n        <li class=\"nav-item \"> <a routerLink=\"/menu/calendario\" class=\"nav-link\"\n            href=\"#\">{{ 'NAV.MYSCHEDULE' | translate }}</a></li>\n        <li class=\"nav-item active\"><a class=\"nav-link\">{{ 'NAV.SETTINGS' | translate }}</a></li>\n        <li class=\"nav-item\"><a (click)=\"Logout()\" class=\"nav-link\"\n            style=\"cursor: pointer\">{{ 'NAV.LOGOUT' | translate }}</a></li>\n      </ul>\n    </div>\n  </div>\n</nav-->\n\n\n\n<div class=\"hero-wrap\" style=\"background-image: url('assets/image/b5.jpg');\" data-stellar-background-ratio=\"0.5\">\n  <div class=\"overlay\"></div>\n  <div class=\"container\">\n    <div class=\"row no-gutters slider-text\" data-scrollax-parent=\"true\">\n\n      <div class=\"col-md-6 mb-4\" style=\"margin-top: 7rem\" data-scrollax=\" properties: { translateY: '70%' }\">\n\n        <div class=\"card\">\n\n          <h3 class=\"card-title mx-1\" style=\"color: #ce9c6b\">{{ 'CONFIG.MYSETTINGS' | translate }}</h3>\n\n\n\n          <form class=\"form-horizontal \" [formGroup]=\"formulario\" (ngSubmit)=\"onSubmit()\">\n            <div class=\"card-body\">\n\n\n              <input type=\"hidden\" class=\"form-control \" formControlName=\"id\" id=\"id\" (input)=\"onInput()\">\n              <input type=\"hidden\" class=\"form-control \" formControlName=\"fk\" id=\"fk\" (input)=\"onInput()\">\n              <input type=\"hidden\" class=\"form-control \" formControlName=\"url\" id=\"url\" (input)=\"onInput()\">\n              <input type=\"hidden\" class=\"form-control \" formControlName=\"urlLogo\" id=\"urlLogo\" (input)=\"onInput()\">\n\n              <div class=\"row\" [ngClass]=\"aplicaCssErro('txt_NomeSalao')\">\n\n                <div class=\"col-sm-12  mb-3\">\n                  <input type=\"text\" class=\"form-control\" placeholder=\"{{ 'CONFIG.NAMEOFBARBERSHOP' | translate }}\"\n                    formControlName=\"txt_NomeSalao\" id=\"txt_NomeSalao\" (input)=\"onInput()\">\n                  <app-error-msg [control]=\"formulario.get('txt_NomeSalao')\" label=\"{{ 'CONFIG.NAMEOFBARBERSHOP' | translate }}\">\n                  </app-error-msg>\n                </div>\n              </div>\n\n\n              <!--combobox-->\n              <div class=\"row\" [ngClass]=\"aplicaCssErro('txt_pais')\">\n                <div class=\"col-sm-12  mb-3\">\n                  <!--input type=\"text\" class=\"form-control\" placeholder=\"Country\" formControlName=\"txt_pais\" id=\"txt_pais\"\n                    (input)=\"onInput()\"-->\n                  <select class=\"form-control\" formControlName=\"txt_pais\" id=\"txt_pais\">\n                    <!--Dar preferencia para pipe async em observable vindo do controle-->\n                    <option *ngFor=\"let pais of paises$ | async\" [value]=\"pais.sigla\"> {{ pais.nome_pais_int }}\n                    </option>\n                  </select>\n                  <app-error-msg [control]=\"formulario.get('txt_pais')\" label=\"{{ 'CONFIG.COUNTRY' | translate }}\"></app-error-msg>\n                </div>\n              </div>\n\n\n\n\n              <div class=\"row\" [ngClass]=\"aplicaCssErro('txt_UF')\">\n                <div class=\"col-sm-12  mb-3\">\n                  <input type=\"text\" class=\"form-control\" placeholder=\"{{ 'CONFIG.STATE' | translate }}\" formControlName=\"txt_UF\" id=\"txt_UF\"\n                    (input)=\"onInput()\">\n                  <app-error-msg [control]=\"formulario.get('txt_UF')\" label=\"{{ 'CONFIG.STATE' | translate }}\"></app-error-msg>\n                </div>\n              </div>\n\n\n              <div class=\"row\" [ngClass]=\"aplicaCssErro('txt_Cidade')\">\n                <div class=\"col-sm-12 mb-3\">\n                  <input type=\"text\" class=\"form-control\" placeholder=\"{{ 'CONFIG.CITY' | translate }}\" formControlName=\"txt_Cidade\"\n                    id=\"txt_Cidade\" (input)=\"onInput()\">\n                  <app-error-msg [control]=\"formulario.get('txt_Cidade')\" label=\"{{ 'CONFIG.CITY' | translate }}\"></app-error-msg>\n                </div>\n              </div>\n\n\n\n              <div class=\"row\" [ngClass]=\"aplicaCssErro('txt_NomeResp')\">\n\n                <div class=\"col-sm-12  mb-3\">\n                  <input type=\"text\" class=\"form-control\" formControlName=\"txt_NomeResp\" placeholder=\"{{ 'CONFIG.NEIGHBORHOOD' | translate }}\"\n                    id=\"txt_NomeResp\" (input)=\"onInput()\">\n                  <app-error-msg [control]=\"formulario.get('txt_NomeResp')\" label=\"{{ 'CONFIG.NEIGHBORHOOD' | translate }}\"></app-error-msg>\n                </div>\n              </div>\n\n\n              <div class=\"row\" [ngClass]=\"aplicaCssErro('txt_End')\">\n                <div class=\"col-sm-12 mb-3\">\n                  <input type=\"text\" placeholder=\"{{ 'CONFIG.STREET' | translate }}\" class=\"form-control\" formControlName=\"txt_End\" id=\"txt_End\"\n                    (input)=\"onInput()\">\n                  <app-error-msg [control]=\"formulario.get('txt_End')\" label=\"{{ 'CONFIG.STREET' | translate }}\"></app-error-msg>\n                </div>\n              </div>\n\n\n\n              <div class=\"row\">\n\n                <div class=\"col-sm-6 input-group mb-3\" [ngClass]=\"aplicaCssErro('txt_Numero')\">\n                  <input type=\"text\" class=\"form-control\" placeholder=\"{{ 'CONFIG.NUMBER' | translate }}\" formControlName=\"txt_Numero\"\n                    id=\"txt_Numero\" (input)=\"onInput()\">\n\n                </div>\n\n\n                <div class=\"col-sm-6 input-group mb-3\">\n                  <input type=\"text\" class=\"form-control\" placeholder=\"{{ 'CONFIG.ZIPCODE' | translate }}\" formControlName=\"txt_CEP\"\n                    id=\"txt_CEP\" (input)=\"onInput()\" (keypress)=\"numberOnly($event)\">\n\n                </div>\n\n              </div>\n\n\n\n\n\n\n              <div class=\"row\">\n\n                <div class=\"col-sm-6 input-group mb-3\">\n                  <input type=\"text\" placeholder=\"{{ 'CONFIG.CELLPHONE' | translate }}\" class=\"form-control \" formControlName=\"txt_Cel\"\n                    id=\"txt_Cel\" (input)=\"onInput()\">\n                </div>\n\n                <div class=\"col-sm-6 input-group mb-3\">\n                  <input type=\"text\" class=\"form-control\" placeholder=\"{{ 'CONFIG.TELEPHONE' | translate }}\" formControlName=\"txt_Tel\" id=\"txt_Tel\"\n                    (input)=\"onInput()\">\n                </div>\n\n              </div>\n\n\n\n\n\n\n\n              <div class=\"row\">\n\n                <div class=\"col-sm-8 input-group\" [ngClass]=\"aplicaCssErro('txt_email')\">\n                  <input type=\"text\" class=\"form-control\" placeholder=\"{{ 'CONFIG.EMAIL' | translate }}\" formControlName=\"txt_email\"\n                    id=\"txt_email\" (input)=\"onInput()\">\n                  <app-error-msg [control]=\"formulario.get('txt_email')\" label=\"{{ 'CONFIG.EMAIL' | translate }}\"></app-error-msg>\n                </div>\n\n\n              </div>\n\n            </div>\n\n\n            <div class=\"card-footer justify-content-end\"\n              style=\"background-color: transparent; border-top-color: transparent\">\n              <button type=\"submit\" class=\"btn btn-primary \">{{ 'CONFIG.SUBMIT' | translate }}</button>\n            </div>\n\n          </form>\n\n\n\n        </div>\n\n        <br><br>\n\n\n      </div>\n    </div>\n  </div>\n</div>\n\n<section class=\"ftco-section ftco-intro\" style=\"margin-top: 15rem; padding-top: 0px\">\n  <div class=\"container\">\n\n\n    <div class=\"row justify-content-center  mb-3 pb-3\" data-scrollax-parent=\"true\">\n      <div class=\"col-md-7 heading-section text-center fadeInUp ftco-animated \" style=\"margin-top: 7rem\"\n        data-scrollax=\" properties: { translateY: '70%' }\">\n        <h3 class=\"mb-4\">{{ 'CONFIG.PHOTOBARBERSHOP' | translate }}</h3>\n        <p class=\"flip\">\n          <span class=\"deg1\"></span>\n          <span class=\"deg2\"></span>\n          <span class=\"deg3\"></span>\n        </p>\n      </div>\n    </div>\n\n\n    <div class=\"row d-flex\">\n\n      <div class=\"col-md-6 col-sm-12 col-12 justify-content-center\">\n        <img class=\"mr-2  img-fluid\" src=\"assets\\image\\polaroid.jpg\" alt=\"\">\n      </div>\n\n      <div class=\"col-md-6 col-sm-12 col-12 pl-5 mt-5\" style=\"padding-right: 48px\">\n\n        <div class=\"row text-center\">\n\n          <blockquote class=\"blockquote text-center\">\n            <p class=\"mb-0\">{{ 'CONFIG.TEXTEFFECT' | translate }}</p>\n            <footer class=\"blockquote-footer\">Oliver Goldsmith <cite title=\"Título\">{{ 'CONFIG.TEXTEFFECTCont' | translate }}</cite></footer>\n\n          </blockquote>\n\n        </div>\n\n        <br><br><br>\n        <p>{{ 'CONFIG.TEXTEFFECT2' | translate }}</p>\n        <div class=\"row\" style=\"margin-left: 1\">\n          <button class=\"btn btn-primary mr-3\" data-toggle=\"modal\" data-target=\"#fotoModal\"\n            [disabled]=\"ativarDesativar\">{{ 'CONFIG.CHOOSEPHOTO' | translate }}</button>\n\n          <button class=\"btn btn-outline-primary\" data-toggle=\"modal\" data-target=\"#fotoModalLogo\"\n            [disabled]=\"ativarDesativar\">{{ 'CONFIG.CHOOSELOGO' | translate }}</button>\n        </div>\n      </div>\n\n\n    </div>\n  </div>\n</section>\n\n\n\n<section class=\"ftco-section ftco-bg-dark\">\n  <div class=\"container\">\n\n\n    <div class=\"row justify-content-center  mb-3 pb-3\" data-scrollax-parent=\"true\">\n      <div class=\"col-md-7 heading-section text-center fadeInUp ftco-animated \" style=\"margin-top: 7rem\"\n        data-scrollax=\" properties: { translateY: '70%' }\">\n        <h3 class=\"mb-4\">{{ 'CONFIG.BUSINESSHOURS' | translate }}</h3>\n        <p class=\"flip\">\n          <span class=\"deg1\"></span>\n          <span class=\"deg2\"></span>\n          <span class=\"deg3\"></span>\n        </p>\n      </div>\n    </div>\n\n\n    <div class=\"container\">\n    <div class=\"row  justify-content-center mb-5\">\n      <p class=\"mb-0\">{{ 'CONFIG.TEXTEFFECT3' | translate }}</p>\n    </div>\n  </div>\n\n\n\n\n\n    <div class=\"row justify-content-center\">\n      <div class=\"card\" style=\"border-color: #ce9c6b\">\n        <img class=\"card-img-top\" src=\"assets\\image\\b6.jpg\">\n\n        <div class=\"card-body\" style=\"background-color: #1b1b1b\">\n\n\n\n\n          <div class=\"container\" style=\"cursor: pointer\" data-toggle=\"modal\" data-target=\"#myModal\">\n            <!--Div com ng*For-->\n\n\n\n            <div class=\"row\">\n\n              <div class=\"col-4\">\n                <i class=\"far fa-clock\" aria-hidden=\"true\"></i>\n              </div>\n\n              <div class=\"col-4\">\n\n              </div>\n\n              <div class=\"col-4\" style=\"padding-left: 0px\">\n                <i class=\"fa fa-pencil-alt\" style=\"float: right\" aria-hidden=\"true\"></i>\n              </div>\n            </div>\n\n\n            <div class=\"row mb-2\">\n\n\n              <div class=\"col-5\" style=\"padding-left: 0px\">\n                <h5 style=\"font-size: 15px\">\n                  <span>{{ 'CONFIG.SUNDAY' | translate }}</span>\n                </h5>\n              </div>\n\n              <div class=\"col-7 justify-content-center\"\n                *ngIf=\"horariosDom$ | async as horariosDom ; else elseTemplateDom\">\n                <div *ngFor=\"let item of horariosDom\">\n\n                  <div *ngIf=\"item.closedDom==false; else elseDom\">\n                    <p\n                      style=\"font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif; margin-bottom: 0rem\">\n                      {{ 'CONFIG.CLOSED' | translate }}</p>\n                  </div>\n\n                  <ng-template #elseDom>\n                    <div *ngFor=\"let item of item.formArrayDomingo\">\n\n                      <p\n                        style=\"font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif; margin-bottom: 0rem\">\n                        {{item.itemPropertyOneDomingo}} - {{item.itemPropertyTwoDomingo}} </p>\n\n\n                    </div>\n                  </ng-template>\n\n                </div>\n              </div>\n\n              <ng-template #elseTemplateDom>\n                <p\n                  style=\"font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif; margin-bottom: 0rem\">\n                  {{ 'CONFIG.CLOSED' | translate }}</p>\n              </ng-template>\n\n\n\n            </div>\n\n\n\n\n\n            <div class=\"row mb-2\">\n              <div class=\"col-5\" style=\"padding-left: 0px\">\n                <h5 style=\"font-size: 15px\">\n                  <span>{{ 'CONFIG.MONDAY' | translate }}</span>\n                </h5>\n              </div>\n\n              <div class=\"col-7 justify-content-center\"\n                *ngIf=\"horariosSeg$ | async as horariosSeg ; else elseTemplateSeg\">\n                <div *ngFor=\"let item of horariosSeg\">\n\n                  <div *ngIf=\"item.closedSeg==false; else elseSeg\">\n                    <p\n                      style=\"font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif; margin-bottom: 0rem\">\n                      {{ 'CONFIG.CLOSED' | translate }}</p>\n                  </div>\n\n                  <ng-template #elseSeg>\n                    <div *ngFor=\"let item of item.formArraySegunda\">\n\n                      <p\n                        style=\"font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif; margin-bottom: 0rem\">\n                        {{item.itemPropertyOneSegunda}} - {{item.itemPropertyTwoSegunda}} </p>\n\n\n                    </div>\n                  </ng-template>\n\n                </div>\n              </div>\n\n              <ng-template #elseTemplateSeg>\n                <p\n                  style=\"font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif; margin-bottom: 0rem\">\n                  {{ 'CONFIG.CLOSED' | translate }}</p>\n              </ng-template>\n            </div>\n\n\n\n\n\n\n\n\n\n            <div class=\"row mb-2\">\n              <div class=\"col-5\" style=\"padding-left: 0px\">\n                <h5 style=\"font-size: 15px\">\n                  <span>{{ 'CONFIG.TUESDAY' | translate }}</span>\n                </h5>\n              </div>\n\n              <div class=\"col-7 justify-content-center\"\n                *ngIf=\"horariosTer$ | async as horariosTer ; else elseTemplateTer\">\n                <div *ngFor=\"let item of horariosTer\">\n\n                  <div *ngIf=\"item.closedTer==false; else elseTer\">\n                    <p\n                      style=\"font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif; margin-bottom: 0rem\">\n                      {{ 'CONFIG.CLOSED' | translate }}</p>\n                  </div>\n\n                  <ng-template #elseTer>\n                    <div *ngFor=\"let item of item.formArrayTerca\">\n\n                      <p\n                        style=\"font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif; margin-bottom: 0rem\">\n                        {{item.itemPropertyOneTerca}} - {{item.itemPropertyTwoTerca}} </p>\n\n\n                    </div>\n                  </ng-template>\n\n                </div>\n              </div>\n              <ng-template #elseTemplateTer>\n                <p\n                  style=\"font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif; margin-bottom: 0rem\">\n                  {{ 'CONFIG.CLOSED' | translate }}</p>\n              </ng-template>\n            </div>\n\n\n\n\n\n\n            <div class=\"row mb-2\">\n              <div class=\"col-5\" style=\"padding-left: 0px\">\n                <h5 style=\"font-size: 15px\">\n                  <span>{{ 'CONFIG.WEDNESDAY' | translate }}</span>\n                </h5>\n              </div>\n\n              <div class=\"col-7 justify-content-center\"\n                *ngIf=\"horariosQua$ | async as horariosQua ; else elseTemplateQua\">\n                <div *ngFor=\"let item of horariosQua\">\n\n                  <div *ngIf=\"item.closedQua==false; else elseQua\">\n                    <p\n                      style=\"font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif; margin-bottom: 0rem\">\n                      {{ 'CONFIG.CLOSED' | translate }}</p>\n                  </div>\n\n                  <ng-template #elseQua>\n                    <div *ngFor=\"let item of item.formArrayQuarta\">\n\n                      <p\n                        style=\"font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif; margin-bottom: 0rem\">\n                        {{item.itemPropertyOneQuarta}} - {{item.itemPropertyTwoQuarta}} </p>\n\n\n                    </div>\n                  </ng-template>\n\n                </div>\n              </div>\n              <ng-template #elseTemplateQua>\n                <p\n                  style=\"font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif; margin-bottom: 0rem\">\n                  {{ 'CONFIG.CLOSED' | translate }}</p>\n              </ng-template>\n            </div>\n\n\n\n\n\n\n\n\n            <div class=\"row mb-2\">\n              <div class=\"col-5\" style=\"padding-left: 0px\">\n                <h5 style=\"font-size: 15px\">\n                  <span>{{ 'CONFIG.THURSDAY' | translate }}</span>\n                </h5>\n              </div>\n\n              <div class=\"col-7 justify-content-center\"\n                *ngIf=\"horariosQui$ | async as horariosQui ; else elseTemplateQui\">\n                <div *ngFor=\"let item of horariosQui\">\n\n                  <div *ngIf=\"item.closedQui==false; else elseQui\">\n                    <p\n                      style=\"font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif; margin-bottom: 0rem\">\n                      {{ 'CONFIG.CLOSED' | translate }}</p>\n                  </div>\n\n                  <ng-template #elseQui>\n                    <div *ngFor=\"let item of item.formArrayQuinta\">\n\n                      <p\n                        style=\"font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif; margin-bottom: 0rem\">\n                        {{item.itemPropertyOneQuinta}} - {{item.itemPropertyTwoQuinta}} </p>\n\n                    </div>\n                  </ng-template>\n\n                </div>\n              </div>\n\n              <ng-template #elseTemplateQui>\n                <p\n                  style=\"font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif; margin-bottom: 0rem\">\n                  {{ 'CONFIG.CLOSED' | translate }}</p>\n              </ng-template>\n            </div>\n\n\n\n\n\n\n            <div class=\"row mb-2\">\n              <div class=\"col-5\" style=\"padding-left: 0px\">\n                <h5 style=\"font-size: 15px\">\n                  <span>{{ 'CONFIG.FRIDAY' | translate }}</span>\n                </h5>\n              </div>\n\n\n              <div class=\"col-7 justify-content-center\"\n                *ngIf=\"horariosSex$ | async as horariosSex ; else elseTemplateSex\">\n                <div *ngFor=\"let item of horariosSex\">\n\n                  <div *ngIf=\"item.closedSex==false; else elseSex\">\n                    <p\n                      style=\"font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif; margin-bottom: 0rem\">\n                      {{ 'CONFIG.CLOSED' | translate }}</p>\n                  </div>\n\n                  <ng-template #elseSex>\n                    <div *ngFor=\"let item of item.formArraySexta\">\n\n                      <p\n                        style=\"font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif; margin-bottom: 0rem\">\n                        {{item.itemPropertyOneSexta}} - {{item.itemPropertyTwoSexta}} </p>\n\n\n                    </div>\n                  </ng-template>\n\n                </div>\n              </div>\n              <ng-template #elseTemplateSex>\n                <p\n                  style=\"font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif; margin-bottom: 0rem\">\n                  {{ 'CONFIG.CLOSED' | translate }}</p>\n              </ng-template>\n            </div>\n\n\n\n\n\n\n\n\n            <div class=\"row\">\n              <div class=\"col-5\" style=\"padding-left: 0px\">\n                <h5 style=\"font-size: 15px\">\n                  <span>{{ 'CONFIG.SATURDAY' | translate }}</span>\n                </h5>\n              </div>\n\n              <div class=\"col-7 justify-content-center\"\n                *ngIf=\"horariosSab$ | async as horariosSab ; else elseTemplateSab\">\n                <div *ngFor=\"let item of horariosSab\">\n\n                  <div *ngIf=\"item.closedSab==false; else elseSab\">\n                    <p\n                      style=\"font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif; margin-bottom: 0rem\">\n                      {{ 'CONFIG.CLOSED' | translate }}</p>\n                  </div>\n\n                  <ng-template #elseSab>\n                    <div *ngFor=\"let item of item.formArraySabado\">\n\n                      <p\n                        style=\"font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif; margin-bottom: 0rem\">\n                        {{item.itemPropertyOneSabado}} - {{item.itemPropertyTwoSabado}} </p>\n\n\n                    </div>\n                  </ng-template>\n\n                </div>\n              </div>\n              <ng-template #elseTemplateSab>\n                <p\n                  style=\"font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif; margin-bottom: 0rem\">\n                  {{ 'CONFIG.CLOSED' | translate }}</p>\n              </ng-template>\n            </div>\n\n\n\n\n\n          </div>\n          <!--End Div com ng*For-->\n\n\n          <hr>\n\n          <div class=\"container\" style=\"cursor: pointer\" data-toggle=\"modal\" data-target=\"#precoModal\">\n\n            <div class=\"row\">\n\n              <div class=\"col-4\">\n                <i class=\"fas fa-cut\" aria-hidden=\"true\"></i>\n              </div>\n\n              <div class=\"col-4\">\n\n              </div>\n\n              <div class=\"col-4\">\n                <i class=\"fa fa-pencil-alt\" style=\"float: right\" aria-hidden=\"true\"></i>\n              </div>\n            </div>\n\n\n\n            <div class=\"row justify-content-center\" *ngIf=\"precos$ | async as precos ; else elseTemplateprecos\">\n              <div class=\"pricing-entry\" *ngFor=\"let item of precos\">\n                <div class=\"d-flex text align-items-center\" *ngFor=\"let item of item.formArrayPrecos\">\n                  <h3 style=\"font-size: 15px\">\n                    <span>{{ item.itemPropertyServico }}</span>\n                  </h3>\n\n                  <span class=\"price\" style=\"font-size: 15px\">{{ item.itemPropertyPreco }}</span>\n\n                </div>\n              </div>\n\n            </div>\n            <ng-template #elseTemplateprecos>\n\n              <p\n                style=\"font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif; margin-bottom: 0rem\">{{ 'CONFIG.ADDSERVICE' | translate }}</p>\n\n            </ng-template>\n\n          </div>\n\n\n        </div>\n\n      </div>\n    </div>\n  </div>\n\n</section>\n\n\n\n\n\n\n\n<!-- Modal Horario-->\n\n<div class=\"modal\" id=\"myModal\">\n  <div class=\"modal-dialog\">\n    <div class=\"modal-content\">\n\n      <div class=\"modal-header\" style=\"border-bottom: 0px\">\n        <button class=\"close float-right\" data-dismiss=\"modal\" aria-label=\"Close\">\n          <span aria-hidden=\"true\">x</span>\n        </button>\n      </div>\n\n      <div class=\"modal-body\">\n\n\n\n\n\n        <div class=\"container\">\n\n\n          <div class=\"row mb-3\">\n\n            <form class=\"appointment-form2 form-check-inline \" [formGroup]=\"myFormDomingo\">\n\n              <input type=\"hidden\" class=\"form-control2\" formControlName=\"id\" id=\"id\">\n\n              <input type=\"hidden\" class=\"form-control2\" formControlName=\"fk\" id=\"fk\">\n\n              <div class=\"row\">\n                <div class=\"col-12 col-md-3\">\n                  <div class=\"row \" style=\"width: 115px\">\n                    <div class=\"col-8 justify-content-start\">\n                      <span class=\"mr-1\" style=\"color: lightslategray ; font-size: 14px\">{{ 'CONFIG.SUNDAY' | translate }}</span>\n                    </div>\n                    <div class=\"col-4 justify-content-end\">\n                      <label class=\"switch\">\n                        <input type=\"checkbox\" [checked]=\"mostrarHoraDom\" (click)=\"onClickMostraHoraDom()\">\n                        <span class=\"slider round\"></span>\n                      </label>\n                    </div>\n\n                  </div>\n                </div>\n\n\n\n\n\n\n                <input type=\"hidden\" class=\"form-control2\" formControlName=\"closedDom\" id=\"closedDom\">\n\n                <div class=\"col-8 col-md-7\" [hidden]=\"!mostrarHoraDom\">\n                  <div formArrayName=\"formArrayDomingo\">\n                    <div *ngFor=\"let control of myFormDomingo.get('formArrayDomingo')['controls']; let i=index\">\n\n                      <div class=\"row\" style=\"margin-left: 2px\">\n                        <div class=\"col-10 col-md-11\">\n                          <app-domingo [myFormDomingo]=\"myFormDomingo.get('formArrayDomingo')['controls'][i]\">\n                          </app-domingo>\n                        </div>\n                        <div class=\"col-2 col-md-1\" style=\"padding: 0px\">\n                          <span (click)=\"delInputDomingo(i)\"\n                            style=\"cursor: pointer; position: absolute; right: 0\">x</span>\n                        </div>\n                      </div>\n\n                    </div>\n                  </div>\n\n\n                </div>\n\n\n\n                <div class=\"col-4 col-md-2\" style=\"padding: 0px\" [hidden]=\"!mostrarHoraDom\">\n                  <button class=\"btn btn-outline-primary\" style=\"margin-left: 6px; padding: 9px\"\n                    (click)=\"addInputDomingo()\">Add+</button>\n                </div>\n\n\n                <div class=\"col-4 col-md-3\" [hidden]=\"mostrarHoraDom\" style=\"width: 0px; height: 0px\">\n                </div>\n\n\n                <div class=\"col-4 col-md-3\" [hidden]=\"mostrarHoraDom\">\n                  <span>{{ 'CONFIG.CLOSED' | translate }}</span>\n                </div>\n\n              </div>\n            </form>\n          </div>\n\n\n          <div class=\"row mb-3\">\n            <form class=\"appointment-form2 form-check-inline\" [formGroup]=\"myFormSegunda\">\n\n              <input type=\"hidden\" class=\"form-control2\" formControlName=\"id\" id=\"id\">\n\n              <input type=\"hidden\" class=\"form-control2\" formControlName=\"fk\" id=\"fk\">\n\n\n              <div class=\"row \">\n                <div class=\"col-12 col-md-3\">\n                  <div class=\"row\" style=\"width: 115px\">\n                    <div class=\"col-8 justify-content-start\">\n                      <span class=\"mr-1\" style=\"color: lightslategray ; font-size: 14px\">{{ 'CONFIG.MONDAY' | translate }}</span>\n                    </div>\n                    <div class=\"col-4 justify-content-end\">\n                      <label class=\"switch\">\n                        <input type=\"checkbox\" [checked]=\"mostrarHoraSeg\" (click)=\"onClickMostraHoraSeg()\">\n                        <span class=\"slider round\"></span>\n                      </label>\n                    </div>\n\n                  </div>\n                </div>\n\n\n                <input type=\"hidden\" class=\"form-control2\" formControlName=\"closedSeg\" id=\"closedSeg\">\n\n                <div class=\"col-8 col-md-7\" [hidden]=\"!mostrarHoraSeg\">\n                  <div formArrayName=\"formArraySegunda\">\n                    <div *ngFor=\"let control of myFormSegunda.get('formArraySegunda')['controls']; let i=index\">\n\n                      <div class=\"row\" style=\"margin-left: 2px\">\n                        <div class=\"col-10 col-md-11\">\n                          <app-segunda [myFormSegunda]=\"myFormSegunda.get('formArraySegunda')['controls'][i]\">\n                          </app-segunda>\n                        </div>\n                        <div class=\"col-2 col-md-1\" style=\"padding: 0px\">\n                          <span (click)=\"delInputSegunda(i)\"\n                            style=\"cursor: pointer; position: absolute; right: 0\">x</span>\n                        </div>\n                      </div>\n\n                    </div>\n                  </div>\n\n\n                </div>\n\n\n\n\n                <div class=\"col-4 col-md-2\" style=\"padding: 0px\" [hidden]=\"!mostrarHoraSeg\">\n                  <button class=\"btn btn-outline-primary\" style=\"margin-left: 6px; padding: 9px\"\n                    (click)=\"addInputSegunda()\">Add+</button>\n                </div>\n\n\n                <div class=\"col-4 col-md-3\" [hidden]=\"mostrarHoraSeg\" style=\"width: 0px; height: 0px\">\n                </div>\n\n\n                <div class=\"col-4 col-md-3\" [hidden]=\"mostrarHoraSeg\">\n                  <span>{{ 'CONFIG.CLOSED' | translate }}</span>\n                </div>\n\n              </div>\n\n            </form>\n          </div>\n\n          <div class=\"row mb-3\">\n            <form class=\"appointment-form2 form-check-inline\" [formGroup]=\"myFormTerca\">\n\n              <input type=\"hidden\" class=\"form-control2\" formControlName=\"id\" id=\"id\">\n\n              <input type=\"hidden\" class=\"form-control2\" formControlName=\"fk\" id=\"fk\">\n\n\n\n              <div class=\"row \">\n                <div class=\"col-12 col-md-3\">\n                  <div class=\"row\" style=\"width: 115px\">\n                    <div class=\" col-8 justify-content-start\">\n                      <span class=\"mr-1\" style=\"color: lightslategray ; font-size: 14px\">{{ 'CONFIG.TUESDAY' | translate }}</span>\n                    </div>\n                    <div class=\"col-4 justify-content-end\">\n                      <label class=\"switch\">\n                        <input type=\"checkbox\" [checked]=\"mostrarHoraTer\" (click)=\"onClickMostraHoraTer()\">\n                        <span class=\"slider round\"></span>\n                      </label>\n                    </div>\n\n                  </div>\n                </div>\n\n\n\n\n\n\n                <input type=\"hidden\" class=\"form-control2\" formControlName=\"closedTer\" id=\"closedTer\">\n\n                <div class=\"col-8 col-md-7\" [hidden]=\"!mostrarHoraTer\">\n                  <div formArrayName=\"formArrayTerca\">\n                    <div *ngFor=\"let control of myFormTerca.get('formArrayTerca')['controls']; let i=index\">\n\n                      <div class=\"row\" style=\"margin-left: 2px\">\n                        <div class=\"col-10 col-md-11\">\n                          <app-terca [myFormTerca]=\"myFormTerca.get('formArrayTerca')['controls'][i]\"> </app-terca>\n                        </div>\n                        <div class=\"col-2 col-md-1\" style=\"padding: 0px\">\n                          <span (click)=\"delInputTerca(i)\"\n                            style=\"cursor: pointer; position: absolute; right: 0\">x</span>\n                        </div>\n                      </div>\n\n                    </div>\n                  </div>\n\n\n                </div>\n\n\n\n\n                <div class=\"col-4 col-md-2\" style=\"padding: 0px\" [hidden]=\"!mostrarHoraTer\">\n                  <button class=\"btn btn-outline-primary\" style=\"margin-left: 6px; padding: 9px\"\n                    (click)=\"addInputTerca()\">Add+</button>\n                </div>\n\n\n                <div class=\"col-4 col-md-3\" [hidden]=\"mostrarHoraTer\" style=\"width: 0px; height: 0px\">\n                </div>\n\n\n                <div class=\"col-4 col-md-3\" [hidden]=\"mostrarHoraTer\">\n                  <span>{{ 'CONFIG.CLOSED' | translate }}</span>\n                </div>\n\n              </div>\n            </form>\n          </div>\n\n\n\n          <div class=\"row mb-3\">\n            <form class=\"appointment-form2 form-check-inline \" [formGroup]=\"myFormQuarta\">\n\n              <input type=\"hidden\" class=\"form-control2\" formControlName=\"id\" id=\"id\">\n\n              <input type=\"hidden\" class=\"form-control2\" formControlName=\"fk\" id=\"fk\">\n\n\n\n              <div class=\"row \">\n                <div class=\"col-12 col-md-3\">\n                  <div class=\"row \" style=\"width: 115px\">\n                    <div class=\"col-8 justify-content-start\">\n                      <span class=\"mr-1\" style=\"color: lightslategray; font-size: 14px\">{{ 'CONFIG.WEDNESDAY' | translate }}</span>\n                    </div>\n                    <div class=\"col-4 justify-content-end\">\n                      <label class=\"switch\">\n                        <input type=\"checkbox\" [checked]=\"mostrarHoraQua\" (click)=\"onClickMostraHoraQua()\">\n                        <span class=\"slider round\"></span>\n                      </label>\n                    </div>\n\n                  </div>\n                </div>\n\n\n\n\n\n\n                <input type=\"hidden\" class=\"form-control2\" formControlName=\"closedQua\" id=\"closedQua\">\n\n                <div class=\"col-8 col-md-7\" [hidden]=\"!mostrarHoraQua\">\n                  <div formArrayName=\"formArrayQuarta\">\n                    <div *ngFor=\"let control of myFormQuarta.get('formArrayQuarta')['controls']; let i=index\">\n\n                      <div class=\"row\" style=\"margin-left: 2px\">\n                        <div class=\"col-10 col-md-11\">\n                          <app-quarta [myFormQuarta]=\"myFormQuarta.get('formArrayQuarta')['controls'][i]\">\n                          </app-quarta>\n                        </div>\n                        <div class=\"col-2 col-md-1\" style=\"padding: 0px\">\n                          <span (click)=\"delInputQuarta(i)\"\n                            style=\"cursor: pointer; position: absolute; right: 0\">x</span>\n                        </div>\n                      </div>\n\n                    </div>\n                  </div>\n\n\n                </div>\n\n\n\n\n                <div class=\"col-4 col-md-2\" style=\"padding: 0px\" [hidden]=\"!mostrarHoraQua\">\n                  <button class=\"btn btn-outline-primary\" style=\"margin-left: 6px; padding: 9px\"\n                    (click)=\"addInputQuarta()\">Add+</button>\n                </div>\n\n\n                <div class=\"col-4 col-md-3\" [hidden]=\"mostrarHoraQua\" style=\"width: 0px; height: 0px\">\n                </div>\n\n\n                <div class=\"col-4 col-md-3\" [hidden]=\"mostrarHoraQua\">\n                  <span>{{ 'CONFIG.CLOSED' | translate }}</span>\n                </div>\n\n              </div>\n            </form>\n          </div>\n\n\n\n          <div class=\"row mb-3\">\n            <form class=\"appointment-form2 form-check-inline\" [formGroup]=\"myFormQuinta\">\n\n              <input type=\"hidden\" class=\"form-control2\" formControlName=\"id\" id=\"id\">\n\n              <input type=\"hidden\" class=\"form-control2\" formControlName=\"fk\" id=\"fk\">\n\n\n\n\n              <div class=\"row \">\n                <div class=\"col-12 col-md-3\">\n                  <div class=\"row\" style=\"width: 115px\">\n                    <div class=\"col-8 justify-content-start\">\n                      <span class=\"mr-1\" style=\"color: lightslategray ; font-size: 14px\">{{ 'CONFIG.THURSDAY' | translate }}</span>\n                    </div>\n                    <div class=\"col-4 justify-content-end\">\n                      <label class=\"switch\">\n                        <input type=\"checkbox\" [checked]=\"mostrarHoraQui\" (click)=\"onClickMostraHoraQui()\">\n                        <span class=\"slider round\"></span>\n                      </label>\n                    </div>\n\n                  </div>\n                </div>\n\n\n\n\n\n\n                <input type=\"hidden\" class=\"form-control2\" formControlName=\"closedQui\" id=\"closedQui\">\n\n                <div class=\"col-8 col-md-7\" [hidden]=\"!mostrarHoraQui\">\n                  <div formArrayName=\"formArrayQuinta\">\n                    <div *ngFor=\"let control of myFormQuinta.get('formArrayQuinta')['controls']; let i=index\">\n\n                      <div class=\"row\" style=\"margin-left: 2px\">\n                        <div class=\"col-10 col-md-11\">\n                          <app-quinta [myFormQuinta]=\"myFormQuinta.get('formArrayQuinta')['controls'][i]\">\n                          </app-quinta>\n                        </div>\n                        <div class=\"col-2 col-md-1\" style=\"padding: 0px\">\n                          <span (click)=\"delInputQuinta(i)\"\n                            style=\"cursor: pointer; position: absolute; right: 0\">x</span>\n                        </div>\n                      </div>\n\n                    </div>\n                  </div>\n\n\n                </div>\n\n\n\n\n                <div class=\"col-4 col-md-2\" style=\"padding: 0px\" [hidden]=\"!mostrarHoraQui\">\n                  <button class=\"btn btn-outline-primary\" style=\"margin-left: 6px; padding: 9px\"\n                    (click)=\"addInputQuinta()\">Add+</button>\n                </div>\n\n\n                <div class=\"col-4 col-md-3\" [hidden]=\"mostrarHoraQui\" style=\"width: 0px; height: 0px\">\n                </div>\n\n\n                <div class=\"col-4 col-md-3\" [hidden]=\"mostrarHoraQui\">\n                  <span>{{ 'CONFIG.CLOSED' | translate }}</span>\n                </div>\n\n              </div>\n\n            </form>\n          </div>\n\n\n          <div class=\"row mb-3\">\n            <form class=\"appointment-form2 form-check-inline\" [formGroup]=\"myFormSexta\">\n\n              <input type=\"hidden\" class=\"form-control2\" formControlName=\"id\" id=\"id\">\n\n              <input type=\"hidden\" class=\"form-control2\" formControlName=\"fk\" id=\"fk\">\n\n\n\n\n\n\n\n              <div class=\"row\">\n                <div class=\"col-12 col-md-3\">\n                  <div class=\"row\" style=\"width: 115px\">\n                    <div class=\"col-8 justify-content-start\">\n                      <span class=\"mr-1\" style=\"color: lightslategray ; font-size: 14px\">{{ 'CONFIG.FRIDAY' | translate }}</span>\n                    </div>\n                    <div class=\"col-4 justify-content-end\">\n                      <label class=\"switch\">\n                        <input type=\"checkbox\" [checked]=\"mostrarHoraSex\" (click)=\"onClickMostraHoraSex()\">\n                        <span class=\"slider round\"></span>\n                      </label>\n\n                    </div>\n                  </div>\n                </div>\n\n\n\n\n\n\n                <input type=\"hidden\" class=\"form-control2\" formControlName=\"closedSex\" id=\"closedSex\">\n\n                <div class=\"col-8 col-md-7\" [hidden]=\"!mostrarHoraSex\">\n                  <div formArrayName=\"formArraySexta\">\n                    <div *ngFor=\"let control of myFormSexta.get('formArraySexta')['controls']; let i=index\">\n\n                      <div class=\"row\" style=\"margin-left: 2px\">\n                        <div class=\"col-10 col-md-11\">\n                          <app-sexta [myFormSexta]=\"myFormSexta.get('formArraySexta')['controls'][i]\"> </app-sexta>\n                        </div>\n                        <div class=\"col-2 col-md-1\" style=\"padding: 0px\">\n                          <span (click)=\"delInputSexta(i)\"\n                            style=\"cursor: pointer; position: absolute; right: 0\">x</span>\n                        </div>\n                      </div>\n\n                    </div>\n                  </div>\n\n\n                </div>\n\n\n\n\n                <div class=\"col-4 col-md-2\" style=\"padding: 0px\" [hidden]=\"!mostrarHoraSex\">\n                  <button class=\"btn btn-outline-primary\" style=\"margin-left: 6px; padding: 9px\"\n                    (click)=\"addInputSexta()\">Add+</button>\n                </div>\n\n\n                <div class=\"col-4 col-md-3\" [hidden]=\"mostrarHoraSex\" style=\"width: 0px; height: 0px\">\n                </div>\n\n\n                <div class=\"col-4 col-md-3\" [hidden]=\"mostrarHoraSex\">\n                  <span>{{ 'CONFIG.CLOSED' | translate }}</span>\n                </div>\n\n              </div>\n\n            </form>\n          </div>\n\n\n\n          <div class=\"row mb-3\">\n\n            <form class=\"appointment-form2 form-check-inline\" [formGroup]=\"myFormSabado\">\n\n              <input type=\"hidden\" class=\"form-control2\" formControlName=\"id\" id=\"id\">\n\n              <input type=\"hidden\" class=\"form-control2\" formControlName=\"fk\" id=\"fk\">\n\n\n\n\n\n\n              <div class=\"row\">\n                <div class=\"col-12 col-md-3\">\n                  <div class=\"row\" style=\"width: 115px\">\n                    <div class=\"col-8 justify-content-start\">\n                      <span class=\"mr-1\" style=\"color: lightslategray ; font-size: 14px\">{{ 'CONFIG.SATURDAY' | translate }}</span>\n                    </div>\n\n                    <div class=\"col-4 justify-content-end\">\n                      <label class=\"switch\">\n                        <input type=\"checkbox\" [checked]=\"mostrarHoraSab\" (click)=\"onClickMostraHoraSab()\">\n                        <span class=\"slider round\"></span>\n                      </label>\n\n                    </div>\n                  </div>\n                </div>\n\n\n\n\n\n\n                <input type=\"hidden\" class=\"form-control2\" formControlName=\"closedSab\" id=\"closedSab\">\n\n                <div class=\"col-8 col-md-7\" [hidden]=\"!mostrarHoraSab\">\n                  <div formArrayName=\"formArraySabado\">\n                    <div *ngFor=\"let control of myFormSabado.get('formArraySabado')['controls']; let i=index\">\n\n                      <div class=\"row\" style=\"margin-left: 2px\">\n                        <div class=\"col-10 col-md-11\">\n                          <app-sabado [myFormSabado]=\"myFormSabado.get('formArraySabado')['controls'][i]\">\n                          </app-sabado>\n                        </div>\n                        <div class=\"col-2 col-md-1\" style=\"padding: 0px\">\n                          <span (click)=\"delInputSabado(i)\"\n                            style=\"cursor: pointer; position: absolute; right: 0\">x</span>\n                        </div>\n                      </div>\n\n                    </div>\n                  </div>\n\n\n                </div>\n\n\n\n\n                <div class=\"col-4 col-md-2\" style=\"padding: 0px\" [hidden]=\"!mostrarHoraSab\">\n                  <button class=\"btn btn-outline-primary\" style=\"margin-left: 6px; padding: 9px\"\n                    (click)=\"addInputSabado()\">Add+</button>\n                </div>\n\n\n                <div class=\"col-4 col-md-3\" [hidden]=\"mostrarHoraSab\" style=\"width: 0px; height: 0px\">\n                </div>\n\n\n                <div class=\"col-4 col-md-3\" [hidden]=\"mostrarHoraSab\">\n                  <span>{{ 'CONFIG.CLOSED' | translate }}</span>\n                </div>\n\n              </div>\n            </form>\n\n          </div>\n\n\n        </div>\n\n\n\n\n\n      </div>\n\n\n      <div class=\"modal-footer\" style=\"padding: 20px; border-top-color: transparent\">\n        <button class=\"btn btn-secondary\" (click)=\"onClickAdd()\" data-dismiss=\"modal\">{{ 'CONFIG.APPLY' | translate }}</button>\n      </div>\n\n    </div>\n  </div>\n</div>\n\n\n\n\n<div class=\"modal\" id=\"precoModal\">\n  <div class=\"modal-dialog\">\n    <div class=\"modal-content\">\n\n      <div class=\"modal-header\" style=\"border-bottom: 0px\">\n        <button class=\"close float-right\" data-dismiss=\"modal\" aria-label=\"Close\">\n          <span aria-hidden=\"true\">x</span>\n        </button>\n      </div>\n\n      <div class=\"modal-body\">\n        <div class=\"container\">\n          <div class=\"row\">\n            <div class=\"col-lg-2\"></div>\n\n            <div class=\"col-12 col-lg-8\">\n              <form class=\"appointment-form2 form-check-inline\" [formGroup]=\"myFormPrecos\">\n\n                <input type=\"hidden\" class=\"form-control2\" formControlName=\"id\" id=\"id\">\n\n                <input type=\"hidden\" class=\"form-control2\" formControlName=\"fk\" id=\"fk\">\n                <div formArrayName=\"formArrayPrecos\">\n                  <div *ngFor=\"let control of myFormPrecos.get('formArrayPrecos')['controls']; let i=index\">\n\n                    <div class=\"row\">\n                      <div class=\"col-9\">\n                        <app-precos [myFormPrecos]=\"myFormPrecos.get('formArrayPrecos')['controls'][i]\"></app-precos>\n                      </div>\n\n\n                      <div class=\"col-1\">\n                        <i class=\"fas fa-plus\" (click)=\"addInputPrecos()\" style=\"cursor: pointer; color: #ce9c6b\"></i>\n                      </div>\n\n                      <div class=\"col-1\">\n                        <i class=\"fas fa-trash\" (click)=\"delInputPrecos(i)\" style=\"cursor: pointer\"></i>\n                      </div>\n\n                    </div>\n                  </div>\n                </div>\n              </form>\n            </div>\n\n            <div class=\"col-1 col-lg-2\"></div>\n          </div>\n        </div>\n      </div>\n      <div class=\"modal-footer\" style=\"padding: 20px; border-top-color: transparent\">\n        <button class=\"btn btn-secondary\" (click)=\"onClickAddPrecos()\" data-dismiss=\"modal\">{{ 'CONFIG.APPLY' | translate }}</button>\n      </div>\n    </div>\n\n  </div>\n</div>\n\n\n\n<div class=\"modal\" id=\"fotoModal\">\n  <div class=\"modal-dialog\">\n    <div class=\"modal-content\">\n\n      <div class=\"modal-header\" style=\"border-bottom-width: 0px\">\n        <h5 class=\"modal-title\" style=\"color: gray\">BarberPro</h5>\n\n      </div>\n\n      <div class=\"modal-body\">\n        <div class=\"container\">\n\n          <img [src]=\"downloadURL\" style=\"max-width: 398px; max-height: 260px; width:auto; height: auto\"> <br>\n\n          <input type=\"file\" accept=\"image/*\" class=\"form-control2\" (change)=\"featuredPhotoSelected($event)\" />\n        </div>\n      </div>\n      <div class=\"modal-footer\" style=\"padding: 20px; border-top-color: transparent\">\n\n        <button class=\"btn btn-primary\" data-dismiss=\"modal\">Ok</button>\n      </div>\n    </div>\n\n  </div>\n</div>\n\n\n\n\n<div class=\"modal\" id=\"fotoModalLogo\">\n  <div class=\"modal-dialog\">\n    <div class=\"modal-content\">\n\n      <div class=\"modal-header\" style=\"border-bottom-width: 0px\">\n        <h5 class=\"modal-title\" style=\"color: gray\">BarberPro</h5>\n\n      </div>\n\n      <div class=\"modal-body\">\n        <div class=\"container\">\n\n          <img [src]=\"downloadURLLogo\" style=\"width: 70px; height: 70px;\"> <br>\n\n          <input type=\"file\" accept=\"image/*\" class=\"form-control2\" (change)=\"featuredPhotoSelectedLogo($event)\" />\n        </div>\n      </div>\n      <div class=\"modal-footer\" style=\"padding: 20px; border-top-color: transparent\">\n\n        <button class=\"btn btn-primary\" data-dismiss=\"modal\">Ok</button>\n      </div>\n    </div>\n\n  </div>\n</div>\n\n\n\n\n\n\n\n\n\n<section style=\"background: #000\">\n  <div class=\"container\" style=\"padding-top: 30px; padding-bottom: 5px\">\n    <div class=\"row\">\n      <div class=\"col-8\">\n        <p style=\"cursor: pointer\" data-toggle=\"modal\" data-target=\"#contatoModal\"><i class=\"fas fa-headset\"></i>\n          {{ 'HOME.TITLE24' | translate }}</p>\n      </div>\n     \n    </div>\n  </div>\n</section>\n\n\n\n\n\n<div class=\"modal\" id=\"contatoModal\">\n  <div class=\"modal-dialog\">\n    <div class=\"modal-content\">\n\n      <div class=\"modal-header\" style=\"border-bottom-width: 0px\">\n        <h5 class=\"modal-title\" style=\"color: gray\">{{ 'HOME.TITLE17' | translate }}</h5>\n        <button class=\"close float-right\" data-dismiss=\"modal\" aria-label=\"Close\">\n          <span aria-hidden=\"true\">x</span>\n        </button>\n      </div>\n\n      <div class=\"modal-body\">\n\n\n\n\n\n        <div class=\"container\">\n\n          <form action=\"#\" class=\"contact-form\" [formGroup]=\"formularioContato\">\n            <div class=\"row\">\n\n\n              <div class=\"col-md-6\">\n                <div class=\"form-group\">\n                  <input type=\"text\" style=\"font-size: 13px\" class=\"form-control\" placeholder=\"{{ 'HOME.TITLE20' | translate }}\" formControlName=\"yourName\"\n                    id=\"yourName\">\n                  <app-error-msg style=\"font-size: 10px\" [control]=\"formularioContato.get('yourName')\" label=\"Name\">\n                  </app-error-msg>\n                </div>\n              </div>\n\n\n              <div class=\"col-md-6\" >\n                <div class=\"form-group\">\n                  <input type=\"text\" style=\"font-size: 13px\" class=\"form-control\" placeholder=\"{{ 'HOME.TITLE21' | translate }}\" formControlName=\"yourEmail\"\n                    id=\"yourEmail\">\n                  <app-error-msg style=\"font-size: 10px\" [control]=\"formularioContato.get('yourEmail')\" label=\"Email\">\n                  </app-error-msg>\n                </div>\n\n              </div>\n            </div>\n\n\n          \n              <div class=\"form-group\">\n                <input type=\"text\" style=\"font-size: 13px\" class=\"form-control\" placeholder=\"{{ 'HOME.TITLE22' | translate }}\" formControlName=\"assunto\" id=\"assunto\">\n                <app-error-msg style=\"font-size: 10px\" [control]=\"formularioContato.get('assunto')\" label=\"{{ 'HOME.TITLE22' | translate }}\">\n                </app-error-msg>\n              </div>\n           \n\n         \n              <div class=\"form-group\">\n                <textarea cols=\"30\" rows=\"7\" style=\"font-size: 13px\" class=\"form-control\" placeholder=\"{{ 'HOME.TITLE23' | translate }}\" formControlName=\"message\"\n                  id=\"message\"></textarea>\n                <app-error-msg style=\"font-size: 10px\" [control]=\"formularioContato.get('message')\" label=\"Message\">\n                </app-error-msg>\n              </div>\n         \n\n          </form>\n\n\n        </div>\n\n\n      </div>\n\n\n      <div class=\"modal-footer\" style=\"padding: 20px; border-top-color: transparent\">\n\n        <div>\n          <button class=\"btn btn-outline-primary mr-2\" data-dismiss=\"modal\">{{ 'HOME.TITLE18' | translate }}</button>\n          <button class=\"btn btn-primary\" (click)=\"sendEmail()\" data-dismiss=\"modal\">{{ 'HOME.TITLE19' | translate }}</button>\n        </div>\n      </div>\n    </div>\n  </div>\n\n</div>\n"
 
 /***/ }),
 
@@ -28519,7 +32087,6 @@ var __metadata = (undefined && undefined.__metadata) || function (k, v) {
 
 var ConfigComponent = /** @class */ (function () {
     function ConfigComponent(formBuilder, router, route, userService, modalService, horarioService, precoService, fb, afAuth, authService, toastr, translate, usuarioService) {
-        var _this = this;
         this.formBuilder = formBuilder;
         this.router = router;
         this.route = route;
@@ -28533,9 +32100,6 @@ var ConfigComponent = /** @class */ (function () {
         this.toastr = toastr;
         this.translate = translate;
         this.usuarioService = usuarioService;
-        this.afAuth.authState.pipe(Object(rxjs_operators__WEBPACK_IMPORTED_MODULE_2__["take"])(1)).subscribe(function (user) {
-            _this.codigoUsuario = user.uid;
-        });
         this.translate.addLangs(['de', 'en', 'es', 'fr', 'it', 'pt']);
         this.translate.setDefaultLang('en');
         var browserLang = this.translate.getBrowserLang();
@@ -28543,27 +32107,31 @@ var ConfigComponent = /** @class */ (function () {
         this.browserLangua = browserLang;
     }
     ConfigComponent.prototype.ngOnInit = function () {
-        this.ativarDesativar = true;
-        // this.codigoUsuario = this.route.snapshot.params['id'];
-        this.configurarFormulario();
-        this.carregarUsuario(this.codigoUsuario);
-        this.configuraFormularioContato();
-        this.configurarformularioDom();
-        this.configurarformularioSeg();
-        this.configurarformularioTer();
-        this.configurarformularioQua();
-        this.configurarformularioQui();
-        this.configurarformularioSex();
-        this.configurarformularioSab();
-        this.carregarformularioHorario(this.codigoUsuario);
-        this.configurarformularioPrecos();
-        this.carregaObservables();
-        this.precos$ = this.precoService.getListaPrecos(this.codigoUsuario);
-        this.carregarformulariopreços(this.codigoUsuario);
-        this.paises$ = this.userService.getPaises();
-        this.carregaFoto();
-        this.carregaFotoLogo();
-        this.oneSignal();
+        var _this = this;
+        this.afAuth.authState.pipe(Object(rxjs_operators__WEBPACK_IMPORTED_MODULE_2__["take"])(1)).subscribe(function (user) {
+            _this.codigoUsuario = user.uid;
+            _this.ativarDesativar = true;
+            // this.codigoUsuario = this.route.snapshot.params['id'];
+            _this.configurarFormulario();
+            _this.carregarUsuario(_this.codigoUsuario);
+            _this.configuraFormularioContato();
+            _this.configurarformularioDom();
+            _this.configurarformularioSeg();
+            _this.configurarformularioTer();
+            _this.configurarformularioQua();
+            _this.configurarformularioQui();
+            _this.configurarformularioSex();
+            _this.configurarformularioSab();
+            _this.carregarformularioHorario(_this.codigoUsuario);
+            _this.configurarformularioPrecos();
+            _this.carregaObservables();
+            _this.precos$ = _this.precoService.getListaPrecos(_this.codigoUsuario);
+            _this.carregarformulariopreços(_this.codigoUsuario);
+            _this.paises$ = _this.userService.getPaises();
+            _this.carregaFoto();
+            _this.carregaFotoLogo();
+            _this.oneSignal();
+        });
     };
     ConfigComponent.prototype.oneSignal = function () {
         this.userIdOneSignal = localStorage.getItem('userId');
