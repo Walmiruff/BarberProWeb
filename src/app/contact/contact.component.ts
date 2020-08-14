@@ -20,7 +20,7 @@ export class ContactComponent implements OnInit {
 
   
   openUrlPlayStore() {
-    window.location.href = 'https://play.google.com/store/apps/details?id=io.barberpro.starter&hl=pt_BR';
+    window.open('https://play.google.com/store/apps/details?id=io.barberpro.starter&hl=pt_BR', '_system', 'location=yes');
  }
 
 }

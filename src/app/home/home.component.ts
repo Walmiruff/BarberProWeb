@@ -35,19 +35,19 @@ export class HomeComponent implements OnInit {
 
 
   openUrlPlayStore() {
-    window.location.href = 'https://play.google.com/store/apps/details?id=io.barberpro.starter&hl=pt_BR';
+    window.open('https://play.google.com/store/apps/details?id=io.barberpro.starter&hl=pt_BR', '_system', 'location=yes');
  }
 
   openUrlLinkedin() {
-    window.location.href = 'https://www.linkedin.com/in/walmir-castro-83011869';
+    window.open('https://www.linkedin.com/in/walmir-castro-83011869', '_system', 'location=yes');
   }
 
   openUrlIn() {
-    window.location.href = 'https://www.instagram.com/barberproapp/';
+    window.open('https://www.instagram.com/barberproapp/', '_system', 'location=yes');
   }
 
   openUrlFace() {
-    window.location.href = 'https://www.facebook.com/barberproapp/';
+    window.open('https://www.facebook.com/barberproapp/', '_system', 'location=yes');
   }
 
 
